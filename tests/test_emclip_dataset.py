@@ -111,3 +111,15 @@ def test_coviar_candidate_dirs_include_local_pytorch_coviar_first():
     local_idx = next(i for i, path in enumerate(candidates) if path.endswith("pytorch-coviar/data_loader"))
     server_idx = next(i for i, path in enumerate(candidates) if path == "/home/fuh/m2clip/Coviar/data_loader")
     assert local_idx < server_idx
+
+
+def test_coviar_ffmpeg_candidate_dirs_include_local_pytorch_coviar_first():
+    candidates = [
+        str(path).replace("\\", "/")
+        for path in cvd._coviar_ffmpeg_candidate_dirs()
+    ]
+
+    assert any(path.endswith("pytorch-coviar/data_loader/ffmpeg/lib") for path in candidates)
+    local_idx = next(i for i, path in enumerate(candidates) if path.endswith("pytorch-coviar/data_loader/ffmpeg/lib"))
+    server_idx = next(i for i, path in enumerate(candidates) if path == "/home/fuh/ffmpeg_coviar/lib")
+    assert local_idx < server_idx

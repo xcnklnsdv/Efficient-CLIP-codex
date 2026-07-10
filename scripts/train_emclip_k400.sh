@@ -6,6 +6,7 @@ set -euo pipefail
 
 DATASET="k400"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 NUM_WORKERS=${NUM_WORKERS:-0}
@@ -29,7 +30,7 @@ mkdir -p "${OUTPUT_DIR}"
 CMD=(torchrun
   --nproc_per_node="${NPROC_PER_NODE}"
   --master_port="${MASTER_PORT}"
-  main_emclip.py
+  "${REPO_ROOT}/main_emclip.py"
   --model emclip_b16
   --dataset "${DATASET}"
   --emclip-variant "${VARIANT}"

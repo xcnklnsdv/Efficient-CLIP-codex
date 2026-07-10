@@ -10,6 +10,17 @@
 # If NPROC_PER_NODE is not explicitly set, it is derived from GPU_IDS, GPUS,
 # or CUDA_VISIBLE_DEVICES. The local default below pins scripts to GPU 4 and 5.
 
+if [[ -z "${COVIAR_FFMPEG_LIB:-}" ]]; then
+  _EMCLIP_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [[ -d "${_EMCLIP_SCRIPT_DIR}/../pytorch-coviar/data_loader/ffmpeg/lib" ]]; then
+    COVIAR_FFMPEG_LIB="$(cd "${_EMCLIP_SCRIPT_DIR}/../pytorch-coviar/data_loader/ffmpeg/lib" && pwd)"
+  else
+    COVIAR_FFMPEG_LIB=/home/fuh/ffmpeg_coviar/lib
+  fi
+fi
+export COVIAR_FFMPEG_LIB
+export LD_LIBRARY_PATH="${COVIAR_FFMPEG_LIB}:${LD_LIBRARY_PATH:-}"
+
 CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-4,5}
 GPU_IDS=${GPU_IDS:-${GPUS:-${CUDA_VISIBLE_DEVICES}}}
 GPU_IDS="${GPU_IDS//[[:space:]]/}"

@@ -6,6 +6,7 @@ set -euo pipefail
 
 DATASET="ucf101_mpeg4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 NUM_WORKERS=${NUM_WORKERS:-0}
@@ -26,7 +27,7 @@ OUTPUT_DIR="${OUTPUT_ROOT}/${DATASET}_eval_${TEMPORAL_VIEWS}x${SPATIAL_CROPS}_${
 mkdir -p "${OUTPUT_DIR}"
 
 CMD=(torchrun --nproc_per_node="${NPROC_PER_NODE}" --master_port="${MASTER_PORT}"
-  main_emclip.py --model emclip_b16 --dataset "${DATASET}" --eval --batch-size "${BATCH_SIZE}"
+  "${REPO_ROOT}/main_emclip.py" --model emclip_b16 --dataset "${DATASET}" --eval --batch-size "${BATCH_SIZE}"
   --num-workers "${NUM_WORKERS}"
   --coviar-data-loader-dir "${COVIAR_DATA_LOADER_DIR}"
   --test-num-temporal-views "${TEMPORAL_VIEWS}" --test-num-spatial-crops "${SPATIAL_CROPS}"

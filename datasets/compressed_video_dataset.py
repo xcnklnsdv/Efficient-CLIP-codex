@@ -3,6 +3,7 @@ import os
 import random
 import sys
 import importlib
+import ctypes
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
@@ -17,6 +18,7 @@ CLIP_STD = torch.tensor([0.26862954, 0.26130258, 0.27577711])
 coviar_get_num_frames = None
 coviar_load = None
 coviar_import_error = None
+coviar_preload_errors = []
 
 
 @dataclass
@@ -132,6 +134,86 @@ def _coviar_candidate_dirs(extra_dir=None):
         yield path
 
 
+def _coviar_ffmpeg_candidate_dirs(extra_dir=None):
+    repo_root = Path(__file__).resolve().parents[1]
+    candidates = []
+    if extra_dir:
+        candidate = Path(extra_dir).expanduser()
+        if candidate.name == "data_loader":
+            candidates.append(candidate / "ffmpeg" / "lib")
+        elif candidate.name == "lib":
+            candidates.append(candidate)
+    for env_name in ("COVIAR_FFMPEG_LIB", "COVIAR_FFMPEG_DIR"):
+        if os.environ.get(env_name):
+            value = Path(os.environ[env_name]).expanduser()
+            candidates.append(value / "lib" if value.name != "lib" else value)
+    candidates.extend([
+        repo_root / "pytorch-coviar" / "data_loader" / "ffmpeg" / "lib",
+        repo_root / "Coviar" / "data_loader" / "ffmpeg" / "lib",
+        repo_root / "coviar" / "data_loader" / "ffmpeg" / "lib",
+        Path("/home/fuh/ffmpeg_coviar/lib"),
+        Path("/home/fuh/m2clip/Coviar/data_loader/ffmpeg/lib"),
+        Path("/home/fuh/Efficient-CLIP-codex/pytorch-coviar/data_loader/ffmpeg/lib"),
+    ])
+    seen = set()
+    for path in candidates:
+        path = Path(path).expanduser()
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        yield path
+
+
+def _prepend_ld_library_path(paths):
+    existing = os.environ.get("LD_LIBRARY_PATH", "")
+    existing_parts = [part for part in existing.split(os.pathsep) if part]
+    new_parts = []
+    for path in paths:
+        text = str(path)
+        if text and text not in new_parts and text not in existing_parts:
+            new_parts.append(text)
+    if new_parts:
+        os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(new_parts + existing_parts)
+
+
+def _preload_coviar_ffmpeg_libraries(extra_dir=None):
+    """Best-effort preload for FFmpeg libs used by coviar*.so.
+
+    LD_LIBRARY_PATH must normally be set before Python starts. This preloader
+    helps when the extension is imported with dlopen and the FFmpeg directory is
+    known, and it also gives a better error trail when a library is missing.
+    """
+    global coviar_preload_errors
+    coviar_preload_errors = []
+    dirs = [path for path in _coviar_ffmpeg_candidate_dirs(extra_dir) if path.exists()]
+    _prepend_ld_library_path(dirs)
+    if os.name == "nt":
+        for path in dirs:
+            try:
+                os.add_dll_directory(str(path))
+            except (AttributeError, OSError) as exc:
+                coviar_preload_errors.append("%s: %s" % (path, exc))
+        return
+
+    sonames = [
+        "libavutil.so.55",
+        "libswresample.so.2",
+        "libavcodec.so.57",
+        "libavformat.so.57",
+        "libswscale.so.4",
+    ]
+    for directory in dirs:
+        for soname in sonames:
+            library = directory / soname
+            if not library.exists():
+                continue
+            try:
+                ctypes.CDLL(str(library), mode=ctypes.RTLD_GLOBAL)
+            except OSError as exc:
+                coviar_preload_errors.append("%s: %s" % (library, exc))
+
+
 def ensure_coviar_loader(extra_dir=None):
     """Import CoViAR from an explicit, environment, local, or common server path."""
     global coviar_get_num_frames, coviar_load, coviar_import_error
@@ -141,6 +223,7 @@ def ensure_coviar_loader(extra_dir=None):
     for candidate in _coviar_candidate_dirs(extra_dir):
         if candidate.exists() and str(candidate) not in sys.path:
             sys.path.insert(0, str(candidate))
+    _preload_coviar_ffmpeg_libraries(extra_dir)
     if sys.modules.get("coviar") is None:
         sys.modules.pop("coviar", None)
     try:
@@ -156,9 +239,16 @@ def ensure_coviar_loader(extra_dir=None):
         raise ImportError(
             "CompressedVideoDataset requires coviar. Build pytorch-coviar/data_loader "
             "with `cd pytorch-coviar/data_loader && bash install.sh`, or pass "
-            "--coviar-data-loader-dir to a directory containing coviar*.so. "
-            "Tried data_loader dirs: %s. Original import error: %s"
-            % (", ".join(str(p) for p in _coviar_candidate_dirs(extra_dir)), exc)
+            "--coviar-data-loader-dir to a directory containing coviar*.so. If the "
+            "error mentions libavutil.so.55, set COVIAR_FFMPEG_LIB to the directory "
+            "containing FFmpeg 3.x libs. Tried data_loader dirs: %s. Tried FFmpeg "
+            "lib dirs: %s. Preload errors: %s. Original import error: %s"
+            % (
+                ", ".join(str(p) for p in _coviar_candidate_dirs(extra_dir)),
+                ", ".join(str(p) for p in _coviar_ffmpeg_candidate_dirs(extra_dir)),
+                "; ".join(coviar_preload_errors) if coviar_preload_errors else "none",
+                exc,
+            )
         )
 
 
