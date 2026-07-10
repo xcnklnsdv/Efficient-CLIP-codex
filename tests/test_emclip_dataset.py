@@ -22,6 +22,18 @@ def test_parse_video_list_line_supports_path_num_frames_label():
     assert item.label == 4
 
 
+def test_parse_video_list_line_supports_path_class_name_label():
+    item = parse_video_list_line(
+        "train_256/cleaning_floor/UB61Z0vxSPg_000030_000040.mp4 cleaning_floor 60",
+        num_classes=400,
+        dataset_name="k400",
+    )
+
+    assert item.relative_path == "train_256/cleaning_floor/UB61Z0vxSPg_000030_000040.mp4"
+    assert item.num_frames is None
+    assert item.label == 60
+
+
 def test_parse_video_list_line_supports_space_separated_label_names():
     item = parse_video_list_line(
         "videos/my clip.mp4 playing guitar",

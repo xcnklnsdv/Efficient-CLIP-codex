@@ -36,6 +36,32 @@ def _try_int(value):
         return None
 
 
+def _has_video_suffix(value):
+    return Path(value).suffix.lower() in {".mp4", ".avi", ".webm", ".mkv", ".mov"}
+
+
+def _strip_trailing_class_metadata(path_tokens, class_to_idx=None):
+    """Drop class-name metadata from numeric-label list rows.
+
+    K400 lists can use `relative/path.mp4 class_name label`. Paths may also
+    contain spaces, so the safest signal is the token where the video suffix
+    appears; any following non-label tokens are metadata, not path text.
+    """
+    if len(path_tokens) < 2:
+        return " ".join(path_tokens)
+
+    for index, token in enumerate(path_tokens):
+        if _has_video_suffix(token):
+            return " ".join(path_tokens[: index + 1])
+
+    candidate_path = " ".join(path_tokens[:-1])
+    trailing_name = path_tokens[-1]
+    parent_name = Path(candidate_path).parent.name
+    if (class_to_idx and trailing_name in class_to_idx) or parent_name == trailing_name:
+        return candidate_path
+    return " ".join(path_tokens)
+
+
 def parse_video_list_line(line, num_classes, dataset_name, class_to_idx: Optional[Dict[str, int]] = None):
     raw_line = line.rstrip("\n")
     parts = raw_line.strip().split()
@@ -49,7 +75,7 @@ def parse_video_list_line(line, num_classes, dataset_name, class_to_idx: Optiona
             num_frames = int(parts[-2])
             relative_path = " ".join(parts[:-2])
         else:
-            relative_path = " ".join(parts[:-1])
+            relative_path = _strip_trailing_class_metadata(parts[:-1], class_to_idx)
     else:
         if not class_to_idx:
             raise ValueError(
