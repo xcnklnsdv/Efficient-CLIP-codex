@@ -34,7 +34,12 @@ Override common settings:
 ```bash
 NPROC_PER_NODE=1 BATCH_SIZE=2 MASTER_PORT=29601 bash scripts/train_emclip_hmdb51.sh
 RESUME=output_dir/emclip/run/latest.pth bash scripts/train_emclip_hmdb51.sh
+GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh
+GPU_IDS=2 bash scripts/train_emclip_ucf101.sh
+CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
 ```
+
+`GPU_IDS`, `GPUS`, and `CUDA_VISIBLE_DEVICES` all work. If `NPROC_PER_NODE` is not set, the scripts derive it from the number of comma-separated GPU ids.
 
 EM-CLIP-diamond examples:
 

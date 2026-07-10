@@ -2,7 +2,8 @@
 set -euo pipefail
 
 DATASET="hmdb51_mpeg4"
-NPROC_PER_NODE=${NPROC_PER_NODE:-4}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 MASTER_PORT=${MASTER_PORT:-29501}
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip_eval}
