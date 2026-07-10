@@ -8,9 +8,10 @@
 #   CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
 #
 # If NPROC_PER_NODE is not explicitly set, it is derived from GPU_IDS, GPUS,
-# or CUDA_VISIBLE_DEVICES. If none is set, scripts keep the paper default of 4 GPUs.
+# or CUDA_VISIBLE_DEVICES. The local default below pins scripts to GPU 4 and 5.
 
-GPU_IDS=${GPU_IDS:-${GPUS:-${CUDA_VISIBLE_DEVICES:-}}}
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-4,5}
+GPU_IDS=${GPU_IDS:-${GPUS:-${CUDA_VISIBLE_DEVICES}}}
 GPU_IDS="${GPU_IDS//[[:space:]]/}"
 
 if [[ -n "${GPU_IDS}" ]]; then
