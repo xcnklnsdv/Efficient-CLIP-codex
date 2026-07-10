@@ -56,6 +56,8 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=1024)
     parser.add_argument("--print-freq", type=int, default=10)
     parser.add_argument("--synthetic-smoke", action="store_true")
+    parser.add_argument("--find-unused-parameters", action="store_true", default=False)
+    parser.add_argument("--debug-unused-parameters", action="store_true", default=False)
     return parser.parse_args()
 
 
@@ -256,11 +258,10 @@ def main():
     )
 
     if dist_ready():
-        model = torch.nn.parallel.DistributedDataParallel(
-            model,
-            device_ids=[device.index] if device.type == "cuda" else None,
-            find_unused_parameters=False,
-        )
+        ddp_kwargs = {"find_unused_parameters": args.find_unused_parameters}
+        if device.type == "cuda":
+            ddp_kwargs.update(device_ids=[device.index], output_device=device.index)
+        model = torch.nn.parallel.DistributedDataParallel(model, **ddp_kwargs)
 
     optimizer = None
     scheduler = None
@@ -272,8 +273,23 @@ def main():
         if args.scale_lr_by_global_batch:
             world = dist.get_world_size() if dist_ready() else 1
             lr = lr * args.batch_size * world / 4.0
+        optimizer_params = [p for p in model.parameters() if p.requires_grad]
+        optimizer_param_count = sum(p.numel() for p in optimizer_params)
+        if is_main_process():
+            raw_model = model.module if hasattr(model, "module") else model
+            all_param_count = sum(p.numel() for p in raw_model.parameters())
+            trainable_param_count = sum(p.numel() for p in raw_model.parameters() if p.requires_grad)
+            print("All params before optimizer: %d (%.2f M)" % (all_param_count, all_param_count / 1e6))
+            print(
+                "Requires-grad params before optimizer: %d (%.2f M)"
+                % (trainable_param_count, trainable_param_count / 1e6)
+            )
+            print(
+                "Optimizer params: %d (%.2f M)"
+                % (optimizer_param_count, optimizer_param_count / 1e6)
+            )
         optimizer = torch.optim.AdamW(
-            [p for p in model.parameters() if p.requires_grad],
+            optimizer_params,
             lr=lr,
             betas=(0.9, 0.98),
             eps=1e-6,

@@ -311,6 +311,23 @@ class EMCLIP(nn.Module):
                 )
                 if train_new:
                     parameter.requires_grad = True
+        self._freeze_parameters_without_loss_path()
+
+    def _freeze_module(self, module):
+        if module is None:
+            return
+        for parameter in module.parameters():
+            parameter.requires_grad = False
+
+    def _freeze_parameters_without_loss_path(self):
+        self.melsc.freeze_unused_parameters()
+        if self.use_mgse and self.config.motion_pooling == "mean":
+            self._freeze_module(self.mgse.feature_ln)
+        if self.use_mgse and float(self.config.lambda_mg) == 0.0:
+            self._freeze_module(self.mgse)
+        if float(self.config.lambda_me) == 0.0:
+            self._freeze_module(self.melsc)
+            self.logit_scale.requires_grad = False
 
     def parameter_counts(self):
         total = sum(p.numel() for p in self.parameters())

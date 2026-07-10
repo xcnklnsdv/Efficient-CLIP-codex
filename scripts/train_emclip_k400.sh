@@ -23,6 +23,8 @@ OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip}
 VARIANT=${VARIANT:-emclip}
 T=${T:-16}
 K=${K:-8}
+FIND_UNUSED_PARAMETERS=${FIND_UNUSED_PARAMETERS:-true}
+DEBUG_UNUSED_PARAMETERS=${DEBUG_UNUSED_PARAMETERS:-false}
 STAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_DIR="${OUTPUT_ROOT}/${DATASET}_${VARIANT}_T${T}_K${K}_${STAMP}"
 mkdir -p "${OUTPUT_DIR}"
@@ -47,6 +49,12 @@ CMD=(torchrun
   --output-dir "${OUTPUT_DIR}")
 if [[ "${PIN_MEMORY}" == "0" || "${PIN_MEMORY}" == "false" || "${PIN_MEMORY}" == "False" ]]; then
   CMD+=(--no-pin-memory)
+fi
+if [[ "${FIND_UNUSED_PARAMETERS}" == "1" || "${FIND_UNUSED_PARAMETERS}" == "true" || "${FIND_UNUSED_PARAMETERS}" == "True" ]]; then
+  CMD+=(--find-unused-parameters)
+fi
+if [[ "${DEBUG_UNUSED_PARAMETERS}" == "1" || "${DEBUG_UNUSED_PARAMETERS}" == "true" || "${DEBUG_UNUSED_PARAMETERS}" == "True" ]]; then
+  CMD+=(--debug-unused-parameters)
 fi
 
 if [[ -n "${RESUME:-}" ]]; then

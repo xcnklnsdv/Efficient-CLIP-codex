@@ -67,6 +67,21 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
         self.final_ln = LayerNorm(width)
         self.apply(init_linear_or_attention)
 
+    def freeze_unused_parameters(self):
+        """Freeze residual-tail parameters that have no downstream loss path.
+
+        Residual tokens are consumed only to generate prompts for I-frame SAG.
+        The last residual block output, residual ln_post, and residual projection
+        are never read by the video classifier or MGSE loss.
+        """
+        if self.r_encoder.proj is not None:
+            self.r_encoder.proj.requires_grad = False
+        for parameter in self.r_encoder.ln_post.parameters():
+            parameter.requires_grad = False
+        if len(self.r_encoder.blocks) > 0:
+            for parameter in self.r_encoder.blocks[-1].parameters():
+                parameter.requires_grad = False
+
     def _initial_tokens(self, branch, frames, channels):
         assert frames.ndim == 5, "frames must be [B, K, C, H, W]."
         B, K, C, H, W = frames.shape
@@ -120,10 +135,13 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
             z_i = i_flat[:, :N, :].reshape(B, K, N, self.width)
             assert z_i.shape == (B, K, N, self.width)
 
-            r_flat = z_r.reshape(B * K, N, self.width)
-            r_flat = self.r_encoder.blocks[layer_idx](r_flat)
-            z_r = r_flat.reshape(B, K, N, self.width)
-            assert z_r.shape == (B, K, N, self.width)
+            # The residual state is only needed by the next layer's prompt
+            # generator. Updating it after the final layer has no loss consumer.
+            if layer_idx + 1 < self.layers:
+                r_flat = z_r.reshape(B * K, N, self.width)
+                r_flat = self.r_encoder.blocks[layer_idx](r_flat)
+                z_r = r_flat.reshape(B, K, N, self.width)
+                assert z_r.shape == (B, K, N, self.width)
 
         z_i = self.i_encoder.ln_post(z_i.reshape(B * K, N, self.width)).reshape(B, K, N, self.width)
         frame_cls = z_i[:, :, 0, :]

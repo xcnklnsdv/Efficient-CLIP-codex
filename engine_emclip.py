@@ -71,6 +71,22 @@ def _flatten_views(batch):
     return flat
 
 
+def _debug_unused_parameters(model, step, args):
+    if not getattr(args, "debug_unused_parameters", False) or step >= 3:
+        return
+    if not is_main_process():
+        return
+    raw_model = model.module if hasattr(model, "module") else model
+    unused = [
+        (name, tuple(param.shape), param.numel())
+        for name, param in raw_model.named_parameters()
+        if param.requires_grad and param.grad is None
+    ]
+    print("[DDP unused params] step=%d count=%d" % (step, len(unused)), flush=True)
+    for name, shape, numel in unused:
+        print("  %s shape=%s numel=%d" % (name, shape, numel), flush=True)
+
+
 def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, args):
     model.train()
     start = time.time()
@@ -96,7 +112,10 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
                 training_mode=True,
             )
             loss = out["loss"]
+        if loss is None or not torch.is_tensor(loss) or loss.ndim != 0:
+            raise RuntimeError("EM-CLIP training loss must be a scalar Tensor.")
         scaler.scale(loss).backward()
+        _debug_unused_parameters(model, step, args)
         scaler.unscale_(optimizer)
         grad_norm = torch.nn.utils.clip_grad_norm_(
             [p for p in model.parameters() if p.requires_grad],
