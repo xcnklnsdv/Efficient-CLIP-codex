@@ -37,7 +37,8 @@ def parse_args():
     parser.add_argument("--warmup-epochs", type=int, default=0)
     parser.add_argument("--batch-size", "--batch_size", dest="batch_size", type=int, default=4)
     parser.add_argument("--num-workers", "--num_workers", dest="num_workers", type=int, default=8)
-    parser.add_argument("--pin-memory", action="store_true", default=True)
+    parser.add_argument("--pin-memory", dest="pin_memory", action="store_true", default=True)
+    parser.add_argument("--no-pin-memory", dest="pin_memory", action="store_false")
     parser.add_argument("--amp", action="store_true")
     parser.add_argument("--resume", default=None)
     parser.add_argument("--output-dir", "--save-dir", dest="output_dir", default="output_dir/emclip")
@@ -148,6 +149,16 @@ def build_scheduler(optimizer, steps_per_epoch, args):
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
 
+def make_grad_scaler(device, enabled):
+    enabled = enabled and device.type == "cuda"
+    if hasattr(torch, "amp") and hasattr(torch.amp, "GradScaler"):
+        try:
+            return torch.amp.GradScaler("cuda", enabled=enabled)
+        except TypeError:
+            return torch.amp.GradScaler(enabled=enabled)
+    return torch.cuda.amp.GradScaler(enabled=enabled)
+
+
 def synthetic_smoke(args):
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -247,7 +258,7 @@ def main():
 
     optimizer = None
     scheduler = None
-    scaler = torch.cuda.amp.GradScaler(enabled=args.amp and device.type == "cuda")
+    scaler = make_grad_scaler(device, args.amp)
     start_epoch = 0
     best_acc1 = -math.inf
     if not args.eval:

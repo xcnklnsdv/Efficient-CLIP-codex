@@ -8,6 +8,8 @@ DATASET="hmdb51_mpeg4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
+NUM_WORKERS=${NUM_WORKERS:-0}
+PIN_MEMORY=${PIN_MEMORY:-0}
 MASTER_PORT=${MASTER_PORT:-29501}
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip}
 VARIANT=${VARIANT:-emclip}
@@ -31,8 +33,12 @@ CMD=(torchrun
   --lr 8e-6
   --input-size 256
   --batch-size "${BATCH_SIZE}"
+  --num-workers "${NUM_WORKERS}"
   --amp
   --output-dir "${OUTPUT_DIR}")
+if [[ "${PIN_MEMORY}" == "0" || "${PIN_MEMORY}" == "false" || "${PIN_MEMORY}" == "False" ]]; then
+  CMD+=(--no-pin-memory)
+fi
 
 if [[ -n "${RESUME:-}" ]]; then
   CMD+=(--resume "${RESUME}")

@@ -35,6 +35,11 @@ def move_batch_to_device(batch, device):
 
 def _autocast(device, enabled):
     if device.type == "cuda":
+        if hasattr(torch, "amp") and hasattr(torch.amp, "autocast"):
+            try:
+                return torch.amp.autocast("cuda", enabled=enabled)
+            except TypeError:
+                return torch.amp.autocast(device_type="cuda", enabled=enabled)
         return torch.cuda.amp.autocast(enabled=enabled)
     return nullcontext()
 
