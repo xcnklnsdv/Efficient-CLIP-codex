@@ -46,6 +46,11 @@ def parse_args():
     parser.add_argument("--test-num-temporal-views", type=int, default=1)
     parser.add_argument("--test-num-spatial-crops", type=int, default=1)
     parser.add_argument("--verify-compressed-inputs", action="store_true")
+    parser.add_argument(
+        "--coviar-data-loader-dir",
+        default=os.environ.get("COVIAR_DATA_LOADER_DIR"),
+        help="Directory containing coviar Python extension, e.g. /home/fuh/m2clip/Coviar/data_loader.",
+    )
     parser.add_argument("--scale-lr-by-global-batch", action="store_true")
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=1024)
@@ -115,6 +120,7 @@ def build_datasets(args):
         input_size=args.input_size,
         gop_size=args.gop_size or cfg.get("GOP_SIZE", 12),
         compressed_video_root=cfg.get("COMPRESSED_VIDEO_ROOT", None),
+        coviar_data_loader_dir=args.coviar_data_loader_dir,
         verify_paths=args.verify_compressed_inputs,
     )
     train_dataset = None

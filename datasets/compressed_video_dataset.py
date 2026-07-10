@@ -2,6 +2,7 @@ import math
 import os
 import random
 import sys
+import importlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
@@ -13,6 +14,9 @@ import torch.nn.functional as F
 
 CLIP_MEAN = torch.tensor([0.48145466, 0.4578275, 0.40821073])
 CLIP_STD = torch.tensor([0.26862954, 0.26130258, 0.27577711])
+coviar_get_num_frames = None
+coviar_load = None
+coviar_import_error = None
 
 
 @dataclass
@@ -101,15 +105,68 @@ def crop_modalities(i_frames, motion_vectors, residuals, top, left, height, widt
     )
 
 
-def _import_coviar_loader():
+def _coviar_candidate_dirs(extra_dir=None):
     repo_root = Path(__file__).resolve().parents[1]
-    local_coviar_loader = repo_root / "Coviar" / "data_loader"
-    if local_coviar_loader.exists() and str(local_coviar_loader) not in sys.path:
-        sys.path.insert(0, str(local_coviar_loader))
+    candidates = []
+    if extra_dir:
+        candidates.append(Path(extra_dir))
+    for env_name in ("COVIAR_DATA_LOADER_DIR", "COVIAR_PATH"):
+        if os.environ.get(env_name):
+            candidates.append(Path(os.environ[env_name]))
+    candidates.extend([
+        repo_root / "pytorch-coviar" / "data_loader",
+        repo_root / "Coviar" / "data_loader",
+        repo_root / "coviar" / "data_loader",
+        repo_root / "coviar",
+        Path("/home/fuh/m2clip/Coviar/data_loader"),
+        Path("/home/fuh/Efficient-CLIP-codex/Coviar/data_loader"),
+        Path("/home/fuh/Efficient-CLIP-codex/pytorch-coviar/data_loader"),
+    ])
+    seen = set()
+    for path in candidates:
+        path = Path(path).expanduser()
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        yield path
+
+
+def ensure_coviar_loader(extra_dir=None):
+    """Import CoViAR from an explicit, environment, local, or common server path."""
+    global coviar_get_num_frames, coviar_load, coviar_import_error
+    if coviar_get_num_frames is not None and coviar_load is not None:
+        return coviar_get_num_frames, coviar_load
+
+    for candidate in _coviar_candidate_dirs(extra_dir):
+        if candidate.exists() and str(candidate) not in sys.path:
+            sys.path.insert(0, str(candidate))
+    if sys.modules.get("coviar") is None:
+        sys.modules.pop("coviar", None)
     try:
-        from coviar import get_num_frames, load
-        return get_num_frames, load, None
+        module = importlib.import_module("coviar")
+        coviar_get_num_frames = module.get_num_frames
+        coviar_load = module.load
+        coviar_import_error = None
+        return coviar_get_num_frames, coviar_load
     except Exception as exc:
+        coviar_get_num_frames = None
+        coviar_load = None
+        coviar_import_error = exc
+        raise ImportError(
+            "CompressedVideoDataset requires coviar. Build pytorch-coviar/data_loader "
+            "with `cd pytorch-coviar/data_loader && bash install.sh`, or pass "
+            "--coviar-data-loader-dir to a directory containing coviar*.so. "
+            "Tried data_loader dirs: %s. Original import error: %s"
+            % (", ".join(str(p) for p in _coviar_candidate_dirs(extra_dir)), exc)
+        )
+
+
+def _import_coviar_loader():
+    try:
+        get_num_frames, load = ensure_coviar_loader()
+        return get_num_frames, load, None
+    except ImportError as exc:
         return None, None, exc
 
 
@@ -172,6 +229,7 @@ class CompressedVideoDataset(torch.utils.data.Dataset):
         random_sample=True,
         class_to_idx=None,
         compressed_video_root=None,
+        coviar_data_loader_dir=None,
         num_temporal_views=1,
         num_spatial_crops=1,
         verify_paths=False,
@@ -188,10 +246,7 @@ class CompressedVideoDataset(torch.utils.data.Dataset):
         self.num_temporal_views = num_temporal_views
         self.num_spatial_crops = num_spatial_crops
         if coviar_load is None:
-            raise ImportError(
-                "CompressedVideoDataset requires coviar. Build Coviar/data_loader or install coviar. "
-                "Original import error: %s" % coviar_import_error
-            )
+            ensure_coviar_loader(coviar_data_loader_dir)
         with open(list_path, "r", encoding="utf-8") as handle:
             self.items = [
                 parse_video_list_line(line, num_classes, dataset_name, class_to_idx)

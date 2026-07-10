@@ -38,10 +38,12 @@ GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh
 GPU_IDS=2 bash scripts/train_emclip_ucf101.sh
 CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
 NUM_WORKERS=8 PIN_MEMORY=1 bash scripts/train_emclip_hmdb51.sh
+COVIAR_DATA_LOADER_DIR=/home/fuh/Efficient-CLIP-codex/pytorch-coviar/data_loader bash scripts/train_emclip_hmdb51.sh
 ```
 
 `GPU_IDS`, `GPUS`, and `CUDA_VISIBLE_DEVICES` all work. If `NPROC_PER_NODE` is not set, the scripts derive it from the number of comma-separated GPU ids.
 The scripts default to `NUM_WORKERS=0` and `PIN_MEMORY=0` because some CoViAR builds segfault inside PyTorch DataLoader worker subprocesses. Increase workers only after a single-process data smoke test is stable.
+The scripts prefer a local `pytorch-coviar/data_loader` directory when present, then fall back to `/home/fuh/m2clip/Coviar/data_loader`. Build the extension with `cd pytorch-coviar/data_loader && bash install.sh` if `coviar*.so` is missing.
 
 EM-CLIP-diamond examples:
 

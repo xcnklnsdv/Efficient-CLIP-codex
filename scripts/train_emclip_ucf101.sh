@@ -10,6 +10,13 @@ source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 NUM_WORKERS=${NUM_WORKERS:-0}
 PIN_MEMORY=${PIN_MEMORY:-0}
+if [[ -z "${COVIAR_DATA_LOADER_DIR:-}" ]]; then
+  if [[ -d "${SCRIPT_DIR}/../pytorch-coviar/data_loader" ]]; then
+    COVIAR_DATA_LOADER_DIR="$(cd "${SCRIPT_DIR}/../pytorch-coviar/data_loader" && pwd)"
+  else
+    COVIAR_DATA_LOADER_DIR=/home/fuh/m2clip/Coviar/data_loader
+  fi
+fi
 MASTER_PORT=${MASTER_PORT:-29501}
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip}
 VARIANT=${VARIANT:-emclip}
@@ -34,6 +41,7 @@ CMD=(torchrun
   --input-size 256
   --batch-size "${BATCH_SIZE}"
   --num-workers "${NUM_WORKERS}"
+  --coviar-data-loader-dir "${COVIAR_DATA_LOADER_DIR}"
   --amp
   --output-dir "${OUTPUT_DIR}")
 if [[ "${PIN_MEMORY}" == "0" || "${PIN_MEMORY}" == "false" || "${PIN_MEMORY}" == "False" ]]; then

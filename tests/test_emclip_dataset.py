@@ -1,7 +1,9 @@
 import torch
 
+import datasets.compressed_video_dataset as cvd
 from datasets.compressed_video_dataset import (
     crop_modalities,
+    ensure_coviar_loader,
     horizontal_flip_modalities,
     parse_video_list_line,
     resize_modalities,
@@ -77,3 +79,35 @@ def test_crop_uses_identical_spatial_window_for_all_modalities():
     assert torch.equal(cropped_i[0, 0], expected)
     assert torch.equal(cropped_mv[0, 0], expected)
     assert torch.equal(cropped_r[0, 0], expected)
+
+
+def test_ensure_coviar_loader_accepts_user_supplied_data_loader_dir(tmp_path, monkeypatch):
+    fake_loader_dir = tmp_path / "Coviar" / "data_loader"
+    fake_loader_dir.mkdir(parents=True)
+    (fake_loader_dir / "coviar.py").write_text(
+        "def get_num_frames(path):\n"
+        "    return 12\n"
+        "def load(path, gop_idx, pos_in_gop, representation_idx, accumulate):\n"
+        "    return None\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setitem(__import__("sys").modules, "coviar", None)
+    monkeypatch.setattr(cvd, "coviar_get_num_frames", None)
+    monkeypatch.setattr(cvd, "coviar_load", None)
+
+    get_num_frames, load = ensure_coviar_loader(str(fake_loader_dir))
+
+    assert get_num_frames("video.mp4") == 12
+    assert load("video.mp4", 0, 0, 0, False) is None
+
+
+def test_coviar_candidate_dirs_include_local_pytorch_coviar_first():
+    candidates = [
+        str(path).replace("\\", "/")
+        for path in cvd._coviar_candidate_dirs()
+    ]
+
+    assert any(path.endswith("pytorch-coviar/data_loader") for path in candidates)
+    local_idx = next(i for i, path in enumerate(candidates) if path.endswith("pytorch-coviar/data_loader"))
+    server_idx = next(i for i, path in enumerate(candidates) if path == "/home/fuh/m2clip/Coviar/data_loader")
+    assert local_idx < server_idx
