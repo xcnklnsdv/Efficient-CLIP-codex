@@ -1,0 +1,62 @@
+# EM-CLIP Standalone Reproduction
+
+This directory contains a standalone engineering reproduction of **Efficient Motion-Centric CLIP for Compressed Video Action Recognition**. It was created here because this workspace only contained `AGENTS.md`; it does not modify `C:\Users\Frank\Downloads\m2clip-origin-mp4`.
+
+The implementation provides:
+
+- MGSE and ACG with `class_bank`, `ground_truth`, and `predicted_class` text modes.
+- MELSC with independent I-frame and residual ViT branches, GSPL, LMPL, SAG, and temporal aggregation.
+- `L_MG` multi-positive bidirectional KL and `L_ME` video-text classification CE.
+- CoViAR-backed compressed dataset loading for I/MV/Residual.
+- DDP, AMP, resume, latest/best checkpoint, 1-view and multi-view evaluation support.
+
+## Quick Checks
+
+```bash
+python -m pytest tests -q
+python main_emclip.py --synthetic-smoke --model emclip_b16 --emclip-variant emclip
+bash scripts/smoke_emclip.sh
+```
+
+## Training
+
+Default full EM-CLIP, 4 GPUs:
+
+```bash
+bash scripts/train_emclip_ssv2.sh
+bash scripts/train_emclip_hmdb51.sh
+bash scripts/train_emclip_ucf101.sh
+bash scripts/train_emclip_k400.sh
+```
+
+Override common settings:
+
+```bash
+NPROC_PER_NODE=1 BATCH_SIZE=2 MASTER_PORT=29601 bash scripts/train_emclip_hmdb51.sh
+RESUME=output_dir/emclip/run/latest.pth bash scripts/train_emclip_hmdb51.sh
+```
+
+EM-CLIP-diamond examples:
+
+```bash
+VARIANT=diamond T=8 K=8 bash scripts/train_emclip_hmdb51.sh
+VARIANT=diamond T=16 K=16 bash scripts/train_emclip_ucf101.sh
+```
+
+## Evaluation
+
+Fast 1x1 evaluation:
+
+```bash
+RESUME=/path/to/model_best.pth bash scripts/eval_emclip_hmdb51.sh
+```
+
+Paper-style 4 temporal views x 3 spatial crops:
+
+```bash
+RESUME=/path/to/model_best.pth TEMPORAL_VIEWS=4 SPATIAL_CROPS=3 bash scripts/eval_emclip_k400.sh
+```
+
+## Notes
+
+The paper does not release code and omits some optimizer, batch-size, freezing, and MGSE inference details. Those choices are documented in [IMPLEMENTATION_NOTES_EMCLIP.md](IMPLEMENTATION_NOTES_EMCLIP.md). This code is a runnable reproduction, not a claim that it will match the paper's private implementation or reported accuracy.

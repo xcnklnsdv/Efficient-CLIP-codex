@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DATASET="ssv2_mpeg4"
+NPROC_PER_NODE=${NPROC_PER_NODE:-4}
+BATCH_SIZE=${BATCH_SIZE:-4}
+MASTER_PORT=${MASTER_PORT:-29501}
+OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip_eval}
+TEMPORAL_VIEWS=${TEMPORAL_VIEWS:-1}
+SPATIAL_CROPS=${SPATIAL_CROPS:-1}
+STAMP=$(date +"%Y%m%d_%H%M%S")
+OUTPUT_DIR="${OUTPUT_ROOT}/${DATASET}_eval_${TEMPORAL_VIEWS}x${SPATIAL_CROPS}_${STAMP}"
+mkdir -p "${OUTPUT_DIR}"
+
+CMD=(torchrun --nproc_per_node="${NPROC_PER_NODE}" --master_port="${MASTER_PORT}"
+  main_emclip.py --model emclip_b16 --dataset "${DATASET}" --eval --batch-size "${BATCH_SIZE}"
+  --test-num-temporal-views "${TEMPORAL_VIEWS}" --test-num-spatial-crops "${SPATIAL_CROPS}"
+  --amp --output-dir "${OUTPUT_DIR}")
+if [[ -n "${RESUME:-}" ]]; then CMD+=(--resume "${RESUME}"); fi
+printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"; printf '\n' >> "${OUTPUT_DIR}/command.txt"
+"${CMD[@]}" 2>&1 | tee "${OUTPUT_DIR}/eval_${STAMP}.log"
