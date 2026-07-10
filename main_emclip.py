@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.distributed as dist
+from torch.distributed.elastic.multiprocessing.errors import record
 from torch.utils.data import DataLoader, DistributedSampler
 
 from configs import DATASETS
@@ -213,6 +214,7 @@ def synthetic_smoke(args):
     }, indent=2))
 
 
+@record
 def main():
     args = parse_args()
     apply_model_variant_defaults(args)

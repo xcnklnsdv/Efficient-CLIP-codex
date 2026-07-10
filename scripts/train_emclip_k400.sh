@@ -27,11 +27,16 @@ FIND_UNUSED_PARAMETERS=${FIND_UNUSED_PARAMETERS:-true}
 DEBUG_UNUSED_PARAMETERS=${DEBUG_UNUSED_PARAMETERS:-false}
 STAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_DIR="${OUTPUT_ROOT}/${DATASET}_${VARIANT}_T${T}_K${K}_${STAMP}"
+TORCHRUN_LOG_DIR="${OUTPUT_DIR}/torchrun_logs"
 mkdir -p "${OUTPUT_DIR}"
+mkdir -p "${TORCHRUN_LOG_DIR}"
 
 CMD=(torchrun
   --nproc_per_node="${NPROC_PER_NODE}"
   --master_port="${MASTER_PORT}"
+  --log-dir "${TORCHRUN_LOG_DIR}"
+  --redirects 3
+  --tee 3
   "${REPO_ROOT}/main_emclip.py"
   --model emclip_b16
   --dataset "${DATASET}"
