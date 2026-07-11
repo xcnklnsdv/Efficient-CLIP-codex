@@ -37,6 +37,12 @@ def parse_args():
     parser.add_argument("--weight-decay", "--weight_decay", dest="weight_decay", type=float, default=0.2)
     parser.add_argument("--warmup-epochs", type=int, default=0)
     parser.add_argument("--batch-size", "--batch_size", dest="batch_size", type=int, default=4)
+    parser.add_argument(
+        "--micro-batch-size",
+        type=int,
+        default=1,
+        help="Per-forward GPU batch. The DataLoader batch is split and gradients are accumulated.",
+    )
     parser.add_argument("--num-workers", "--num_workers", dest="num_workers", type=int, default=8)
     parser.add_argument("--pin-memory", dest="pin_memory", action="store_true", default=True)
     parser.add_argument("--no-pin-memory", dest="pin_memory", action="store_false")
@@ -47,6 +53,11 @@ def parse_args():
     parser.add_argument("--test-num-temporal-views", type=int, default=1)
     parser.add_argument("--test-num-spatial-crops", type=int, default=1)
     parser.add_argument("--verify-compressed-inputs", action="store_true")
+    parser.add_argument(
+        "--preflight-compressed-inputs",
+        action="store_true",
+        help="Synchronously decode dataset item 0 before DDP training; useful for isolating CoViAR crashes.",
+    )
     parser.add_argument(
         "--coviar-data-loader-dir",
         default=os.environ.get("COVIAR_DATA_LOADER_DIR"),
@@ -218,15 +229,26 @@ def synthetic_smoke(args):
 def main():
     args = parse_args()
     apply_model_variant_defaults(args)
+    if args.micro_batch_size < 1:
+        raise ValueError("--micro-batch-size must be >= 1.")
     if args.synthetic_smoke:
         synthetic_smoke(args)
         return
     set_seed(args.seed)
     device = init_distributed()
+    if is_main_process():
+        world = dist.get_world_size() if dist_ready() else 1
+        print(
+            "[emclip] initialized world_size=%d device=%s batch_size=%d micro_batch_size=%d"
+            % (world, device, args.batch_size, args.micro_batch_size),
+            flush=True,
+        )
     cfg = DATASETS[args.dataset]
     class_names = load_class_names(args, cfg["NUM_CLASSES"])
     model_config = build_emclip_config_from_args(args, class_names)
     model = EMCLIP(model_config).to(device)
+    if is_main_process():
+        print("[emclip] model moved to device", flush=True)
     total, trainable = model.parameter_counts()
     if is_main_process():
         os.makedirs(args.output_dir, exist_ok=True)
@@ -235,6 +257,30 @@ def main():
         print("Trainable params: %d (%.2f M)" % (trainable, trainable / 1e6))
 
     train_dataset, val_dataset = build_datasets(args)
+    if is_main_process():
+        print(
+            "[emclip] datasets ready train=%s val=%d"
+            % (len(train_dataset) if train_dataset is not None else "none", len(val_dataset)),
+            flush=True,
+        )
+    if args.preflight_compressed_inputs and is_main_process():
+        preflight_dataset = train_dataset if train_dataset is not None else val_dataset
+        if len(preflight_dataset) == 0:
+            raise RuntimeError("cannot preflight an empty compressed-video dataset")
+        sample = preflight_dataset.preflight(0)
+        print(
+            "[emclip] compressed preflight OK path=%s I=%s MV=%s R=%s gops=%s"
+            % (
+                sample["metadata"]["video_path"],
+                tuple(sample["i_frames"].shape),
+                tuple(sample["motion_vectors"].shape),
+                tuple(sample["residuals"].shape),
+                sample["metadata"]["gop_count"],
+            ),
+            flush=True,
+        )
+    if args.preflight_compressed_inputs and dist_ready():
+        dist.barrier()
     if train_dataset is not None:
         train_sampler = DistributedSampler(train_dataset, shuffle=True) if dist_ready() else None
         train_loader = DataLoader(
@@ -264,6 +310,8 @@ def main():
         if device.type == "cuda":
             ddp_kwargs.update(device_ids=[device.index], output_device=device.index)
         model = torch.nn.parallel.DistributedDataParallel(model, **ddp_kwargs)
+        if is_main_process():
+            print("[emclip] DDP wrapper ready", flush=True)
 
     optimizer = None
     scheduler = None
@@ -298,6 +346,8 @@ def main():
             weight_decay=args.weight_decay,
         )
         scheduler = build_scheduler(optimizer, len(train_loader), args)
+        if is_main_process():
+            print("[emclip] optimizer and scheduler ready", flush=True)
     if args.resume:
         start_epoch, best_acc1 = load_checkpoint(args.resume, model, optimizer, scheduler, scaler, map_location=device)
 

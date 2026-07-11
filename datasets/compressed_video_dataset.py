@@ -16,6 +16,7 @@ import torch.nn.functional as F
 CLIP_MEAN = torch.tensor([0.48145466, 0.4578275, 0.40821073])
 CLIP_STD = torch.tensor([0.26862954, 0.26130258, 0.27577711])
 coviar_get_num_frames = None
+coviar_get_num_gops = None
 coviar_load = None
 coviar_import_error = None
 coviar_preload_errors = []
@@ -242,7 +243,20 @@ def _preload_coviar_ffmpeg_libraries(extra_dir=None):
 
 def ensure_coviar_loader(extra_dir=None):
     """Import CoViAR from an explicit, environment, local, or common server path."""
-    global coviar_get_num_frames, coviar_load, coviar_import_error
+    global coviar_get_num_frames, coviar_get_num_gops, coviar_load, coviar_import_error
+    if extra_dir:
+        loaded = sys.modules.get("coviar")
+        loaded_file = getattr(loaded, "__file__", None)
+        requested_dir = Path(extra_dir).expanduser().resolve()
+        loaded_matches = False
+        if loaded_file:
+            loaded_path = Path(loaded_file).expanduser().resolve()
+            loaded_matches = loaded_path.parent == requested_dir or requested_dir in loaded_path.parents
+        if not loaded_matches:
+            coviar_get_num_frames = None
+            coviar_get_num_gops = None
+            coviar_load = None
+            sys.modules.pop("coviar", None)
     if coviar_get_num_frames is not None and coviar_load is not None:
         return coviar_get_num_frames, coviar_load
 
@@ -255,11 +269,13 @@ def ensure_coviar_loader(extra_dir=None):
     try:
         module = importlib.import_module("coviar")
         coviar_get_num_frames = module.get_num_frames
+        coviar_get_num_gops = getattr(module, "get_num_gops", None)
         coviar_load = module.load
         coviar_import_error = None
         return coviar_get_num_frames, coviar_load
     except Exception as exc:
         coviar_get_num_frames = None
+        coviar_get_num_gops = None
         coviar_load = None
         coviar_import_error = exc
         raise ImportError(
@@ -286,7 +302,12 @@ def _import_coviar_loader():
         return None, None, exc
 
 
-coviar_get_num_frames, coviar_load, coviar_import_error = _import_coviar_loader()
+# Keep CoViAR lazy. Importing the package before argparse would otherwise load
+# a fallback system extension and make --coviar-data-loader-dir ineffective.
+coviar_get_num_frames = None
+coviar_get_num_gops = None
+coviar_load = None
+coviar_import_error = None
 
 
 def resolve_video_path(root, relative_path, dataset_name, raw_line, default_suffix=".mp4"):
@@ -301,10 +322,20 @@ def resolve_video_path(root, relative_path, dataset_name, raw_line, default_suff
     return str(Path(str(candidate) + default_suffix))
 
 
-def sample_gop_indices(num_frames, candidate_frames, gop_size, random_sample, temporal_view=0, num_temporal_views=1):
+def sample_gop_indices(
+    num_frames,
+    candidate_frames,
+    gop_size,
+    random_sample,
+    temporal_view=0,
+    num_temporal_views=1,
+    gop_count=None,
+):
     if num_frames <= 0:
         raise ValueError("num_frames must be positive, got %d." % num_frames)
-    gop_count = max(1, int(math.ceil(float(num_frames) / float(gop_size))))
+    if gop_count is None:
+        gop_count = int(math.ceil(float(num_frames) / float(gop_size)))
+    gop_count = max(1, int(gop_count))
     if gop_count >= candidate_frames:
         boundaries = np.linspace(0, gop_count, candidate_frames + 1)
         indices = []
@@ -381,6 +412,12 @@ class CompressedVideoDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.items)
 
+    def preflight(self, index=0):
+        """Decode one sample synchronously for a safe single-process smoke test."""
+        if index < 0 or index >= len(self.items):
+            raise IndexError("preflight index %d is outside dataset length %d" % (index, len(self.items)))
+        return self._load_view(self.items[index], temporal_view=0, crop_id=0)
+
     def _prepare_iframe(self, arr):
         if arr is None:
             raise RuntimeError("CoViAR returned None for I-frame.")
@@ -408,7 +445,12 @@ class CompressedVideoDataset(torch.utils.data.Dataset):
             raise RuntimeError("Residual must be [H, W, 3], got %s." % (arr.shape,))
         return torch.as_tensor(arr).float().permute(2, 0, 1) / 255.0
 
-    def _load_gop(self, path, gop_idx, num_frames):
+    def _load_gop(self, path, gop_idx, num_frames, gop_count):
+        if gop_idx < 0 or gop_idx >= gop_count:
+            raise IndexError(
+                "dataset=%s requested GOP %d but CoViAR reports %d GOPs for %s"
+                % (self.dataset_name, gop_idx, gop_count, path)
+            )
         iframe = self._prepare_iframe(coviar_load(path, gop_idx, 0, 0, False))
         ref_hw = tuple(iframe.shape[-2:])
         frames_left = max(0, num_frames - gop_idx * self.gop_size)
@@ -464,7 +506,24 @@ class CompressedVideoDataset(torch.utils.data.Dataset):
                 "dataset=%s raw_line=%r parsed_path=%s does not exist"
                 % (self.dataset_name, item.raw_line, path)
             )
-        num_frames = item.num_frames if item.num_frames is not None else coviar_get_num_frames(path)
+        # List metadata is useful for diagnostics, but CoViAR's parser is the
+        # source of truth for GOP bounds. Stale list frame counts can otherwise
+        # generate an invalid GOP index and crash the native decoder.
+        num_frames = int(coviar_get_num_frames(path))
+        if num_frames <= 0:
+            raise RuntimeError(
+                "dataset=%s CoViAR reported no frames for raw_line=%r path=%s"
+                % (self.dataset_name, item.raw_line, path)
+            )
+        if coviar_get_num_gops is not None:
+            gop_count = int(coviar_get_num_gops(path))
+        else:
+            gop_count = int(math.ceil(float(num_frames) / float(self.gop_size)))
+        if gop_count <= 0:
+            raise RuntimeError(
+                "dataset=%s CoViAR reported no GOPs for raw_line=%r path=%s"
+                % (self.dataset_name, item.raw_line, path)
+            )
         gop_indices, valid_mask, gop_count = sample_gop_indices(
             num_frames,
             self.candidate_frames,
@@ -472,11 +531,12 @@ class CompressedVideoDataset(torch.utils.data.Dataset):
             self.random_sample,
             temporal_view=temporal_view,
             num_temporal_views=self.num_temporal_views,
+            gop_count=gop_count,
         )
         i_list, mv_list, r_list = [], [], []
         for gop_idx in gop_indices:
             try:
-                iframe, mv, residual = self._load_gop(path, int(gop_idx), num_frames)
+                iframe, mv, residual = self._load_gop(path, int(gop_idx), num_frames, gop_count)
             except Exception as exc:
                 raise RuntimeError(
                     "CoViAR load failed for dataset=%s raw_line=%r path=%s gop=%s: %s"

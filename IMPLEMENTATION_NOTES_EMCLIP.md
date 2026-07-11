@@ -36,11 +36,17 @@ Formulas 28-30, temporal aggregation, video-text logits, and CE, map to MELSC fi
 
 ## CoViAR Calls
 
-`CompressedVideoDataset` imports `coviar.get_num_frames` and `coviar.load`. It calls:
+`CompressedVideoDataset` uses `coviar.get_num_frames` and `coviar.load`. It calls:
 
 - I-frame: `load(path, gop_idx, 0, 0, False)`
 - MV: `load(path, gop_idx, last_p_pos, 1, False)`
 - Residual: `load(path, gop_idx, last_p_pos, 2, True)`
+
+CoViAR is loaded lazily after argparse so `--coviar-data-loader-dir` selects the
+requested native extension. When available, `get_num_gops(path)` is used for
+GOP bounds; the list-file frame count is not trusted for native decoder indices.
+Run `--preflight-compressed-inputs` with one process to synchronously decode the
+first sample before starting DDP.
 
 MV uses the last valid P-frame without accumulation. Residual uses `accumulate=True` to obtain cumulative residual relative to the GOP I-frame. If a GOP has no valid P-frame, MV/R fall back to explicit zeros for that GOP only.
 
@@ -74,7 +80,7 @@ I, residual, and MV encoders are separate module instances. They do not share `n
 
 Paper-specified defaults: epochs 30, LR `8e-6`, cosine schedule, input 256, tau `0.01`, ViT-B/16, GOP size 12, `T=16`, `K=8`.
 
-Engineering assumptions: AdamW, betas `(0.9,0.98)`, eps `1e-6`, weight decay `0.2`, warmup 0, batch size per GPU 4, grad clip 1.0, seed 1024, AMP on scripts, workers 8. LR is not scaled by world size unless `--scale-lr-by-global-batch` is passed.
+Engineering assumptions: AdamW, betas `(0.9,0.98)`, eps `1e-6`, weight decay `0.2`, warmup 0, batch size per GPU 4, `--micro-batch-size 1` by default, grad clip 1.0, seed 1024, AMP on scripts, workers 8. The effective batch is split into GPU micro-batches and gradients are accumulated. LR is not scaled by world size unless `--scale-lr-by-global-batch` is passed.
 
 由于论文未公开源码，并且没有完整披露优化器、batch size、参数冻结策略、MGSE测试阶段类别文本来源等细节，本实现属于基于论文公式和描述的工程复现，不能保证与作者私有实现逐行一致。
 

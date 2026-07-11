@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
+MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-1}
 NUM_WORKERS=${NUM_WORKERS:-0}
 PIN_MEMORY=${PIN_MEMORY:-0}
 if [[ -z "${COVIAR_DATA_LOADER_DIR:-}" ]]; then
@@ -41,6 +42,7 @@ CMD=(torchrun
   --lr 8e-6
   --input-size 256
   --batch-size "${BATCH_SIZE}"
+  --micro-batch-size "${MICRO_BATCH_SIZE}"
   --num-workers "${NUM_WORKERS}"
   --coviar-data-loader-dir "${COVIAR_DATA_LOADER_DIR}"
   --amp
