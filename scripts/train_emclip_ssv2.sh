@@ -7,7 +7,8 @@ set -euo pipefail
 DATASET="ssv2_mpeg4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-if [[ -z "${CLIP_CHECKPOINT:-}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
+CLIP_CHECKPOINT="${CLIP_CHECKPOINT:-/home/fuh/CLIP-models/ViT-B-16.pt}"
+if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
 fi
 source "${SCRIPT_DIR}/_gpu_env.sh"
