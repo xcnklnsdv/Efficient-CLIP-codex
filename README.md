@@ -15,7 +15,42 @@ The implementation provides:
 ```bash
 python -m pytest tests -q
 python main_emclip.py --synthetic-smoke --model emclip_b16 --emclip-variant emclip
+python main_emclip.py --dataset hmdb51_mpeg4 --clip-checkpoint /home/fuh/CLIP-models/ViT-B-16.pt --pretrained-audit-only
 bash scripts/smoke_emclip.sh
+```
+
+## Checkpoint Types
+
+`--clip-checkpoint` initializes EM-CLIP from an original pretrained CLIP file.
+OpenAI TorchScript/JIT archives and regular state-dict containers are supported.
+The loader maps `visual.*` separately into the independent I-frame, residual,
+and MV branches, and maps CLIP text tensors into the text encoder. The MV patch
+embedding is converted from RGB `[D,3,16,16]` to `[D,2,16,16]` by channel mean,
+two-channel repeat, and `3/2` scaling. Visual position embeddings are bicubically
+interpolated from the checkpoint grid (normally 14x14) to the configured grid
+(16x16 for 256 input). ViT-B/16 uses visual width/heads 768/12 and the separate
+CLIP text width/heads 512/8. Every branch must reach at least 99% parameter
+coverage.
+
+`--resume` is intentionally separate. It only accepts an EM-CLIP training
+checkpoint containing `model`, `optimizer`, `scheduler`, `scaler`, `epoch`, and
+`best_acc1`; it is not a fallback for original CLIP files.
+
+Audit a real checkpoint without constructing dataset loaders or training:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python main_emclip.py \
+  --dataset hmdb51_mpeg4 \
+  --clip-checkpoint /home/fuh/CLIP-models/ViT-B-16.pt \
+  --pretrained-audit-only
+
+CUDA_VISIBLE_DEVICES=0,1 torchrun \
+  --nproc_per_node=2 \
+  --master_port=29512 \
+  main_emclip.py \
+  --dataset hmdb51_mpeg4 \
+  --clip-checkpoint /home/fuh/CLIP-models/ViT-B-16.pt \
+  --pretrained-audit-only
 ```
 
 ## Training

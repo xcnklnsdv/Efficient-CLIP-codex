@@ -193,6 +193,8 @@ def synthetic_smoke(args):
         layers=1,
         heads=4,
         embed_dim=16,
+        text_width=32,
+        text_heads=4,
         text_layers=1,
         temporal_aggregator_layers=1,
         emclip_variant=args.emclip_variant,
@@ -225,8 +227,99 @@ def synthetic_smoke(args):
     }, indent=2))
 
 
-@record
-def main():
+def _tensor_stats(name, tensor):
+    value = tensor.detach().float()
+    return (
+        "%s shape=%s mean=%.6g std=%.6g norm=%.6g finite=%s"
+        % (
+            name,
+            tuple(value.shape),
+            float(value.mean().cpu()),
+            float(value.std(unbiased=False).cpu()),
+            float(value.norm().cpu()),
+            bool(torch.isfinite(value).all().cpu()),
+        )
+    )
+
+
+def _all_tensor_outputs_finite(value):
+    if torch.is_tensor(value):
+        return bool(torch.isfinite(value).all().item())
+    if isinstance(value, dict):
+        return all(_all_tensor_outputs_finite(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return all(_all_tensor_outputs_finite(item) for item in value)
+    return True
+
+
+@torch.no_grad()
+def run_pretrained_audit(model, args, device):
+    """Audit pretrained coverage and run a dataset-free finite forward pass."""
+    if model.pretrained_audit is None:
+        raise RuntimeError("--pretrained-audit-only requires --clip-checkpoint")
+    model.eval()
+    if is_main_process():
+        key_tensors = [
+            ("I.conv1", model.melsc.i_encoder.conv1.weight),
+            ("I.positional_embedding", model.melsc.i_encoder.positional_embedding),
+            ("I.proj", model.melsc.i_encoder.proj),
+            ("R.conv1", model.melsc.r_encoder.conv1.weight),
+            ("R.positional_embedding", model.melsc.r_encoder.positional_embedding),
+            ("R.proj", model.melsc.r_encoder.proj),
+            ("Text.token_embedding", model.text_encoder.token_embedding.weight),
+            ("Text.positional_embedding", model.text_encoder.positional_embedding),
+            ("Text.text_projection", model.text_encoder.text_projection),
+        ]
+        if model.mgse is not None:
+            key_tensors.extend([
+                ("MV.conv1", model.mgse.motion_encoder.conv1.weight),
+                ("MV.positional_embedding", model.mgse.motion_encoder.positional_embedding),
+                ("MV.proj", model.mgse.motion_encoder.proj),
+            ])
+        for name, tensor in key_tensors:
+            print("[emclip][pretrained] " + _tensor_stats(name, tensor), flush=True)
+
+    # Dynamic position interpolation lets this use a small spatial grid while
+    # still exercising I/R/MV/Text and every transformer layer.
+    spatial_size = max(model.config.patch_size, min(64, model.config.input_size))
+    temporal_size = model.config.selected_frames
+    i_frames = torch.randn(1, temporal_size, 3, spatial_size, spatial_size, device=device)
+    residuals = torch.randn_like(i_frames)
+    motion_vectors = None
+    if model.use_mgse:
+        motion_vectors = torch.randn(
+            1, temporal_size, 2, spatial_size, spatial_size, device=device
+        )
+    valid_mask = torch.ones(1, temporal_size, dtype=torch.bool, device=device)
+    output = model(
+        i_frames=i_frames,
+        motion_vectors=motion_vectors,
+        residuals=residuals,
+        labels=None,
+        valid_mask=valid_mask,
+        training_mode=False,
+    )
+    local_finite = _all_tensor_outputs_finite(output)
+    finite_tensor = torch.tensor(int(local_finite), dtype=torch.int32, device=device)
+    if dist_ready():
+        dist.all_reduce(finite_tensor, op=dist.ReduceOp.MIN)
+    all_finite = bool(finite_tensor.item())
+    if not all_finite:
+        raise FloatingPointError("pretrained audit synthetic forward produced non-finite output")
+    if is_main_process():
+        print(
+            "[emclip][pretrained] synthetic_input=I%s MV%s R%s"
+            % (
+                tuple(i_frames.shape),
+                tuple(motion_vectors.shape) if motion_vectors is not None else None,
+                tuple(residuals.shape),
+            ),
+            flush=True,
+        )
+        print("[emclip][pretrained] all_outputs_finite=True", flush=True)
+
+
+def main_worker():
     args = parse_args()
     apply_model_variant_defaults(args)
     if args.micro_batch_size < 1:
@@ -255,6 +348,10 @@ def main():
         print(args)
         print("Total params: %d (%.2f M)" % (total, total / 1e6))
         print("Trainable params: %d (%.2f M)" % (trainable, trainable / 1e6))
+
+    if args.pretrained_audit_only:
+        run_pretrained_audit(model, args, device)
+        return
 
     train_dataset, val_dataset = build_datasets(args)
     if is_main_process():
@@ -369,8 +466,17 @@ def main():
             if val_stats["val_acc1"] > best_acc1:
                 best_acc1 = val_stats["val_acc1"]
                 save_checkpoint(os.path.join(args.output_dir, "model_best.pth"), model, optimizer, scheduler, scaler, epoch, best_acc1)
-    if dist_ready():
-        dist.destroy_process_group()
+
+
+@record
+def main():
+    try:
+        return main_worker()
+    finally:
+        # Preserve and propagate the original exception while ensuring torchrun
+        # does not warn about a leaked process group.
+        if dist.is_available() and dist.is_initialized():
+            dist.destroy_process_group()
 
 
 if __name__ == "__main__":

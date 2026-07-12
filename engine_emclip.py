@@ -309,9 +309,17 @@ def save_checkpoint(path, model, optimizer, scheduler, scaler, epoch, best_acc1)
 
 
 def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, map_location="cpu"):
-    ckpt = torch.load(path, map_location=map_location)
+    try:
+        ckpt = torch.load(path, map_location=map_location, weights_only=False)
+    except TypeError:
+        ckpt = torch.load(path, map_location=map_location)
+    if not isinstance(ckpt, dict) or "model" not in ckpt:
+        raise TypeError(
+            "--resume expects an EM-CLIP training checkpoint containing a 'model' state_dict; got %s"
+            % type(ckpt)
+        )
     module = model.module if hasattr(model, "module") else model
-    module.load_state_dict(ckpt["model"], strict=False)
+    module.load_state_dict(ckpt["model"], strict=True)
     if optimizer is not None and ckpt.get("optimizer") is not None:
         optimizer.load_state_dict(ckpt["optimizer"])
     if scheduler is not None and ckpt.get("scheduler") is not None:

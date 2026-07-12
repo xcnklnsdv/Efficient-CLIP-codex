@@ -7,6 +7,7 @@ This is a standalone implementation because the active workspace only contained 
 - MGSE and ACG: `models/emclip_mgse.py`
 - MELSC, IFE, GSPL, LMPL, SAG: `models/emclip_melsc.py`
 - End-to-end model and prompt text encoder: `models/emclip.py`
+- Original CLIP checkpoint parsing and coverage audit: `models/clip_checkpoint.py`
 - `L_MG`: `losses/emclip_loss.py`
 - CoViAR dataset and synchronized transforms: `datasets/compressed_video_dataset.py`
 - DDP/AMP/checkpoints: `engine_emclip.py`, `main_emclip.py`
@@ -65,6 +66,52 @@ All ViT branches interpolate absolute position embeddings with bicubic interpola
 ## Branch Independence
 
 I, residual, and MV encoders are separate module instances. They do not share `nn.Module` objects.
+
+## Pretrained CLIP Loading and Audit
+
+`--clip-checkpoint` and `--resume` have deliberately different loaders.
+`--clip-checkpoint` first calls `torch.jit.load(...).eval()` so an original OpenAI
+CLIP JIT archive is converted to a tensor state dict before any branch load. If
+and only if JIT loading fails, it falls back to `torch.load(...,
+weights_only=False)` and accepts a direct state dict, `{"state_dict": ...}`,
+`{"model": ...}`, or an `nn.Module`. Non-tensor values and nonexistent paths are
+reported as errors. A leading `module.` prefix is removed.
+
+OpenAI CLIP keys are mapped as follows:
+
+- `visual.*` (with `transformer.resblocks.*` renamed to `blocks.*`) initializes
+  both `melsc.i_encoder` and `melsc.r_encoder` through independent copies.
+- The same visual tensors initialize `mgse.motion_encoder`, except `conv1.weight`
+  is changed from three channels to two by RGB channel mean, repeat, and `3/2`
+  scaling.
+- `token_embedding`, text `transformer.resblocks`, `positional_embedding`,
+  `ln_final`, and `text_projection` initialize `text_encoder`; `logit_scale` is
+  copied to the top-level CLIP logit-scale parameter.
+- `visual.proj` initializes the I, residual, and MV visual projections.
+
+CLIP ViT-B/16 does not use the visual width for its text transformer: visual
+width/heads are 768/12, while text width/heads are 512/8 and the shared embedding
+dimension is 512. These are separate `EMCLIPConfig` fields; conflating both
+widths is rejected by the checkpoint shape audit.
+
+For a 224-source/256-target B/16 checkpoint, the 14x14 source visual positional
+grid is bicubically interpolated to 16x16 during initialization. Forward still
+performs dynamic interpolation for smoke-test or non-default resolutions.
+Loading reports source/loaded tensor counts, loaded/total parameter numel,
+coverage, and missing/unexpected/shape-mismatch keys. I, R, and Text require at
+least 99% coverage; MV requires at least 99% after excluding the intentionally
+converted two-channel `conv1`. Required stem, position, normalization, and
+projection tensors are checked explicitly.
+
+`--pretrained-audit-only` stops before dataset or DataLoader construction. It
+prints the four branch reports and key parameter statistics, then runs a small
+dataset-free no-grad forward through all layers and requires every tensor output
+to be finite. Under `torchrun`, all ranks participate and the process group is
+destroyed in `finally` even if the original error propagates.
+
+`--resume` only reads this project's training format and strictly loads
+`checkpoint["model"]` before restoring optimizer, scheduler, scaler, epoch, and
+best accuracy.
 
 ## MGSE Label Leakage
 

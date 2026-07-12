@@ -5,16 +5,32 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 
 from losses.emclip_loss import motion_text_kl_loss
+from .clip_checkpoint import (
+    adapt_visual_positional_embedding,
+    extract_text_state,
+    extract_visual_state,
+    load_clip_source_checkpoint,
+    load_submodule_with_audit,
+)
 from .emclip_layers import LayerNorm, TransformerBlock
 from .emclip_melsc import MotionEmbeddedLongTermSpatiotemporalCorrelation
-from .emclip_mgse import MotionGuidedSaliencyExtraction, gather_temporal
+from .emclip_mgse import (
+    MotionGuidedSaliencyExtraction,
+    build_mv_patch_embed_weight,
+    gather_temporal,
+)
 
 
 TOKEN_RE = re.compile(r"[A-Za-z0-9_'-]+")
+
+
+def _is_rank_zero():
+    return not (dist.is_available() and dist.is_initialized()) or dist.get_rank() == 0
 
 
 @dataclass
@@ -31,6 +47,8 @@ class EMCLIPConfig:
     layers: int = 12
     heads: int = 12
     embed_dim: int = 512
+    text_width: int = 512
+    text_heads: int = 8
     text_layers: int = 12
     text_context_length: int = 77
     vocab_size: int = 49408
@@ -50,6 +68,10 @@ class EMCLIPConfig:
     clip_checkpoint: Optional[str] = None
 
     def __post_init__(self):
+        if self.width % self.heads != 0:
+            raise ValueError("visual width must be divisible by visual heads.")
+        if self.text_width % self.text_heads != 0:
+            raise ValueError("text_width must be divisible by text_heads.")
         if self.num_classes != len(self.class_names):
             raise ValueError(
                 "num_classes=%d but class_names has %d entries."
@@ -236,9 +258,9 @@ class EMCLIP(nn.Module):
         self.config = config
         self.text_encoder = PromptTextEncoder(
             class_names=config.class_names,
-            width=config.width,
+            width=config.text_width,
             layers=config.text_layers,
-            heads=config.heads,
+            heads=config.text_heads,
             embed_dim=config.embed_dim,
             context_length=config.text_context_length,
             vocab_size=config.vocab_size,
@@ -272,20 +294,140 @@ class EMCLIP(nn.Module):
             dropout=config.dropout,
         )
         self.logit_scale = nn.Parameter(torch.ones([]) * torch.log(torch.tensor(1 / 0.07)))
+        self.pretrained_audit = None
         if config.clip_checkpoint:
             self.load_clip_checkpoint(config.clip_checkpoint)
         self.apply_train_mode(config.emclip_train_mode)
 
     def load_clip_checkpoint(self, path):
-        """Best-effort local checkpoint loading. No network access is used."""
-        checkpoint = torch.load(path, map_location="cpu")
-        if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
-            checkpoint = checkpoint["state_dict"]
-        if isinstance(checkpoint, dict) and "model" in checkpoint:
-            checkpoint = checkpoint["model"]
-        missing, unexpected = self.load_state_dict(checkpoint, strict=False)
-        print("Loaded EM-CLIP checkpoint:", path)
-        print("Missing keys:", len(missing), "Unexpected keys:", len(unexpected))
+        """Initialize I/R/MV/Text branches from an original CLIP checkpoint."""
+        source, checkpoint_type, checkpoint_path = load_clip_source_checkpoint(path)
+        if _is_rank_zero():
+            print("[emclip][pretrained] checkpoint_type=%s" % checkpoint_type, flush=True)
+            print("[emclip][pretrained] checkpoint_path=%s" % checkpoint_path, flush=True)
+            print(
+                "[emclip][pretrained] first_source_keys=%s" % list(source.keys())[:20],
+                flush=True,
+            )
+
+        visual_source = extract_visual_state(source)
+        text_source = extract_text_state(source)
+        visual_required = {
+            "conv1.weight",
+            "class_embedding",
+            "positional_embedding",
+            "ln_pre.weight",
+            "ln_pre.bias",
+            "ln_post.weight",
+            "ln_post.bias",
+            "proj",
+        }
+        text_required = {
+            "token_embedding.weight",
+            "positional_embedding",
+            "ln_final.weight",
+            "ln_final.bias",
+            "text_projection",
+        }
+        reports = {}
+        grids = {}
+        for name, module in (
+            ("I_encoder", self.melsc.i_encoder),
+            ("R_encoder", self.melsc.r_encoder),
+        ):
+            branch_source, grid_pair = adapt_visual_positional_embedding(module, visual_source)
+            grids[name] = grid_pair
+            reports[name] = load_submodule_with_audit(
+                module,
+                branch_source,
+                name,
+                minimum_coverage=0.99,
+                required_keys=visual_required,
+            )
+
+        if self.mgse is not None:
+            mv_source, grid_pair = adapt_visual_positional_embedding(
+                self.mgse.motion_encoder,
+                visual_source,
+            )
+            grids["MV_encoder"] = grid_pair
+            rgb_conv = visual_source.get("conv1.weight")
+            if rgb_conv is None:
+                raise RuntimeError("CLIP visual checkpoint is missing conv1.weight for MV initialization")
+            mv_source["conv1.weight"] = build_mv_patch_embed_weight(rgb_conv, scale=True)
+            reports["MV_encoder"] = load_submodule_with_audit(
+                self.mgse.motion_encoder,
+                mv_source,
+                "MV_encoder_excluding_conv1",
+                excluded_from_coverage={"conv1.weight"},
+                minimum_coverage=0.99,
+                required_keys=visual_required,
+            )
+
+        reports["Text_encoder"] = load_submodule_with_audit(
+            self.text_encoder,
+            text_source,
+            "Text_encoder",
+            minimum_coverage=0.99,
+            required_keys=text_required,
+        )
+        if "logit_scale" not in source:
+            raise RuntimeError("CLIP checkpoint is missing required text parameter 'logit_scale'")
+        if tuple(source["logit_scale"].shape) != tuple(self.logit_scale.shape):
+            raise RuntimeError(
+                "CLIP logit_scale shape mismatch: source=%s target=%s"
+                % (tuple(source["logit_scale"].shape), tuple(self.logit_scale.shape))
+            )
+        with torch.no_grad():
+            self.logit_scale.copy_(source["logit_scale"])
+
+        # ``load_state_dict`` copies into each branch.  Assert this invariant so
+        # I and residual can subsequently train independently.
+        i_parameters = dict(self.melsc.i_encoder.named_parameters())
+        r_parameters = dict(self.melsc.r_encoder.named_parameters())
+        for key in sorted(set(i_parameters).intersection(r_parameters)):
+            i_parameter = i_parameters[key]
+            r_parameter = r_parameters[key]
+            if i_parameter is r_parameter or i_parameter.data_ptr() == r_parameter.data_ptr():
+                raise RuntimeError("I/R encoders unexpectedly share parameter storage for %s" % key)
+
+        self.pretrained_audit = {
+            "checkpoint_type": checkpoint_type,
+            "checkpoint_path": checkpoint_path,
+            "position_grids": grids,
+            "branches": {name: report.to_dict() for name, report in reports.items()},
+        }
+        if _is_rank_zero():
+            for name, report in reports.items():
+                grid_pair = grids.get(name)
+                if grid_pair is not None:
+                    print(
+                        "[emclip][pretrained] %s_position_grid=%s->%s"
+                        % (name, grid_pair[0], grid_pair[1]),
+                        flush=True,
+                    )
+                print(
+                    "[emclip][pretrained] %s source=%d loaded=%d numel=%d/%d "
+                    "coverage=%.2f%% missing=%s unexpected=%s shape_mismatch=%s"
+                    % (
+                        name,
+                        report.source_tensor_count,
+                        report.loaded_tensor_count,
+                        report.loaded_parameter_numel,
+                        report.total_parameter_numel,
+                        100.0 * report.coverage,
+                        report.missing_keys,
+                        report.unexpected_keys,
+                        report.shape_mismatch_keys,
+                    ),
+                    flush=True,
+                )
+            print(
+                "[emclip][pretrained] logit_scale=%.8f"
+                % float(self.logit_scale.detach().float().cpu()),
+                flush=True,
+            )
+        return self.pretrained_audit
 
     def apply_train_mode(self, mode):
         mode = mode.lower()
@@ -489,4 +631,5 @@ def add_emclip_args(parser: argparse.ArgumentParser):
     parser.add_argument("--allow-mgse-label-leakage-for-diagnostic", action="store_true")
     parser.add_argument("--debug-shapes", action="store_true")
     parser.add_argument("--clip-checkpoint", default=None)
+    parser.add_argument("--pretrained-audit-only", action="store_true")
     return parser

@@ -33,6 +33,8 @@ def test_engine_accumulates_micro_batches_without_full_gpu_batch():
         layers=1,
         heads=4,
         embed_dim=16,
+        text_width=32,
+        text_heads=4,
         text_layers=1,
     )
     model = EMCLIP(config)
