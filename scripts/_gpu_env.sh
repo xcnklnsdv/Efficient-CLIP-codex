@@ -4,7 +4,7 @@
 #
 # Usage:
 #   GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh
-#   GPUS=2 bash scripts/eval_emclip_ucf101.sh
+#   GPUS=2 bash scripts/eval   _emclip_ucf101.sh
 #   CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
 #
 # If NPROC_PER_NODE is not explicitly set, it is derived from GPU_IDS, GPUS,

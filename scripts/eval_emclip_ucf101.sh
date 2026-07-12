@@ -7,6 +7,9 @@ set -euo pipefail
 DATASET="ucf101_mpeg4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ -z "${CLIP_CHECKPOINT:-}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
+  CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
+fi
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 NUM_WORKERS=${NUM_WORKERS:-0}
@@ -34,6 +37,10 @@ CMD=(torchrun --nproc_per_node="${NPROC_PER_NODE}" --master_port="${MASTER_PORT}
   --amp --output-dir "${OUTPUT_DIR}")
 if [[ "${PIN_MEMORY}" == "0" || "${PIN_MEMORY}" == "false" || "${PIN_MEMORY}" == "False" ]]; then CMD+=(--no-pin-memory); fi
 if [[ -n "${RESUME:-}" ]]; then CMD+=(--resume "${RESUME}"); fi
+if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
+  [[ -f "${CLIP_CHECKPOINT}" ]] || { echo "CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2; exit 1; }
+  CMD+=(--clip-checkpoint "${CLIP_CHECKPOINT}")
+fi
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"; printf '\n' >> "${OUTPUT_DIR}/command.txt"
 if [[ "${EMCLIP_PRINT_CMD_ONLY:-0}" == "1" ]]; then printf '%q ' "${CMD[@]}"; printf '\n'; exit 0; fi
 "${CMD[@]}" 2>&1 | tee "${OUTPUT_DIR}/eval_${STAMP}.log"

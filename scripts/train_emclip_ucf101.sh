@@ -7,6 +7,9 @@ set -euo pipefail
 DATASET="ucf101_mpeg4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ -z "${CLIP_CHECKPOINT:-}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
+  CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
+fi
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-1}
@@ -53,6 +56,10 @@ fi
 
 if [[ -n "${RESUME:-}" ]]; then
   CMD+=(--resume "${RESUME}")
+fi
+if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
+  [[ -f "${CLIP_CHECKPOINT}" ]] || { echo "CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2; exit 1; }
+  CMD+=(--clip-checkpoint "${CLIP_CHECKPOINT}")
 fi
 
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"

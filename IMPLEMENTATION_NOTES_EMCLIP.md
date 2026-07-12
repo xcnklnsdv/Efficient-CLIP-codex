@@ -87,6 +87,7 @@ Engineering assumptions: AdamW, betas `(0.9,0.98)`, eps `1e-6`, weight decay `0.
 ## Known Differences
 
 The text encoder uses a deterministic local tokenizer when the OpenAI CLIP tokenizer is not present. Local checkpoints can be loaded through `--clip-checkpoint`, but no network download is attempted.
+The shell launchers accept `CLIP_CHECKPOINT=/absolute/path/to/clip_vit_b_16.pth` and append the corresponding CLI argument; they fall back to a repository-local file only when it exists.
 
 ## Commands
 
