@@ -91,9 +91,11 @@ CLASS_NAMES=/path/to/ssv2_classes.txt bash scripts/train_emclip_ssv2.sh
 python main_emclip.py --dataset hmdb51_mpeg4 --preflight-compressed-inputs --num-workers 0 --no-pin-memory
 ```
 
-`GPU_IDS`, `GPUS`, and `CUDA_VISIBLE_DEVICES` all work. The scripts never assign
-a GPU id by default. Without an explicit GPU list they use
-`NPROC_PER_NODE=4`; with a list they derive the process count from it.
+All train/eval scripts source `scripts/_gpu_env.sh`. Edit
+`EMCLIP_DEFAULT_GPU_IDS="0,1,2,3"` in that file to centrally select the default
+physical GPUs. `GPU_IDS`, `GPUS`, and `CUDA_VISIBLE_DEVICES` remain available as
+one-off overrides, in that priority order. Unless explicitly overridden,
+`NPROC_PER_NODE` is derived from the selected GPU count.
 The engineering defaults are `NUM_WORKERS=8` and pinned memory enabled. Diagnose
 worker-unsafe CoViAR builds with `NUM_WORKERS=0 PIN_MEMORY=0` and
 `--preflight-only`.
