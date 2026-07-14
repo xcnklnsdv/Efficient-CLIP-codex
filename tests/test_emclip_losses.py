@@ -39,3 +39,4 @@ def test_motion_text_kl_loss_handles_amp_sensitive_temperature_in_float32():
     assert torch.isfinite(out["loss_mg"])
     assert torch.isfinite(out["loss_mg_mv2text"])
     assert torch.isfinite(out["loss_mg_text2mv"])
+    assert out["loss_mg"].dtype == torch.float32

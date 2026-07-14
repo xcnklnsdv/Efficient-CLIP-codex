@@ -116,10 +116,59 @@ def _debug_unused_parameters(model, step, args):
         print("  %s shape=%s numel=%d" % (name, shape, numel), flush=True)
 
 
+def _finish_optimizer_step(model, optimizer, scaler, grad_clip_norm):
+    """Unscale, validate/clip gradients and let GradScaler recover fp16 overflow."""
+    scaler.unscale_(optimizer)
+    raw_model = model.module if hasattr(model, "module") else model
+    trainable = [parameter for parameter in model.parameters() if parameter.requires_grad]
+    scale_before = float(scaler.get_scale())
+    grad_norm = torch.nn.utils.clip_grad_norm_(trainable, grad_clip_norm)
+    if not torch.isfinite(grad_norm):
+        # Keep the expensive per-parameter scan on the exceptional path; doing
+        # hundreds of GPU synchronizations every normal step is prohibitively slow.
+        bad_gradients = [
+            name
+            for name, parameter in raw_model.named_parameters()
+            if parameter.grad is not None and not torch.isfinite(parameter.grad).all()
+        ]
+        if not bad_gradients:
+            raise FloatingPointError(
+                "gradient norm overflowed although every individual gradient is finite"
+            )
+        if not scaler.is_enabled():
+            raise FloatingPointError(
+                "non-finite unscaled gradients without AMP; bad parameters=%s"
+                % bad_gradients[:20]
+            )
+        # unscale_ recorded found_inf. GradScaler now skips the parameter
+        # update and lowers its scale, which is the standard AMP recovery path.
+        scaler.step(optimizer)
+        scaler.update()
+        return {
+            "stepped": False,
+            "grad_norm": float("nan"),
+            "scale_before": scale_before,
+            "scale_after": float(scaler.get_scale()),
+            "bad_gradients": bad_gradients,
+        }
+
+    scaler.step(optimizer)
+    scaler.update()
+    return {
+        "stepped": True,
+        "grad_norm": float(grad_norm),
+        "scale_before": scale_before,
+        "scale_after": float(scaler.get_scale()),
+        "bad_gradients": [],
+    }
+
+
 def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, args):
     model.train()
     start = time.time()
     rank = dist.get_rank() if dist_ready() else 0
+    consecutive_amp_overflows = 0
+    amp_skipped_steps = 0
     print("[emclip][rank=%d] epoch=%d entering DataLoader" % (rank, epoch), flush=True)
     totals = {
         "loss": 0.0,
@@ -217,24 +266,56 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
         if out is None:
             raise RuntimeError("EM-CLIP received an empty DataLoader batch.")
         _debug_unused_parameters(model, step, args)
-        scaler.unscale_(optimizer)
-        grad_norm = torch.nn.utils.clip_grad_norm_(
-            [p for p in model.parameters() if p.requires_grad],
-            args.grad_clip_norm,
+        step_result = _finish_optimizer_step(
+            model, optimizer, scaler, args.grad_clip_norm
         )
-        if not torch.isfinite(grad_norm):
-            raw_model = model.module if hasattr(model, "module") else model
-            bad_gradients = [
-                name
-                for name, parameter in raw_model.named_parameters()
-                if parameter.grad is not None and not torch.isfinite(parameter.grad).all()
-            ]
+        if not step_result["stepped"]:
+            amp_skipped_steps += 1
+            consecutive_amp_overflows += 1
+            max_overflows = int(getattr(args, "max_consecutive_amp_overflows", 8))
+            if step_result["scale_after"] >= step_result["scale_before"]:
+                raise FloatingPointError(
+                    "GradScaler found non-finite gradients but did not reduce its scale: "
+                    "scale=%.1f bad parameters=%s"
+                    % (
+                        step_result["scale_before"],
+                        step_result["bad_gradients"][:20],
+                    )
+                )
+            if consecutive_amp_overflows > max_overflows:
+                raise FloatingPointError(
+                    "AMP gradients remained non-finite for %d consecutive batches; "
+                    "last scale %.1f->%.1f bad parameters=%s"
+                    % (
+                        consecutive_amp_overflows,
+                        step_result["scale_before"],
+                        step_result["scale_after"],
+                        step_result["bad_gradients"][:20],
+                    )
+                )
+            if is_main_process():
+                print(
+                    "[emclip][amp] skipped optimizer step epoch=%d step=%d "
+                    "scale=%.1f->%.1f consecutive=%d bad=%s"
+                    % (
+                        epoch,
+                        step,
+                        step_result["scale_before"],
+                        step_result["scale_after"],
+                        consecutive_amp_overflows,
+                        step_result["bad_gradients"][:5],
+                    ),
+                    flush=True,
+                )
+            optimizer.zero_grad(set_to_none=True)
+            continue
+        consecutive_amp_overflows = 0
+        grad_norm = step_result["grad_norm"]
+        if not math.isfinite(grad_norm):
             raise FloatingPointError(
-                "non-finite gradient norm at epoch=%d step=%d; bad parameters=%s"
-                % (epoch, step, bad_gradients[:20])
+                "non-finite gradient norm after a successful optimizer step at epoch=%d step=%d"
+                % (epoch, step)
             )
-        scaler.step(optimizer)
-        scaler.update()
         if scheduler is not None:
             scheduler.step()
 
@@ -250,7 +331,7 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
                 "epoch=%d step=%d/%d loss=%.4f loss_mg=%.4f "
                 "loss_mg_mv2text=%.4f loss_mg_text2mv=%.4f loss_me=%.4f "
                 "acc1=%.2f acc5=%.2f lr=%.8f grad_norm=%.4f entropy=%.4f "
-                "selected_mean=%.2f max_mem=%.0fMB"
+                "selected_mean=%.2f max_mem=%.0fMB amp_scale=%.1f amp_skips=%d"
                 % (
                     epoch,
                     step,
@@ -267,6 +348,8 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
                     float(totals["entropy"] / max(1, totals["count"])),
                     float(out["selected_indices"].float().mean().detach()),
                     mem,
+                    step_result["scale_after"],
+                    amp_skipped_steps,
                 ),
                 flush=True,
             )
@@ -281,6 +364,7 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
         "acc1": 100.0 * reduce_sum(totals["acc1"], device_for_reduce) / max(1.0, count),
         "acc5": 100.0 * reduce_sum(totals["acc5"], device_for_reduce) / max(1.0, count),
         "mgse_saliency_entropy": reduce_sum(totals["entropy"], device_for_reduce) / max(1.0, count),
+        "amp_skipped_steps": amp_skipped_steps,
         "seconds": time.time() - start,
     }
     return result

@@ -103,6 +103,12 @@ worker-unsafe CoViAR builds with `NUM_WORKERS=0 PIN_MEMORY=0` and
 `MICRO_BATCH_SIZE=BATCH_SIZE`: splitting a batch while `L_MG` is enabled is
 rejected because it changes the global contrastive positive/negative bank.
 Evaluation may use `MICRO_BATCH_SIZE=1` because it does not compute `L_MG`.
+AMP uses an initial GradScaler scale of 1024 because MGSE/L_MG uses the
+paper-specified `tau=0.01`. Correlation, temperature, softmax/log-softmax and
+loss calculations are forced to true float32. A recoverable fp16 backward
+overflow skips that optimizer step and reduces the scale; eight consecutive
+overflows still raise an explicit error. Override with `--amp-init-scale` and
+`--max-consecutive-amp-overflows` when diagnosing another GPU architecture.
 Training and evaluation scripts append `--clip-checkpoint "${CLIP_CHECKPOINT}"`; the default is `/home/fuh/CLIP-models/ViT-B-16.pt`, with an environment override and a repository-local fallback when available.
 The scripts prefer a local `pytorch-coviar/data_loader` directory when present, then fall back to `/home/fuh/m2clip/Coviar/data_loader`. Build the extension with `cd pytorch-coviar/data_loader && bash install.sh` if `coviar*.so` is missing.
 

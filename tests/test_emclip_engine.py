@@ -4,7 +4,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from engine_emclip import train_one_epoch
+from engine_emclip import _finish_optimizer_step, train_one_epoch
 from main_emclip import DistributedEvalSampler
 from models import EMCLIP, EMCLIPConfig
 
@@ -101,3 +101,52 @@ def test_engine_accumulates_micro_batches_when_motion_kl_is_disabled():
     assert torch.isfinite(torch.tensor(stats["acc1"]))
     assert "loss_mg_mv2text" in stats
     assert "loss_mg_text2mv" in stats
+
+
+class _OverflowScaler:
+    def __init__(self, scale=1024.0):
+        self.scale = float(scale)
+        self.step_called = False
+
+    def unscale_(self, optimizer):
+        return None
+
+    def get_scale(self):
+        return self.scale
+
+    def is_enabled(self):
+        return True
+
+    def step(self, optimizer):
+        # A real GradScaler skips optimizer.step after unscale_ found inf.
+        self.step_called = True
+
+    def update(self):
+        self.scale *= 0.5
+
+
+def test_amp_overflow_uses_grad_scaler_backoff_instead_of_immediate_failure():
+    model = torch.nn.Linear(2, 1)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    model.weight.grad = torch.full_like(model.weight, float("inf"))
+    model.bias.grad = torch.zeros_like(model.bias)
+    scaler = _OverflowScaler(scale=1024.0)
+
+    result = _finish_optimizer_step(model, optimizer, scaler, grad_clip_norm=1.0)
+
+    assert not result["stepped"]
+    assert result["scale_before"] == 1024.0
+    assert result["scale_after"] == 512.0
+    assert result["bad_gradients"] == ["weight"]
+    assert scaler.step_called
+
+
+def test_non_amp_nonfinite_gradient_still_raises():
+    model = torch.nn.Linear(2, 1)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    model.weight.grad = torch.full_like(model.weight, float("nan"))
+    model.bias.grad = torch.zeros_like(model.bias)
+    scaler = torch.amp.GradScaler("cuda", enabled=False)
+
+    with pytest.raises(FloatingPointError, match="without AMP"):
+        _finish_optimizer_step(model, optimizer, scaler, grad_clip_norm=1.0)

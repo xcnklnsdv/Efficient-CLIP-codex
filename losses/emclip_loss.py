@@ -2,6 +2,8 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 
+from amp_compat import autocast_disabled
+
 
 def _dist_ready():
     return dist.is_available() and dist.is_initialized()
@@ -88,27 +90,30 @@ def motion_text_kl_loss(
     temperature=0.01,
 ):
     assert labels.ndim == 1, "labels must be [B]."
-    motion_video = _pool_motion_features(motion_frame_features, saliency, valid_mask, pooling=pooling)
-    text_local = class_text_features.to(device=motion_video.device)[labels].float()
-    text_local = F.normalize(text_local, dim=-1)
-    motion_all = all_gather_with_grad(motion_video)
-    text_all = all_gather_with_grad(text_local)
-    labels_all = all_gather_no_grad(labels.to(device=motion_video.device))
-    target = build_multi_positive_target(labels, labels_all).to(device=motion_video.device)
+    with autocast_disabled(motion_frame_features.device):
+        motion_video = _pool_motion_features(
+            motion_frame_features.float(), saliency.float(), valid_mask, pooling=pooling
+        )
+        text_local = class_text_features.to(device=motion_video.device)[labels].float()
+        text_local = F.normalize(text_local, dim=-1)
+        motion_all = all_gather_with_grad(motion_video)
+        text_all = all_gather_with_grad(text_local)
+        labels_all = all_gather_no_grad(labels.to(device=motion_video.device))
+        target = build_multi_positive_target(labels, labels_all).to(device=motion_video.device)
 
-    logits_mv2text = motion_video.float() @ text_all.float().t() / float(temperature)
-    logits_text2mv = text_local.float() @ motion_all.float().t() / float(temperature)
-    loss_mv2text = F.kl_div(
-        F.log_softmax(logits_mv2text.float(), dim=-1),
-        target.float(),
-        reduction="batchmean",
-    )
-    loss_text2mv = F.kl_div(
-        F.log_softmax(logits_text2mv.float(), dim=-1),
-        target.float(),
-        reduction="batchmean",
-    )
-    loss = 0.5 * (loss_mv2text + loss_text2mv)
+        logits_mv2text = motion_video @ text_all.t() / float(temperature)
+        logits_text2mv = text_local @ motion_all.t() / float(temperature)
+        loss_mv2text = F.kl_div(
+            F.log_softmax(logits_mv2text, dim=-1),
+            target.float(),
+            reduction="batchmean",
+        )
+        loss_text2mv = F.kl_div(
+            F.log_softmax(logits_text2mv, dim=-1),
+            target.float(),
+            reduction="batchmean",
+        )
+        loss = 0.5 * (loss_mv2text + loss_text2mv)
     if not torch.isfinite(loss):
         raise FloatingPointError("L_MG produced a non-finite loss.")
     return {

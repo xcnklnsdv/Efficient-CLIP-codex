@@ -151,7 +151,7 @@ the duplicate samples inserted by PyTorch's training `DistributedSampler`.
 
 Paper-specified defaults: epochs 30, LR `8e-6`, cosine schedule, input 256, tau `0.01`, ViT-B/16, GOP size 12, `T=16`, `K=8`.
 
-Engineering assumptions: AdamW, betas `(0.9,0.98)`, eps `1e-6`, weight decay `0.2`, warmup 0, batch size per GPU 4, full-batch forward for `L_MG`, grad clip 1.0, seed 1024, AMP on scripts, workers 8, and pinned memory. LR is not scaled by world size unless `--scale-lr-by-global-batch` is passed. Non-finite gradients raise with the affected parameter names instead of silently advancing the scheduler after a skipped optimizer step.
+Engineering assumptions: AdamW, betas `(0.9,0.98)`, eps `1e-6`, weight decay `0.2`, warmup 0, batch size per GPU 4, full-batch forward for `L_MG`, grad clip 1.0, seed 1024, AMP on scripts, workers 8, and pinned memory. LR is not scaled by world size unless `--scale-lr-by-global-batch` is passed. AMP starts with scale 1024 because `tau=0.01` amplifies alignment gradients; sensitive similarity and loss operations explicitly disable autocast and run in float32. A detected fp16 backward overflow uses the standard GradScaler skip/backoff path without advancing the scheduler. Persistent overflow raises after eight consecutive batches with parameter names and scale history; non-AMP non-finite gradients raise immediately.
 
 The paper does not publish source code or fully specify optimizer, batch size,
 freezing, and MGSE inference details. These choices are engineering assumptions;

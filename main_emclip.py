@@ -55,6 +55,14 @@ def parse_args():
     parser.add_argument("--pin-memory", dest="pin_memory", action="store_true", default=True)
     parser.add_argument("--no-pin-memory", dest="pin_memory", action="store_false")
     parser.add_argument("--amp", action="store_true")
+    parser.add_argument(
+        "--amp-init-scale",
+        type=float,
+        default=1024.0,
+        help="Initial GradScaler scale; 1024 is conservative for MGSE tau=0.01.",
+    )
+    parser.add_argument("--amp-growth-interval", type=int, default=2000)
+    parser.add_argument("--max-consecutive-amp-overflows", type=int, default=8)
     parser.add_argument("--resume", default=None)
     parser.add_argument("--output-dir", "--save-dir", dest="output_dir", default="output_dir/emclip")
     parser.add_argument("--eval", "--eval-only", dest="eval", action="store_true")
@@ -345,14 +353,27 @@ def build_scheduler(optimizer, steps_per_epoch, args):
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
 
-def make_grad_scaler(device, enabled):
+def make_grad_scaler(device, enabled, init_scale=1024.0, growth_interval=2000):
     enabled = enabled and device.type == "cuda"
     if hasattr(torch, "amp") and hasattr(torch.amp, "GradScaler"):
         try:
-            return torch.amp.GradScaler("cuda", enabled=enabled)
+            return torch.amp.GradScaler(
+                "cuda",
+                enabled=enabled,
+                init_scale=init_scale,
+                growth_interval=growth_interval,
+            )
         except TypeError:
-            return torch.amp.GradScaler(enabled=enabled)
-    return torch.cuda.amp.GradScaler(enabled=enabled)
+            return torch.amp.GradScaler(
+                enabled=enabled,
+                init_scale=init_scale,
+                growth_interval=growth_interval,
+            )
+    return torch.cuda.amp.GradScaler(
+        enabled=enabled,
+        init_scale=init_scale,
+        growth_interval=growth_interval,
+    )
 
 
 def synthetic_smoke(args):
@@ -500,6 +521,12 @@ def main_worker():
     apply_model_variant_defaults(args)
     if args.micro_batch_size < 0:
         raise ValueError("--micro-batch-size must be >= 0.")
+    if args.amp_init_scale <= 0:
+        raise ValueError("--amp-init-scale must be > 0.")
+    if args.amp_growth_interval < 1:
+        raise ValueError("--amp-growth-interval must be >= 1.")
+    if args.max_consecutive_amp_overflows < 1:
+        raise ValueError("--max-consecutive-amp-overflows must be >= 1.")
     if args.test_num_temporal_views < 1:
         raise ValueError("--test-num-temporal-views must be >= 1.")
     if args.test_num_spatial_crops not in (1, 3):
@@ -659,7 +686,18 @@ def main_worker():
 
     optimizer = None
     scheduler = None
-    scaler = make_grad_scaler(device, args.amp)
+    scaler = make_grad_scaler(
+        device,
+        args.amp,
+        init_scale=args.amp_init_scale,
+        growth_interval=args.amp_growth_interval,
+    )
+    if is_main_process() and args.amp:
+        print(
+            "[emclip] AMP GradScaler init_scale=%.1f growth_interval=%d"
+            % (float(scaler.get_scale()), args.amp_growth_interval),
+            flush=True,
+        )
     start_epoch = 0
     best_acc1 = -math.inf
     if not args.eval:

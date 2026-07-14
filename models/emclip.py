@@ -7,6 +7,7 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 
+from amp_compat import autocast_disabled
 from losses.emclip_loss import motion_text_kl_loss
 from .clip_checkpoint import (
     adapt_visual_positional_embedding,
@@ -529,31 +530,35 @@ class EMCLIP(nn.Module):
         assert selected_i.shape[:2] == (B, self.config.selected_frames)
         melsc_out = self.melsc(selected_i, selected_r)
         video_features = melsc_out["video_features"]
-        class_text_features = F.normalize(class_text_features.float(), dim=-1)
-        logit_scale = self.logit_scale.float().exp().clamp(max=100.0)
-        logits = logit_scale * (video_features.float() @ class_text_features.t())
-        loss_me = None
-        loss_mg = logits.new_zeros(())
-        loss_mg_mv2text = logits.new_zeros(())
-        loss_mg_text2mv = logits.new_zeros(())
-        if labels is not None:
-            loss_me = F.cross_entropy(logits.float(), labels)
-            if self.use_mgse:
-                mg_loss = motion_text_kl_loss(
-                    motion_frame_features=motion_frame_features,
-                    saliency=saliency,
-                    class_text_features=class_text_features,
-                    labels=labels,
-                    valid_mask=valid_mask,
-                    pooling=self.config.motion_pooling,
-                    temperature=self.config.mgse_temperature,
-                )
-                loss_mg = mg_loss["loss_mg"]
-                loss_mg_mv2text = mg_loss["loss_mg_mv2text"]
-                loss_mg_text2mv = mg_loss["loss_mg_text2mv"]
-            loss = self.config.lambda_me * loss_me + self.config.lambda_mg * loss_mg
-        else:
-            loss = None
+        # Classification similarity, temperature scaling and both losses stay
+        # in true float32 even when the encoders run under CUDA autocast.
+        with autocast_disabled(video_features.device):
+            class_text_features = F.normalize(class_text_features.float(), dim=-1)
+            video_features_fp32 = F.normalize(video_features.float(), dim=-1)
+            logit_scale = self.logit_scale.float().exp().clamp(max=100.0)
+            logits = logit_scale * (video_features_fp32 @ class_text_features.t())
+            loss_me = None
+            loss_mg = logits.new_zeros(())
+            loss_mg_mv2text = logits.new_zeros(())
+            loss_mg_text2mv = logits.new_zeros(())
+            if labels is not None:
+                loss_me = F.cross_entropy(logits, labels)
+                if self.use_mgse:
+                    mg_loss = motion_text_kl_loss(
+                        motion_frame_features=motion_frame_features,
+                        saliency=saliency,
+                        class_text_features=class_text_features,
+                        labels=labels,
+                        valid_mask=valid_mask,
+                        pooling=self.config.motion_pooling,
+                        temperature=self.config.mgse_temperature,
+                    )
+                    loss_mg = mg_loss["loss_mg"]
+                    loss_mg_mv2text = mg_loss["loss_mg_mv2text"]
+                    loss_mg_text2mv = mg_loss["loss_mg_text2mv"]
+                loss = self.config.lambda_me * loss_me + self.config.lambda_mg * loss_mg
+            else:
+                loss = None
         if loss is not None and not torch.isfinite(loss):
             raise FloatingPointError("EM-CLIP total loss is non-finite.")
         entropy = -(saliency.clamp_min(1e-8) * saliency.clamp_min(1e-8).log()).sum(dim=1).mean()

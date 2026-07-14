@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from amp_compat import autocast_disabled
 from .emclip_layers import LayerNorm, PatchTokenEncoder
 
 
@@ -227,37 +228,49 @@ class MotionGuidedSaliencyExtraction(nn.Module):
             labels = labels.to(device=motion_vectors.device, dtype=torch.long)
 
         motion_frame_features = self._encode_motion(motion_vectors)
-        motion_norm = self._prepare_features(motion_frame_features)
-        token_norm = self._normalize_token_features(class_token_features)
-        class_text_norm = F.normalize(class_text_features.float(), dim=-1)
+        # ``.float()`` alone is insufficient inside an outer CUDA autocast
+        # region: einsum/matmul can still be selected for fp16.  The paper's
+        # tau=0.01 makes this complete correlation path explicitly float32.
+        with autocast_disabled(motion_frame_features.device):
+            motion_norm = self._prepare_features(motion_frame_features.float())
+            token_norm = self._normalize_token_features(class_token_features.float())
+            class_text_norm = F.normalize(class_text_features.float(), dim=-1)
 
-        if self.text_mode == "ground_truth":
-            if (not training_mode) and (not self.allow_label_leakage_for_diagnostic):
-                raise RuntimeError(
-                    "mgse_text_mode='ground_truth' would cause validation label leakage; "
-                    "use class_bank or pass allow_label_leakage_for_diagnostic=True."
+            if self.text_mode == "ground_truth":
+                if (not training_mode) and (not self.allow_label_leakage_for_diagnostic):
+                    raise RuntimeError(
+                        "mgse_text_mode='ground_truth' would cause validation label leakage; "
+                        "use class_bank or pass allow_label_leakage_for_diagnostic=True."
+                    )
+                saliency = self._ground_truth_saliency(
+                    motion_norm, token_norm, class_token_mask, labels, valid_mask
                 )
-            saliency = self._ground_truth_saliency(motion_norm, token_norm, class_token_mask, labels, valid_mask)
-        elif self.text_mode == "class_bank":
-            saliency = self._class_bank_saliency(motion_norm, token_norm, class_token_mask, valid_mask)
-        elif self.text_mode == "predicted_class":
-            saliency = self._predicted_class_saliency(
-                motion_norm,
-                class_text_norm,
-                token_norm,
-                class_token_mask,
-                valid_mask,
-            )
-        else:
-            raise ValueError("Unsupported mgse_text_mode: %s" % self.text_mode)
+            elif self.text_mode == "class_bank":
+                saliency = self._class_bank_saliency(
+                    motion_norm, token_norm, class_token_mask, valid_mask
+                )
+            elif self.text_mode == "predicted_class":
+                saliency = self._predicted_class_saliency(
+                    motion_norm,
+                    class_text_norm,
+                    token_norm,
+                    class_token_mask,
+                    valid_mask,
+                )
+            else:
+                raise ValueError("Unsupported mgse_text_mode: %s" % self.text_mode)
 
-        saliency = self._normalize_saliency(saliency, valid_mask)
-        selected_indices = select_topk_indices(saliency, valid_mask, self.selected_frames)
-        motion_video_features = self._pool_motion_video(motion_frame_features, saliency, valid_mask)
-        mg_logits_mv2text = motion_video_features.float() @ class_text_norm.t() / float(self.temperature)
-        mg_logits_text2mv = mg_logits_mv2text.t()
-        if not torch.isfinite(mg_logits_mv2text).all():
-            raise FloatingPointError("MGSE logits contain non-finite values.")
+            saliency = self._normalize_saliency(saliency, valid_mask)
+            selected_indices = select_topk_indices(saliency, valid_mask, self.selected_frames)
+            motion_video_features = self._pool_motion_video(
+                motion_frame_features.float(), saliency, valid_mask
+            )
+            mg_logits_mv2text = (
+                motion_video_features @ class_text_norm.t() / float(self.temperature)
+            )
+            mg_logits_text2mv = mg_logits_mv2text.t()
+            if not torch.isfinite(mg_logits_mv2text).all():
+                raise FloatingPointError("MGSE logits contain non-finite values.")
 
         return {
             "selected_indices": selected_indices,
