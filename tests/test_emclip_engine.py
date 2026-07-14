@@ -1,9 +1,11 @@
 from types import SimpleNamespace
 
+import pytest
 import torch
 from torch.utils.data import DataLoader, Dataset
 
 from engine_emclip import train_one_epoch
+from main_emclip import DistributedEvalSampler
 from models import EMCLIP, EMCLIPConfig
 
 
@@ -21,7 +23,17 @@ class _SyntheticCompressedDataset(Dataset):
         }
 
 
-def test_engine_accumulates_micro_batches_without_full_gpu_batch():
+def test_distributed_eval_sampler_never_pads_duplicate_samples():
+    dataset = list(range(5))
+    rank_zero = list(DistributedEvalSampler(dataset, num_replicas=2, rank=0))
+    rank_one = list(DistributedEvalSampler(dataset, num_replicas=2, rank=1))
+
+    assert rank_zero == [0, 2, 4]
+    assert rank_one == [1, 3]
+    assert sorted(rank_zero + rank_one) == list(range(5))
+
+
+def _build_engine_components(lambda_mg=1.0):
     config = EMCLIPConfig(
         num_classes=2,
         class_names=["class 0", "class 1"],
@@ -36,6 +48,7 @@ def test_engine_accumulates_micro_batches_without_full_gpu_batch():
         text_width=32,
         text_heads=4,
         text_layers=1,
+        lambda_mg=lambda_mg,
     )
     model = EMCLIP(config)
     optimizer = torch.optim.AdamW(
@@ -51,6 +64,27 @@ def test_engine_accumulates_micro_batches_without_full_gpu_batch():
         print_freq=100,
         debug_unused_parameters=False,
     )
+    return model, optimizer, scheduler, scaler, args
+
+
+def test_engine_rejects_contrastive_micro_batch_split():
+    model, optimizer, scheduler, scaler, args = _build_engine_components(lambda_mg=1.0)
+
+    with pytest.raises(ValueError, match="global positives and negatives"):
+        train_one_epoch(
+            model,
+            DataLoader(_SyntheticCompressedDataset(), batch_size=2),
+            optimizer,
+            scheduler,
+            scaler,
+            torch.device("cpu"),
+            epoch=0,
+            args=args,
+        )
+
+
+def test_engine_accumulates_micro_batches_when_motion_kl_is_disabled():
+    model, optimizer, scheduler, scaler, args = _build_engine_components(lambda_mg=0.0)
 
     stats = train_one_epoch(
         model,
@@ -65,3 +99,5 @@ def test_engine_accumulates_micro_batches_without_full_gpu_batch():
 
     assert torch.isfinite(torch.tensor(stats["loss"]))
     assert torch.isfinite(torch.tensor(stats["acc1"]))
+    assert "loss_mg_mv2text" in stats
+    assert "loss_mg_text2mv" in stats

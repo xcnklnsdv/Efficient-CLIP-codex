@@ -36,3 +36,12 @@ def test_k400_launch_script_writes_torchrun_rank_logs():
     assert "--log-dir" in text
     assert "--redirects" in text
     assert "--tee" in text
+
+
+def test_scripts_do_not_pin_default_gpu_ids_or_enable_unused_detection():
+    gpu_text = (REPO_ROOT / "scripts" / "_gpu_env.sh").read_text(encoding="utf-8")
+    k400_text = (REPO_ROOT / "scripts" / "train_emclip_k400.sh").read_text(encoding="utf-8")
+
+    assert "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-4,5}" not in gpu_text
+    assert "NPROC_PER_NODE=4" in gpu_text
+    assert "FIND_UNUSED_PARAMETERS=${FIND_UNUSED_PARAMETERS:-false}" in k400_text

@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from torch.distributed.elastic.multiprocessing.errors import record
-from torch.utils.data import DataLoader, DistributedSampler
+from torch.utils.data import DataLoader, DistributedSampler, Sampler
 
 from configs import DATASETS
 from datasets import CompressedVideoDataset
@@ -32,6 +32,11 @@ def parse_args():
     parser.add_argument("--dataset", default="ssv2_mpeg4", choices=DATASETS.keys())
     parser.add_argument("--label-csv", default=None)
     parser.add_argument("--class-names", default=None)
+    parser.add_argument("--train-root", default=None)
+    parser.add_argument("--val-root", default=None)
+    parser.add_argument("--train-list", default=None)
+    parser.add_argument("--val-list", default=None)
+    parser.add_argument("--compressed-video-root", default=None)
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--lr", type=float, default=8e-6)
     parser.add_argument("--weight-decay", "--weight_decay", dest="weight_decay", type=float, default=0.2)
@@ -40,8 +45,11 @@ def parse_args():
     parser.add_argument(
         "--micro-batch-size",
         type=int,
-        default=1,
-        help="Per-forward GPU batch. The DataLoader batch is split and gradients are accumulated.",
+        default=0,
+        help=(
+            "Per-forward batch; 0 uses the full DataLoader batch. A smaller value is only "
+            "valid when L_MG is disabled because contrastive negatives cannot be split exactly."
+        ),
     )
     parser.add_argument("--num-workers", "--num_workers", dest="num_workers", type=int, default=8)
     parser.add_argument("--pin-memory", dest="pin_memory", action="store_true", default=True)
@@ -57,6 +65,11 @@ def parse_args():
         "--preflight-compressed-inputs",
         action="store_true",
         help="Synchronously decode dataset item 0 before DDP training; useful for isolating CoViAR crashes.",
+    )
+    parser.add_argument(
+        "--preflight-only",
+        action="store_true",
+        help="Decode and forward one real compressed sample, then exit without constructing loaders.",
     )
     parser.add_argument(
         "--coviar-data-loader-dir",
@@ -103,30 +116,170 @@ def apply_model_variant_defaults(args):
         args.selected_frames = 8
 
 
-def load_class_names(args, num_classes):
-    if args.class_names:
-        with open(args.class_names, "r", encoding="utf-8") as handle:
-            names = [line.strip() for line in handle if line.strip()]
-    elif args.label_csv:
-        names = []
-        with open(args.label_csv, "r", encoding="utf-8") as handle:
-            reader = csv.reader(handle)
-            for row in reader:
-                if not row:
-                    continue
-                if len(row) == 1:
-                    names.append(row[0].strip())
-                else:
-                    names.append(row[-1].strip())
-    else:
-        names = ["class %d" % i for i in range(num_classes)]
+def resolve_dataset_config(args):
+    cfg = dict(DATASETS[args.dataset])
+    overrides = {
+        "TRAIN_ROOT": args.train_root,
+        "VAL_ROOT": args.val_root,
+        "TRAIN_LIST": args.train_list,
+        "VAL_LIST": args.val_list,
+        "COMPRESSED_VIDEO_ROOT": args.compressed_video_root,
+    }
+    for key, value in overrides.items():
+        if value:
+            cfg[key] = value
+    if not args.compressed_video_root:
+        if args.eval and args.val_root:
+            cfg["COMPRESSED_VIDEO_ROOT"] = args.val_root
+        elif args.train_root:
+            cfg["COMPRESSED_VIDEO_ROOT"] = args.train_root
+        elif args.val_root and not cfg.get("TRAIN_ROOT"):
+            cfg["COMPRESSED_VIDEO_ROOT"] = args.val_root
+    return cfg
+
+
+def _validate_class_names(names, num_classes, source):
     if len(names) != num_classes:
-        raise ValueError("class text count %d does not match NUM_CLASSES=%d." % (len(names), num_classes))
+        raise ValueError(
+            "class text count %d from %s does not match NUM_CLASSES=%d."
+            % (len(names), source, num_classes)
+        )
+    empty = [index for index, name in enumerate(names) if not name.strip()]
+    if empty:
+        raise ValueError("empty class text entries in %s at indices %s" % (source, empty[:20]))
     return names
 
 
-def build_datasets(args):
-    cfg = DATASETS[args.dataset]
+def _read_plain_class_names(path):
+    indexed = {}
+    sequential = []
+    with open(path, "r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line:
+                continue
+            fields = line.replace("\t", " ").split(maxsplit=1)
+            if len(fields) == 2 and fields[0].isdigit():
+                indexed[int(fields[0])] = fields[1].strip()
+            else:
+                sequential.append(line)
+    if indexed and sequential:
+        raise ValueError("class-name file mixes indexed and sequential rows: %s" % path)
+    if indexed:
+        expected = list(range(max(indexed) + 1))
+        if sorted(indexed) != expected:
+            raise ValueError("class-name indices are not contiguous from zero in %s" % path)
+        return [indexed[index] for index in expected]
+    return sequential
+
+
+def _read_class_csv(path):
+    indexed = {}
+    sequential = []
+    with open(path, "r", encoding="utf-8") as handle:
+        reader = csv.reader(handle)
+        for row_index, row in enumerate(reader):
+            row = [field.strip() for field in row if field.strip()]
+            if not row:
+                continue
+            try:
+                class_index = int(row[0])
+            except ValueError:
+                if row_index == 0 and row[0].lower() in {
+                    "id",
+                    "index",
+                    "label",
+                    "class_id",
+                    "name",
+                    "class",
+                    "class_name",
+                    "label_name",
+                }:
+                    continue
+                sequential.append(row[-1])
+            else:
+                indexed[class_index] = row[-1]
+    if indexed and sequential:
+        raise ValueError("label CSV mixes indexed and sequential rows: %s" % path)
+    if indexed:
+        expected = list(range(max(indexed) + 1))
+        if sorted(indexed) != expected:
+            raise ValueError("label CSV indices are not contiguous from zero in %s" % path)
+        return [indexed[index] for index in expected]
+    return sequential
+
+
+def _infer_class_names_from_lists(cfg, num_classes, dataset_name):
+    inferred = {}
+    inspected = []
+    for key in ("TRAIN_LIST", "VAL_LIST"):
+        list_path = cfg.get(key)
+        if not list_path or not os.path.isfile(list_path):
+            continue
+        inspected.append(list_path)
+        with open(list_path, "r", encoding="utf-8") as handle:
+            for raw_line in handle:
+                if not raw_line.strip():
+                    continue
+                parts = raw_line.strip().split()
+                try:
+                    label = int(parts[-1])
+                except (ValueError, IndexError):
+                    continue
+                if label < 0 or label >= num_classes:
+                    raise ValueError(
+                        "dataset %s label %d is outside [0, %d] in line: %s"
+                        % (dataset_name, label, num_classes - 1, raw_line.rstrip())
+                    )
+                video_token = next((token for token in parts if Path(token).suffix), parts[0])
+                parent = Path(video_token).parent.name
+                if not parent or parent == ".":
+                    continue
+                name = parent.replace("_", " ").strip()
+                previous = inferred.get(label)
+                if previous is not None and previous != name:
+                    raise ValueError(
+                        "conflicting inferred class text for label %d: %r versus %r"
+                        % (label, previous, name)
+                    )
+                inferred[label] = name
+    if len(inferred) == num_classes:
+        return [inferred[index] for index in range(num_classes)], inspected
+    return None, inspected
+
+
+def load_class_names(args, num_classes, cfg=None):
+    cfg = cfg or resolve_dataset_config(args)
+    if args.class_names:
+        names = _read_plain_class_names(args.class_names)
+        return _validate_class_names(names, num_classes, args.class_names)
+    elif args.label_csv:
+        names = _read_class_csv(args.label_csv)
+        return _validate_class_names(names, num_classes, args.label_csv)
+
+    configured = cfg.get("CLASS_NAMES")
+    if configured and os.path.isfile(configured):
+        names = _read_plain_class_names(configured)
+        return _validate_class_names(names, num_classes, configured)
+
+    inferred, inspected = _infer_class_names_from_lists(cfg, num_classes, args.dataset)
+    if inferred is not None:
+        return inferred
+    raise ValueError(
+        "cannot obtain %d semantic class texts for dataset %s from lists %s. "
+        "Pass --class-names or --label-csv; numeric placeholders are forbidden for CLIP training."
+        % (num_classes, args.dataset, inspected or "<no existing list files>")
+    )
+
+
+def build_datasets(args, class_names=None, cfg=None):
+    cfg = cfg or resolve_dataset_config(args)
+    class_to_idx = None
+    if class_names is not None:
+        class_to_idx = {}
+        for index, name in enumerate(class_names):
+            class_to_idx[name] = index
+            class_to_idx[name.replace(" ", "_")] = index
     common = dict(
         dataset_name=args.dataset,
         num_classes=cfg["NUM_CLASSES"],
@@ -136,6 +289,7 @@ def build_datasets(args):
         compressed_video_root=cfg.get("COMPRESSED_VIDEO_ROOT", None),
         coviar_data_loader_dir=args.coviar_data_loader_dir,
         verify_paths=args.verify_compressed_inputs,
+        class_to_idx=class_to_idx,
     )
     train_dataset = None
     if not args.eval:
@@ -154,6 +308,28 @@ def build_datasets(args):
         **common,
     )
     return train_dataset, val_dataset
+
+
+class DistributedEvalSampler(Sampler):
+    """Shard evaluation without the duplicate padding used by DistributedSampler."""
+
+    def __init__(self, dataset, num_replicas=None, rank=None):
+        if num_replicas is None:
+            num_replicas = dist.get_world_size()
+        if rank is None:
+            rank = dist.get_rank()
+        if num_replicas <= 0 or rank < 0 or rank >= num_replicas:
+            raise ValueError("invalid distributed sampler rank/world: %d/%d" % (rank, num_replicas))
+        self.dataset = dataset
+        self.num_replicas = int(num_replicas)
+        self.rank = int(rank)
+
+    def __iter__(self):
+        return iter(range(self.rank, len(self.dataset), self.num_replicas))
+
+    def __len__(self):
+        remaining = max(0, len(self.dataset) - self.rank)
+        return (remaining + self.num_replicas - 1) // self.num_replicas
 
 
 def build_scheduler(optimizer, steps_per_epoch, args):
@@ -322,11 +498,22 @@ def run_pretrained_audit(model, args, device):
 def main_worker():
     args = parse_args()
     apply_model_variant_defaults(args)
-    if args.micro_batch_size < 1:
-        raise ValueError("--micro-batch-size must be >= 1.")
+    if args.micro_batch_size < 0:
+        raise ValueError("--micro-batch-size must be >= 0.")
+    if args.test_num_temporal_views < 1:
+        raise ValueError("--test-num-temporal-views must be >= 1.")
+    if args.test_num_spatial_crops not in (1, 3):
+        raise ValueError("--test-num-spatial-crops must be 1 or 3.")
+    if args.preflight_only:
+        args.preflight_compressed_inputs = True
     if args.synthetic_smoke:
         synthetic_smoke(args)
         return
+    if not args.clip_checkpoint and not args.resume and not args.allow_random_init:
+        raise RuntimeError(
+            "real EM-CLIP training/evaluation requires --clip-checkpoint or --resume. "
+            "Use --allow-random-init only for an explicit initialization ablation."
+        )
     set_seed(args.seed)
     device = init_distributed()
     if is_main_process():
@@ -336,8 +523,18 @@ def main_worker():
             % (world, device, args.batch_size, args.micro_batch_size),
             flush=True,
         )
-    cfg = DATASETS[args.dataset]
-    class_names = load_class_names(args, cfg["NUM_CLASSES"])
+    cfg = resolve_dataset_config(args)
+    try:
+        class_names = load_class_names(args, cfg["NUM_CLASSES"], cfg=cfg)
+    except ValueError:
+        if not args.pretrained_audit_only:
+            raise
+        class_names = ["audit class %d" % index for index in range(cfg["NUM_CLASSES"])]
+        if is_main_process():
+            print(
+                "[emclip][pretrained] class texts unavailable; using audit-only placeholders",
+                flush=True,
+            )
     model_config = build_emclip_config_from_args(args, class_names)
     model = EMCLIP(model_config).to(device)
     if is_main_process():
@@ -348,12 +545,21 @@ def main_worker():
         print(args)
         print("Total params: %d (%.2f M)" % (total, total / 1e6))
         print("Trainable params: %d (%.2f M)" % (trainable, trainable / 1e6))
+        if (
+            args.mgse_text_mode == "ground_truth"
+            and args.allow_mgse_label_leakage_for_diagnostic
+        ):
+            print(
+                "WARNING: ground-truth MGSE selection is enabled for diagnostic use; "
+                "reported validation accuracy contains label leakage.",
+                flush=True,
+            )
 
     if args.pretrained_audit_only:
         run_pretrained_audit(model, args, device)
         return
 
-    train_dataset, val_dataset = build_datasets(args)
+    train_dataset, val_dataset = build_datasets(args, class_names=class_names, cfg=cfg)
     if is_main_process():
         print(
             "[emclip] datasets ready train=%s val=%d"
@@ -366,18 +572,59 @@ def main_worker():
             raise RuntimeError("cannot preflight an empty compressed-video dataset")
         sample = preflight_dataset.preflight(0)
         print(
-            "[emclip] compressed preflight OK path=%s I=%s MV=%s R=%s gops=%s"
+            "[emclip] compressed preflight OK path=%s label=%d I=%s MV=%s R=%s gops=%s candidates=%s"
             % (
                 sample["metadata"]["video_path"],
+                int(sample["label"]),
                 tuple(sample["i_frames"].shape),
                 tuple(sample["motion_vectors"].shape),
                 tuple(sample["residuals"].shape),
                 sample["metadata"]["gop_count"],
+                sample["candidate_gop_indices"].tolist(),
+            ),
+            flush=True,
+        )
+        for name in ("i_frames", "motion_vectors", "residuals"):
+            value = sample[name].float()
+            print(
+                "[emclip] %s dtype=%s min=%.6g max=%.6g mean=%.6g"
+                % (
+                    name,
+                    sample[name].dtype,
+                    float(value.min()),
+                    float(value.max()),
+                    float(value.mean()),
+                ),
+                flush=True,
+            )
+        model.eval()
+        with torch.no_grad():
+            preflight_output = model(
+                i_frames=sample["i_frames"].unsqueeze(0).to(device),
+                motion_vectors=(
+                    sample["motion_vectors"].unsqueeze(0).to(device)
+                    if model.use_mgse
+                    else None
+                ),
+                residuals=sample["residuals"].unsqueeze(0).to(device),
+                labels=None,
+                valid_mask=sample["valid_mask"].unsqueeze(0).to(device),
+                training_mode=False,
+            )
+        if not torch.isfinite(preflight_output["logits"]).all():
+            raise FloatingPointError("real compressed preflight forward produced non-finite logits")
+        print(
+            "[emclip] real no_grad forward OK logits=%s selected=%s"
+            % (
+                tuple(preflight_output["logits"].shape),
+                preflight_output["selected_indices"].detach().cpu().tolist(),
             ),
             flush=True,
         )
     if args.preflight_compressed_inputs and dist_ready():
         dist.barrier()
+    if args.preflight_only:
+        return
     if train_dataset is not None:
         train_sampler = DistributedSampler(train_dataset, shuffle=True) if dist_ready() else None
         train_loader = DataLoader(
@@ -392,7 +639,7 @@ def main_worker():
     else:
         train_sampler = None
         train_loader = None
-    val_sampler = DistributedSampler(val_dataset, shuffle=False) if dist_ready() else None
+    val_sampler = DistributedEvalSampler(val_dataset) if dist_ready() else None
     val_loader = DataLoader(
         val_dataset,
         batch_size=max(1, args.batch_size // 2),
@@ -461,11 +708,11 @@ def main_worker():
         val_stats = evaluate(model, val_loader, device, args)
         if is_main_process():
             print("epoch=%d train=%s val=%s" % (epoch, train_stats, val_stats))
-            latest = os.path.join(args.output_dir, "latest.pth")
-            save_checkpoint(latest, model, optimizer, scheduler, scaler, epoch, best_acc1)
             if val_stats["val_acc1"] > best_acc1:
                 best_acc1 = val_stats["val_acc1"]
                 save_checkpoint(os.path.join(args.output_dir, "model_best.pth"), model, optimizer, scheduler, scaler, epoch, best_acc1)
+            latest = os.path.join(args.output_dir, "latest.pth")
+            save_checkpoint(latest, model, optimizer, scheduler, scaler, epoch, best_acc1)
 
 
 @record

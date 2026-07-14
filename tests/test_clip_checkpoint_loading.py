@@ -28,7 +28,7 @@ def _tiny_config(checkpoint=None):
         text_heads=4,
         text_layers=2,
         text_context_length=8,
-        vocab_size=64,
+        vocab_size=49408,
         temporal_aggregator_layers=1,
         clip_checkpoint=str(checkpoint) if checkpoint is not None else None,
     )

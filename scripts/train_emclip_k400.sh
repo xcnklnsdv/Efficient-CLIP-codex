@@ -13,9 +13,9 @@ if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
 fi
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
-MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-1}
-NUM_WORKERS=${NUM_WORKERS:-0}
-PIN_MEMORY=${PIN_MEMORY:-0}
+MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
+NUM_WORKERS=${NUM_WORKERS:-8}
+PIN_MEMORY=${PIN_MEMORY:-1}
 if [[ -z "${COVIAR_DATA_LOADER_DIR:-}" ]]; then
   if [[ -d "${SCRIPT_DIR}/../pytorch-coviar/data_loader" ]]; then
     COVIAR_DATA_LOADER_DIR="$(cd "${SCRIPT_DIR}/../pytorch-coviar/data_loader" && pwd)"
@@ -28,7 +28,7 @@ OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip}
 VARIANT=${VARIANT:-emclip}
 T=${T:-16}
 K=${K:-8}
-FIND_UNUSED_PARAMETERS=${FIND_UNUSED_PARAMETERS:-true}
+FIND_UNUSED_PARAMETERS=${FIND_UNUSED_PARAMETERS:-false}
 DEBUG_UNUSED_PARAMETERS=${DEBUG_UNUSED_PARAMETERS:-false}
 STAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_DIR="${OUTPUT_ROOT}/${DATASET}_${VARIANT}_T${T}_K${K}_${STAMP}"
@@ -74,6 +74,11 @@ fi
 if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
   [[ -f "${CLIP_CHECKPOINT}" ]] || { echo "CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2; exit 1; }
   CMD+=(--clip-checkpoint "${CLIP_CHECKPOINT}")
+fi
+if [[ -n "${CLASS_NAMES:-}" ]]; then
+  CMD+=(--class-names "${CLASS_NAMES}")
+elif [[ -n "${LABEL_CSV:-}" ]]; then
+  CMD+=(--label-csv "${LABEL_CSV}")
 fi
 
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"

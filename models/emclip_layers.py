@@ -47,10 +47,18 @@ class TransformerBlock(nn.Module):
                 nn.init.xavier_uniform_(module.weight)
                 nn.init.zeros_(module.bias)
 
-    def forward(self, x):
+    def forward(self, x, attn_mask=None, key_padding_mask=None):
         # x: [B, N, D]
         assert x.ndim == 3, "TransformerBlock expects [B, N, D]."
-        attn_out = self.attn(self.ln_1(x), self.ln_1(x), self.ln_1(x), need_weights=False)[0]
+        normalized = self.ln_1(x)
+        attn_out = self.attn(
+            normalized,
+            normalized,
+            normalized,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            need_weights=False,
+        )[0]
         x = x + attn_out
         x = x + self.mlp(self.ln_2(x))
         return x

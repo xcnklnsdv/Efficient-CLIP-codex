@@ -7,17 +7,41 @@ def _dist_ready():
     return dist.is_available() and dist.is_initialized()
 
 
+class _AllGatherWithGrad(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, value):
+        world_size = dist.get_world_size()
+        local_size = torch.tensor([value.size(0)], dtype=torch.long, device=value.device)
+        sizes = [torch.zeros_like(local_size) for _ in range(world_size)]
+        dist.all_gather(sizes, local_size)
+        sizes = [int(size.item()) for size in sizes]
+        if len(set(sizes)) != 1:
+            raise RuntimeError(
+                "gradient-preserving DDP all_gather requires equal local batch sizes; got %s"
+                % sizes
+            )
+        gathered = [torch.zeros_like(value) for _ in range(world_size)]
+        dist.all_gather(gathered, value)
+        ctx.local_size = value.size(0)
+        ctx.rank = dist.get_rank()
+        return torch.cat(gathered, dim=0)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        grad_output = grad_output.contiguous()
+        dist.all_reduce(grad_output, op=dist.ReduceOp.SUM)
+        start = ctx.rank * ctx.local_size
+        return grad_output.narrow(0, start, ctx.local_size).contiguous()
+
+
 def all_gather_with_grad(x):
     if not _dist_ready():
         return x
     try:
         from torch.distributed.nn.functional import all_gather
-        return torch.cat(tuple(all_gather(x)), dim=0)
-    except Exception:
-        gathered = [torch.zeros_like(x) for _ in range(dist.get_world_size())]
-        dist.all_gather(gathered, x)
-        gathered[dist.get_rank()] = x
-        return torch.cat(gathered, dim=0)
+    except (ImportError, AttributeError):
+        return _AllGatherWithGrad.apply(x)
+    return torch.cat(tuple(all_gather(x)), dim=0)
 
 
 def all_gather_no_grad(x):

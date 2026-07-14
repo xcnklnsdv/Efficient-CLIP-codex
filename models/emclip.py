@@ -1,6 +1,4 @@
 import argparse
-import hashlib
-import re
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -17,6 +15,7 @@ from .clip_checkpoint import (
     load_clip_source_checkpoint,
     load_submodule_with_audit,
 )
+from .clip_tokenizer import OpenAIClipBPETokenizer
 from .emclip_layers import LayerNorm, TransformerBlock
 from .emclip_melsc import MotionEmbeddedLongTermSpatiotemporalCorrelation
 from .emclip_mgse import (
@@ -24,9 +23,6 @@ from .emclip_mgse import (
     build_mv_patch_embed_weight,
     gather_temporal,
 )
-
-
-TOKEN_RE = re.compile(r"[A-Za-z0-9_'-]+")
 
 
 def _is_rank_zero():
@@ -66,6 +62,7 @@ class EMCLIPConfig:
     allow_mgse_label_leakage_for_diagnostic: bool = False
     debug_shapes: bool = False
     clip_checkpoint: Optional[str] = None
+    clip_bpe_path: Optional[str] = None
 
     def __post_init__(self):
         if self.width % self.heads != 0:
@@ -88,42 +85,6 @@ class EMCLIPConfig:
             raise ValueError("emclip_variant must be 'emclip' or 'diamond'.")
 
 
-class HashTokenizer:
-    """Small deterministic tokenizer used when no OpenAI CLIP tokenizer is present."""
-
-    pad_id = 0
-    sot_id = 1
-    eot_id = 2
-
-    def __init__(self, vocab_size=49408, context_length=77):
-        self.vocab_size = vocab_size
-        self.context_length = context_length
-
-    def _word_id(self, word):
-        digest = hashlib.md5(word.lower().encode("utf-8")).hexdigest()
-        return 3 + (int(digest[:8], 16) % max(1, self.vocab_size - 3))
-
-    def _words(self, text):
-        return TOKEN_RE.findall(text.lower())
-
-    def encode_prompt(self, template, label):
-        prefix, suffix = template.split("{}", 1)
-        prefix_words = self._words(prefix)
-        label_words = self._words(label)
-        suffix_words = self._words(suffix)
-        words = prefix_words + label_words + suffix_words
-        tokens = [self.sot_id] + [self._word_id(w) for w in words] + [self.eot_id]
-        if len(tokens) > self.context_length:
-            raise RuntimeError("prompt is too long for context length %d: %s" % (self.context_length, label))
-        token_tensor = torch.zeros(self.context_length, dtype=torch.long)
-        token_tensor[:len(tokens)] = torch.tensor(tokens, dtype=torch.long)
-        label_mask = torch.zeros(self.context_length, dtype=torch.bool)
-        start = 1 + len(prefix_words)
-        label_mask[start:start + len(label_words)] = True
-        eot_position = len(tokens) - 1
-        return token_tensor, label_mask, eot_position
-
-
 class PromptTextEncoder(nn.Module):
     """CLIP-style text encoder for class EOT and label-word token features."""
 
@@ -138,6 +99,7 @@ class PromptTextEncoder(nn.Module):
         vocab_size=49408,
         prompt_templates=None,
         dropout=0.0,
+        bpe_path=None,
     ):
         super().__init__()
         self.class_names = list(class_names)
@@ -146,7 +108,12 @@ class PromptTextEncoder(nn.Module):
         for template in self.prompt_templates:
             if "{}" not in template:
                 raise ValueError("prompt template must contain '{}': %s" % template)
-        self.tokenizer = HashTokenizer(vocab_size=vocab_size, context_length=context_length)
+        self.tokenizer = OpenAIClipBPETokenizer(bpe_path=bpe_path, context_length=context_length)
+        if vocab_size != self.tokenizer.vocab_size:
+            raise ValueError(
+                "text vocab_size=%d does not match OpenAI CLIP tokenizer vocab_size=%d"
+                % (vocab_size, self.tokenizer.vocab_size)
+            )
         self.token_embedding = nn.Embedding(vocab_size, width)
         self.positional_embedding = nn.Parameter(torch.empty(context_length, width))
         self.blocks = nn.ModuleList([TransformerBlock(width, heads, dropout=dropout) for _ in range(layers)])
@@ -168,7 +135,11 @@ class PromptTextEncoder(nn.Module):
         template_ids = []
         for class_idx, name in enumerate(self.class_names):
             for template_idx, template in enumerate(self.prompt_templates):
-                tokens, label_mask, eot = self.tokenizer.encode_prompt(template, name)
+                token_ids, label_span, eot = self.tokenizer.encode_prompt(template, name)
+                tokens = torch.zeros(self.context_length, dtype=torch.long)
+                tokens[:len(token_ids)] = torch.tensor(token_ids, dtype=torch.long)
+                label_mask = torch.zeros(self.context_length, dtype=torch.bool)
+                label_mask[label_span[0]:label_span[1]] = True
                 token_rows.append(tokens)
                 label_masks.append(label_mask)
                 eot_positions.append(eot)
@@ -185,13 +156,21 @@ class PromptTextEncoder(nn.Module):
     def _encode_tokens(self, tokens):
         x = self.token_embedding(tokens)
         x = x + self.positional_embedding.to(device=x.device, dtype=x.dtype)
+        causal_mask = torch.full(
+            (self.context_length, self.context_length),
+            float("-inf"),
+            dtype=x.dtype,
+            device=x.device,
+        ).triu_(1)
         for block in self.blocks:
-            x = block(x)
+            x = block(x, attn_mask=causal_mask)
         x = self.ln_final(x)
         return x
 
     def encode_class_prompts(self, training_mode=True):
         device = self.text_projection.device
+        if training_mode:
+            self.clear_cache()
         if (not training_mode) and self._eval_cache is not None and self._eval_cache[0].device == device:
             return self._eval_cache
         tokens, label_masks, eot_positions, class_ids, _ = self._tokenize_templates(device)
@@ -230,6 +209,11 @@ class PromptTextEncoder(nn.Module):
     def clear_cache(self):
         self._eval_cache = None
 
+    def train(self, mode=True):
+        if mode:
+            self.clear_cache()
+        return super().train(mode)
+
 
 def _select_diamond_indices(valid_mask, selected_frames):
     assert valid_mask.ndim == 2, "valid_mask must be [B, T]."
@@ -266,6 +250,7 @@ class EMCLIP(nn.Module):
             vocab_size=config.vocab_size,
             prompt_templates=config.prompt_templates,
             dropout=config.dropout,
+            bpe_path=config.clip_bpe_path,
         )
         self.use_mgse = config.emclip_variant == "emclip"
         self.mgse = MotionGuidedSaliencyExtraction(
@@ -447,9 +432,7 @@ class EMCLIP(nn.Module):
                     "melsc.gs_" in name or
                     "melsc.lm_" in name or
                     "melsc.temporal_blocks" in name or
-                    "melsc.final_ln" in name or
-                    "melsc.i_encoder.proj" in name or
-                    name == "logit_scale"
+                    "melsc.final_ln" in name
                 )
                 if train_new:
                     parameter.requires_grad = True
@@ -492,6 +475,7 @@ class EMCLIP(nn.Module):
         motion_vectors,
         residuals,
         labels=None,
+        mgse_labels=None,
         valid_mask=None,
         training_mode=None,
     ):
@@ -505,6 +489,10 @@ class EMCLIP(nn.Module):
             valid_mask = valid_mask.to(device=i_frames.device, dtype=torch.bool)
         if labels is not None:
             labels = labels.to(device=i_frames.device, dtype=torch.long)
+        if mgse_labels is None:
+            mgse_labels = labels
+        elif mgse_labels is not None:
+            mgse_labels = mgse_labels.to(device=i_frames.device, dtype=torch.long)
 
         class_text_features, class_token_features, class_token_mask = self.text_encoder.encode_class_prompts(
             training_mode=training_mode
@@ -519,7 +507,7 @@ class EMCLIP(nn.Module):
                 class_text_features=class_text_features,
                 class_token_features=class_token_features,
                 class_token_mask=class_token_mask,
-                labels=labels,
+                labels=mgse_labels,
                 valid_mask=valid_mask,
                 training_mode=training_mode,
             )
@@ -610,6 +598,7 @@ def build_emclip_config_from_args(args, class_names):
         allow_mgse_label_leakage_for_diagnostic=args.allow_mgse_label_leakage_for_diagnostic,
         debug_shapes=args.debug_shapes,
         clip_checkpoint=args.clip_checkpoint,
+        clip_bpe_path=args.clip_bpe_path,
     )
 
 
@@ -631,5 +620,7 @@ def add_emclip_args(parser: argparse.ArgumentParser):
     parser.add_argument("--allow-mgse-label-leakage-for-diagnostic", action="store_true")
     parser.add_argument("--debug-shapes", action="store_true")
     parser.add_argument("--clip-checkpoint", default=None)
+    parser.add_argument("--clip-bpe-path", default=None)
+    parser.add_argument("--allow-random-init", action="store_true")
     parser.add_argument("--pretrained-audit-only", action="store_true")
     return parser

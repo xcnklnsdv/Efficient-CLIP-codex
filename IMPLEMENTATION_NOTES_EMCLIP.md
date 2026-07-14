@@ -119,22 +119,58 @@ best accuracy.
 - `class_bank`: default for validation/test; it never reads labels for selected indices.
 - `predicted_class`: predicts a class from motion features first, then uses that class text.
 
+Evaluation normally passes no labels into model selection. For the explicitly
+leaky diagnostic only, `engine_emclip.evaluate` passes labels through the separate
+`mgse_labels` argument; classification loss remains disabled for individual
+views. This makes the warning flag functional without conflating selection labels
+with training targets.
+
+## CLIP Text Tokenization and Attention
+
+`models/clip_tokenizer.py` implements the OpenAI CLIP byte-level BPE tokenizer
+against the vendored official `bpe_simple_vocab_16e6.txt.gz` asset (SHA-256
+`924691ac288e54409236115652ad4aa250f48203de50a9e4722a6ecd48d6804a`).
+The tokenizer validates the 49,408-entry vocabulary and SOT/EOT ids 49406/49407.
+Label-word masks are the exact BPE span of the `{}` placeholder, so padding,
+SOT, and EOT are excluded. The text Transformer uses the same causal attention
+mask as CLIP. Entering training clears evaluation text caches; a later evaluation
+therefore cannot reuse features from an older text-encoder state.
+
 ## Losses and DDP
 
 `L_MG` constructs multi-positive targets where samples with identical labels are positives. It uses `F.kl_div(..., reduction="batchmean")`. Feature all-gather preserves gradients when `torch.distributed.nn.functional.all_gather` is available and falls back safely otherwise. Label all-gather is no-grad.
+
+The gradient-preserving fallback is a custom autograd all-gather with an
+all-reduce in backward; it does not detach remote features. Training forbids
+splitting a DataLoader batch while `L_MG` is enabled because a per-micro-batch
+all-gather would change the contrastive denominator and same-class positive bank.
+Distributed validation uses a non-padding sampler, so metric sums never include
+the duplicate samples inserted by PyTorch's training `DistributedSampler`.
 
 ## Hyperparameters
 
 Paper-specified defaults: epochs 30, LR `8e-6`, cosine schedule, input 256, tau `0.01`, ViT-B/16, GOP size 12, `T=16`, `K=8`.
 
-Engineering assumptions: AdamW, betas `(0.9,0.98)`, eps `1e-6`, weight decay `0.2`, warmup 0, batch size per GPU 4, `--micro-batch-size 1` by default, grad clip 1.0, seed 1024, AMP on scripts, workers 8. The effective batch is split into GPU micro-batches and gradients are accumulated. LR is not scaled by world size unless `--scale-lr-by-global-batch` is passed.
+Engineering assumptions: AdamW, betas `(0.9,0.98)`, eps `1e-6`, weight decay `0.2`, warmup 0, batch size per GPU 4, full-batch forward for `L_MG`, grad clip 1.0, seed 1024, AMP on scripts, workers 8, and pinned memory. LR is not scaled by world size unless `--scale-lr-by-global-batch` is passed. Non-finite gradients raise with the affected parameter names instead of silently advancing the scheduler after a skipped optimizer step.
 
-由于论文未公开源码，并且没有完整披露优化器、batch size、参数冻结策略、MGSE测试阶段类别文本来源等细节，本实现属于基于论文公式和描述的工程复现，不能保证与作者私有实现逐行一致。
+The paper does not publish source code or fully specify optimizer, batch size,
+freezing, and MGSE inference details. These choices are engineering assumptions;
+this implementation does not claim line-by-line identity with the private code or
+guaranteed reproduction of the reported accuracy.
 
 ## Known Differences
 
-The text encoder uses a deterministic local tokenizer when the OpenAI CLIP tokenizer is not present. Local checkpoints can be loaded through `--clip-checkpoint`, but no network download is attempted.
-The shell launchers default to `CLIP_CHECKPOINT=/home/fuh/CLIP-models/ViT-B-16.pt`, accept an environment override, and append the corresponding CLI argument; they fall back to a repository-local file only when it exists.
+No runtime network download is attempted. The shell launchers default to
+`CLIP_CHECKPOINT=/home/fuh/CLIP-models/ViT-B-16.pt`, accept an environment
+override, and append the corresponding CLI argument; they fall back to a
+repository-local file only when it exists. Real training without a CLIP or resume
+checkpoint is rejected unless `--allow-random-init` explicitly marks an ablation.
+
+HMDB51/UCF101/K400 class names may be inferred from real list path parents and
+validated by numeric label. SSV2 requires an explicit semantic class-name file.
+The `freeze_clip` mode leaves original text, visual projections, and logit scale
+frozen while training MGSE projection, GSPL, LMPL, temporal aggregation, and
+other new layers.
 
 ## Commands
 

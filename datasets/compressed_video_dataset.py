@@ -333,16 +333,32 @@ def sample_gop_indices(
 ):
     if num_frames <= 0:
         raise ValueError("num_frames must be positive, got %d." % num_frames)
+    if candidate_frames <= 0:
+        raise ValueError("candidate_frames must be positive, got %d." % candidate_frames)
+    if gop_size <= 0:
+        raise ValueError("gop_size must be positive, got %d." % gop_size)
+    if num_temporal_views <= 0 or temporal_view < 0 or temporal_view >= num_temporal_views:
+        raise ValueError(
+            "temporal_view=%d must be in [0, num_temporal_views=%d)."
+            % (temporal_view, num_temporal_views)
+        )
     if gop_count is None:
         gop_count = int(math.ceil(float(num_frames) / float(gop_size)))
     gop_count = max(1, int(gop_count))
     if gop_count >= candidate_frames:
-        boundaries = np.linspace(0, gop_count, candidate_frames + 1)
+        # Consecutive integer half-open intervals guarantee that two temporal
+        # segments can never sample the same GOP.
+        boundaries = [
+            (segment * gop_count) // candidate_frames
+            for segment in range(candidate_frames + 1)
+        ]
         indices = []
-        for start_f, end_f in zip(boundaries[:-1], boundaries[1:]):
-            start = int(math.floor(start_f))
-            end = max(start + 1, int(math.ceil(end_f)))
-            end = min(end, gop_count)
+        for start, end in zip(boundaries[:-1], boundaries[1:]):
+            if end <= start:
+                raise RuntimeError(
+                    "internal GOP segmentation error: segment [%d, %d) is empty"
+                    % (start, end)
+                )
             if random_sample:
                 indices.append(random.randint(start, end - 1))
             else:
@@ -350,7 +366,8 @@ def sample_gop_indices(
                     frac = 0.5
                 else:
                     frac = (temporal_view + 0.5) / float(num_temporal_views)
-                indices.append(min(end - 1, start + int(math.floor((end - start) * frac))))
+                offset = min(end - start - 1, int(math.floor((end - start) * frac)))
+                indices.append(start + offset)
         valid = [True] * candidate_frames
     else:
         indices = np.round(np.linspace(0, gop_count - 1, candidate_frames)).astype(np.int64).tolist()
@@ -416,7 +433,10 @@ class CompressedVideoDataset(torch.utils.data.Dataset):
         """Decode one sample synchronously for a safe single-process smoke test."""
         if index < 0 or index >= len(self.items):
             raise IndexError("preflight index %d is outside dataset length %d" % (index, len(self.items)))
-        return self._load_view(self.items[index], temporal_view=0, crop_id=0)
+        item = self.items[index]
+        sample = self._load_view(item, temporal_view=0, crop_id=0)
+        sample["label"] = torch.tensor(item.label, dtype=torch.long)
+        return sample
 
     def _prepare_iframe(self, arr):
         if arr is None:

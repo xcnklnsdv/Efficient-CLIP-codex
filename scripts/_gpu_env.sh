@@ -7,8 +7,9 @@
 #   GPUS=2 bash scripts/eval   _emclip_ucf101.sh
 #   CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
 #
-# If NPROC_PER_NODE is not explicitly set, it is derived from GPU_IDS, GPUS,
-# or CUDA_VISIBLE_DEVICES. The local default below pins scripts to GPU 4 and 5.
+# If NPROC_PER_NODE is not explicitly set, it is derived from an explicitly
+# supplied GPU list. Otherwise torchrun defaults to four local processes without
+# changing CUDA_VISIBLE_DEVICES.
 
 if [[ -z "${COVIAR_FFMPEG_LIB:-}" ]]; then
   _EMCLIP_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,8 +22,7 @@ fi
 export COVIAR_FFMPEG_LIB
 export LD_LIBRARY_PATH="${COVIAR_FFMPEG_LIB}:${LD_LIBRARY_PATH:-}"
 
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-4,5}
-GPU_IDS=${GPU_IDS:-${GPUS:-${CUDA_VISIBLE_DEVICES}}}
+GPU_IDS=${GPU_IDS:-${GPUS:-${CUDA_VISIBLE_DEVICES:-}}}
 GPU_IDS="${GPU_IDS//[[:space:]]/}"
 
 if [[ -n "${GPU_IDS}" ]]; then

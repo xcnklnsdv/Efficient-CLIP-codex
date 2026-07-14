@@ -9,6 +9,7 @@ The implementation provides:
 - `L_MG` multi-positive bidirectional KL and `L_ME` video-text classification CE.
 - CoViAR-backed compressed dataset loading for I/MV/Residual.
 - DDP, AMP, resume, latest/best checkpoint, 1-view and multi-view evaluation support.
+- The official offline OpenAI CLIP BPE vocabulary and causal text attention.
 
 ## Quick Checks
 
@@ -32,9 +33,19 @@ interpolated from the checkpoint grid (normally 14x14) to the configured grid
 CLIP text width/heads 512/8. Every branch must reach at least 99% parameter
 coverage.
 
+The repository includes `models/bpe_simple_vocab_16e6.txt.gz` from the official
+OpenAI CLIP repository. Prompts use the original 49,408-token BPE vocabulary,
+SOT/EOT ids 49406/49407, causal text attention, and BPE-derived label-token
+masks. No tokenizer or model file is downloaded at runtime. Use
+`--clip-bpe-path` only for an equivalent local vocabulary asset.
+
 `--resume` is intentionally separate. It only accepts an EM-CLIP training
 checkpoint containing `model`, `optimizer`, `scheduler`, `scaler`, `epoch`, and
 `best_acc1`; it is not a fallback for original CLIP files.
+
+Real training refuses silent random initialization. Pass `--clip-checkpoint`, or
+resume a complete EM-CLIP checkpoint with `--resume`. `--allow-random-init` is
+reserved for an explicit initialization ablation.
 
 Audit a real checkpoint without constructing dataset loaders or training:
 
@@ -68,7 +79,7 @@ Override common settings:
 
 ```bash
 NPROC_PER_NODE=1 BATCH_SIZE=2 MASTER_PORT=29601 bash scripts/train_emclip_hmdb51.sh
-NPROC_PER_NODE=4 BATCH_SIZE=16 MICRO_BATCH_SIZE=1 bash scripts/train_emclip_hmdb51.sh
+NPROC_PER_NODE=4 BATCH_SIZE=4 bash scripts/train_emclip_hmdb51.sh
 RESUME=output_dir/emclip/run/latest.pth bash scripts/train_emclip_hmdb51.sh
 GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh
 GPU_IDS=2 bash scripts/train_emclip_ucf101.sh
@@ -76,14 +87,29 @@ CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
 NUM_WORKERS=8 PIN_MEMORY=1 bash scripts/train_emclip_hmdb51.sh
 COVIAR_DATA_LOADER_DIR=/home/fuh/Efficient-CLIP-codex/pytorch-coviar/data_loader bash scripts/train_emclip_hmdb51.sh
 CLIP_CHECKPOINT=/home/fuh/CLIP-models/ViT-B-16.pt bash scripts/train_emclip_hmdb51.sh
+CLASS_NAMES=/path/to/ssv2_classes.txt bash scripts/train_emclip_ssv2.sh
 python main_emclip.py --dataset hmdb51_mpeg4 --preflight-compressed-inputs --num-workers 0 --no-pin-memory
 ```
 
-`GPU_IDS`, `GPUS`, and `CUDA_VISIBLE_DEVICES` all work. If `NPROC_PER_NODE` is not set, the scripts derive it from the number of comma-separated GPU ids.
-The scripts default to `NUM_WORKERS=0` and `PIN_MEMORY=0` because some CoViAR builds segfault inside PyTorch DataLoader worker subprocesses. Increase workers only after a single-process data smoke test is stable.
-`BATCH_SIZE` is the effective per-GPU batch; `MICRO_BATCH_SIZE` bounds each GPU forward and defaults to 1, so larger batches use gradient accumulation instead of moving all frames to the GPU at once.
+`GPU_IDS`, `GPUS`, and `CUDA_VISIBLE_DEVICES` all work. The scripts never assign
+a GPU id by default. Without an explicit GPU list they use
+`NPROC_PER_NODE=4`; with a list they derive the process count from it.
+The engineering defaults are `NUM_WORKERS=8` and pinned memory enabled. Diagnose
+worker-unsafe CoViAR builds with `NUM_WORKERS=0 PIN_MEMORY=0` and
+`--preflight-only`.
+`BATCH_SIZE` is the effective per-GPU batch. Training defaults
+`MICRO_BATCH_SIZE=BATCH_SIZE`: splitting a batch while `L_MG` is enabled is
+rejected because it changes the global contrastive positive/negative bank.
+Evaluation may use `MICRO_BATCH_SIZE=1` because it does not compute `L_MG`.
 Training and evaluation scripts append `--clip-checkpoint "${CLIP_CHECKPOINT}"`; the default is `/home/fuh/CLIP-models/ViT-B-16.pt`, with an environment override and a repository-local fallback when available.
 The scripts prefer a local `pytorch-coviar/data_loader` directory when present, then fall back to `/home/fuh/m2clip/Coviar/data_loader`. Build the extension with `cd pytorch-coviar/data_loader && bash install.sh` if `coviar*.so` is missing.
+
+HMDB51, UCF101, and K400 semantic class text can be inferred from class-directory
+names when every label is present in the real lists. SSV2 numeric IDs do not
+contain class semantics, so pass `CLASS_NAMES`/`--class-names` or
+`LABEL_CSV`/`--label-csv`. Numeric placeholders such as `class 0` are rejected.
+Dataset locations can be overridden with `--train-root`, `--val-root`,
+`--train-list`, `--val-list`, and `--compressed-video-root`.
 
 EM-CLIP-diamond examples:
 
@@ -105,6 +131,11 @@ Paper-style 4 temporal views x 3 spatial crops:
 ```bash
 RESUME=/path/to/model_best.pth TEMPORAL_VIEWS=4 SPATIAL_CROPS=3 bash scripts/eval_emclip_k400.sh
 ```
+
+`bash scripts/smoke_emclip.sh` always runs synthetic full/diamond checks and then
+attempts one real CoViAR decode plus no-grad forward for all four datasets.
+Missing data, lists, SSV2 class text, checkpoint, or native CoViAR support are
+reported as explicit `SKIP` reasons.
 
 ## Notes
 

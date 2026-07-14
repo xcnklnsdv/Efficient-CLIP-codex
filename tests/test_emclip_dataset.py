@@ -1,12 +1,15 @@
 import torch
+from types import SimpleNamespace
 
 import datasets.compressed_video_dataset as cvd
+from main_emclip import load_class_names
 from datasets.compressed_video_dataset import (
     crop_modalities,
     ensure_coviar_loader,
     horizontal_flip_modalities,
     parse_video_list_line,
     resize_modalities,
+    sample_gop_indices,
 )
 
 
@@ -91,6 +94,51 @@ def test_crop_uses_identical_spatial_window_for_all_modalities():
     assert torch.equal(cropped_i[0, 0], expected)
     assert torch.equal(cropped_mv[0, 0], expected)
     assert torch.equal(cropped_r[0, 0], expected)
+
+
+def test_gop_segments_are_non_overlapping_when_gops_cover_candidates():
+    for seed in range(20):
+        __import__("random").seed(seed)
+        indices, valid_mask, gop_count = sample_gop_indices(
+            num_frames=17 * 12,
+            candidate_frames=16,
+            gop_size=12,
+            random_sample=True,
+            gop_count=17,
+        )
+        assert len(indices) == len(set(indices)) == 16
+        assert valid_mask.all()
+        assert gop_count == 17
+
+
+def test_temporal_views_are_deterministic_and_stay_inside_disjoint_segments():
+    views = []
+    for view in range(4):
+        indices, _, _ = sample_gop_indices(
+            num_frames=64 * 12,
+            candidate_frames=4,
+            gop_size=12,
+            random_sample=False,
+            temporal_view=view,
+            num_temporal_views=4,
+            gop_count=64,
+        )
+        views.append(indices)
+    assert len({tuple(indices) for indices in views}) == 4
+    for indices in views:
+        assert all(segment * 16 <= index < (segment + 1) * 16 for segment, index in enumerate(indices))
+
+
+def test_class_names_are_inferred_by_label_from_realistic_list_paths(tmp_path):
+    train_list = tmp_path / "train.txt"
+    train_list.write_text(
+        "walk/video_a.mp4 120 0\nrun_fast/video_b.mp4 run_fast 1\n",
+        encoding="utf-8",
+    )
+    args = SimpleNamespace(class_names=None, label_csv=None, dataset="unit")
+    cfg = {"TRAIN_LIST": str(train_list), "VAL_LIST": str(train_list)}
+
+    assert load_class_names(args, 2, cfg=cfg) == ["walk", "run fast"]
 
 
 def test_ensure_coviar_loader_accepts_user_supplied_data_loader_dir(tmp_path, monkeypatch):

@@ -51,7 +51,8 @@ def _slice_batch(batch, start, end):
 
 
 def _micro_batch_ranges(batch_size, requested_size):
-    micro_size = max(1, min(int(requested_size), batch_size))
+    requested_size = int(requested_size)
+    micro_size = batch_size if requested_size <= 0 else max(1, min(requested_size, batch_size))
     return [(start, min(batch_size, start + micro_size)) for start in range(0, batch_size, micro_size)]
 
 
@@ -123,6 +124,8 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
     totals = {
         "loss": 0.0,
         "loss_mg": 0.0,
+        "loss_mg_mv2text": 0.0,
+        "loss_mg_text2mv": 0.0,
         "loss_me": 0.0,
         "acc1": 0.0,
         "acc5": 0.0,
@@ -144,12 +147,25 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
             )
         micro_ranges = _micro_batch_ranges(
             batch_size,
-            getattr(args, "micro_batch_size", 1),
+            getattr(args, "micro_batch_size", 0),
         )
+        raw_model = model.module if hasattr(model, "module") else model
+        if (
+            len(micro_ranges) > 1
+            and getattr(raw_model, "use_mgse", False)
+            and float(raw_model.config.lambda_mg) != 0.0
+        ):
+            raise ValueError(
+                "--micro-batch-size cannot split a batch while L_MG is enabled: "
+                "the split would change DDP global positives and negatives. Use 0/full batch, "
+                "or set --lambda-mg 0 for a classification-only ablation."
+            )
         optimizer.zero_grad(set_to_none=True)
         out = None
         batch_loss_total = 0.0
         batch_loss_mg_total = 0.0
+        batch_loss_mg_mv2text_total = 0.0
+        batch_loss_mg_text2mv_total = 0.0
         batch_loss_me_total = 0.0
         for micro_idx, (start, end) in enumerate(micro_ranges):
             batch = move_batch_to_device(_slice_batch(raw_batch, start, end), device)
@@ -181,9 +197,13 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
             micro_bs = end - start
             batch_loss_total += micro_loss.detach().item() * micro_bs
             batch_loss_mg_total += micro_out["loss_mg"].detach().item() * micro_bs
+            batch_loss_mg_mv2text_total += micro_out["loss_mg_mv2text"].detach().item() * micro_bs
+            batch_loss_mg_text2mv_total += micro_out["loss_mg_text2mv"].detach().item() * micro_bs
             batch_loss_me_total += micro_out["loss_me"].detach().item() * micro_bs
             totals["loss"] += micro_loss.detach().item() * micro_bs
             totals["loss_mg"] += micro_out["loss_mg"].detach().item() * micro_bs
+            totals["loss_mg_mv2text"] += micro_out["loss_mg_mv2text"].detach().item() * micro_bs
+            totals["loss_mg_text2mv"] += micro_out["loss_mg_text2mv"].detach().item() * micro_bs
             totals["loss_me"] += micro_out["loss_me"].detach().item() * micro_bs
 
             logits = micro_out["logits"].detach()
@@ -202,6 +222,17 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
             [p for p in model.parameters() if p.requires_grad],
             args.grad_clip_norm,
         )
+        if not torch.isfinite(grad_norm):
+            raw_model = model.module if hasattr(model, "module") else model
+            bad_gradients = [
+                name
+                for name, parameter in raw_model.named_parameters()
+                if parameter.grad is not None and not torch.isfinite(parameter.grad).all()
+            ]
+            raise FloatingPointError(
+                "non-finite gradient norm at epoch=%d step=%d; bad parameters=%s"
+                % (epoch, step, bad_gradients[:20])
+            )
         scaler.step(optimizer)
         scaler.update()
         if scheduler is not None:
@@ -209,12 +240,15 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
 
         loss = batch_loss_total / float(batch_size)
         loss_mg = batch_loss_mg_total / float(batch_size)
+        loss_mg_mv2text = batch_loss_mg_mv2text_total / float(batch_size)
+        loss_mg_text2mv = batch_loss_mg_text2mv_total / float(batch_size)
         loss_me = batch_loss_me_total / float(batch_size)
 
         if is_main_process() and step % args.print_freq == 0:
             mem = torch.cuda.max_memory_allocated() / 1024 ** 2 if device.type == "cuda" else 0.0
             print(
-                "epoch=%d step=%d/%d loss=%.4f loss_mg=%.4f loss_me=%.4f "
+                "epoch=%d step=%d/%d loss=%.4f loss_mg=%.4f "
+                "loss_mg_mv2text=%.4f loss_mg_text2mv=%.4f loss_me=%.4f "
                 "acc1=%.2f acc5=%.2f lr=%.8f grad_norm=%.4f entropy=%.4f "
                 "selected_mean=%.2f max_mem=%.0fMB"
                 % (
@@ -223,6 +257,8 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
                     len(loader),
                     loss,
                     loss_mg,
+                    loss_mg_mv2text,
+                    loss_mg_text2mv,
                     loss_me,
                     100.0 * totals["acc1"] / max(1, totals["count"]),
                     100.0 * totals["acc5"] / max(1, totals["count"]),
@@ -239,6 +275,8 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
     result = {
         "loss": reduce_sum(totals["loss"], device_for_reduce) / max(1.0, count),
         "loss_mg": reduce_sum(totals["loss_mg"], device_for_reduce) / max(1.0, count),
+        "loss_mg_mv2text": reduce_sum(totals["loss_mg_mv2text"], device_for_reduce) / max(1.0, count),
+        "loss_mg_text2mv": reduce_sum(totals["loss_mg_text2mv"], device_for_reduce) / max(1.0, count),
         "loss_me": reduce_sum(totals["loss_me"], device_for_reduce) / max(1.0, count),
         "acc1": 100.0 * reduce_sum(totals["acc1"], device_for_reduce) / max(1.0, count),
         "acc5": 100.0 * reduce_sum(totals["acc5"], device_for_reduce) / max(1.0, count),
@@ -252,13 +290,22 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
 def evaluate(model, loader, device, args):
     model.eval()
     totals = {"acc1": 0.0, "acc5": 0.0, "count": 0, "loss_me": 0.0}
+    raw_model = model.module if hasattr(model, "module") else model
+    diagnostic_ground_truth = (
+        getattr(raw_model, "use_mgse", False)
+        and raw_model.config.mgse_text_mode == "ground_truth"
+        and raw_model.config.allow_mgse_label_leakage_for_diagnostic
+    )
     for raw_batch in loader:
         labels = raw_batch["label"].to(device, non_blocking=True)
         flat = _flatten_views(raw_batch)
         flat_logits = []
+        flat_selection_labels = None
+        if diagnostic_ground_truth:
+            flat_selection_labels = labels[:, None].expand(-1, flat["views"]).reshape(-1)
         for start, end in _micro_batch_ranges(
             flat["i_frames"].size(0),
-            getattr(args, "micro_batch_size", 1),
+            getattr(args, "micro_batch_size", 0),
         ):
             micro = {
                 "i_frames": flat["i_frames"][start:end],
@@ -273,6 +320,11 @@ def evaluate(model, loader, device, args):
                     motion_vectors=batch.get("motion_vectors"),
                     residuals=batch["residuals"],
                     labels=None,
+                    mgse_labels=(
+                        flat_selection_labels[start:end]
+                        if flat_selection_labels is not None
+                        else None
+                    ),
                     valid_mask=batch["valid_mask"],
                     training_mode=False,
                 )

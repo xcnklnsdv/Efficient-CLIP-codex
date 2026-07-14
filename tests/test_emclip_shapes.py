@@ -134,6 +134,12 @@ def test_emclip_full_class_bank_saliency_backward_has_no_unused_trainable_parame
         if param.requires_grad and param.grad is None
     ]
     assert unused == []
+    nonfinite = [
+        name
+        for name, param in model.named_parameters()
+        if param.requires_grad and param.grad is not None and not torch.isfinite(param.grad).all()
+    ]
+    assert nonfinite == []
     params = dict(model.named_parameters())
     expected_grad_names = [
         "logit_scale",
@@ -175,3 +181,64 @@ def test_emclip_mean_motion_pooling_freezes_saliency_only_layernorm():
     model = EMCLIP(config)
 
     assert not any(param.requires_grad for param in model.mgse.feature_ln.parameters())
+
+
+def test_ground_truth_diagnostic_uses_separate_selection_labels_during_eval():
+    config = EMCLIPConfig(
+        num_classes=3,
+        class_names=["running", "jumping", "sitting"],
+        candidate_frames=4,
+        selected_frames=2,
+        input_size=64,
+        patch_size=16,
+        width=32,
+        layers=1,
+        heads=4,
+        embed_dim=16,
+        text_width=32,
+        text_heads=4,
+        text_layers=1,
+        mgse_text_mode="ground_truth",
+        allow_mgse_label_leakage_for_diagnostic=True,
+    )
+    model = EMCLIP(config).eval()
+
+    output = model(
+        i_frames=torch.randn(2, 4, 3, 64, 64),
+        motion_vectors=torch.randn(2, 4, 2, 64, 64),
+        residuals=torch.randn(2, 4, 3, 64, 64),
+        labels=None,
+        mgse_labels=torch.tensor([0, 2]),
+        valid_mask=torch.ones(2, 4, dtype=torch.bool),
+        training_mode=False,
+    )
+
+    assert output["loss"] is None
+    assert output["selected_indices"].shape == (2, 2)
+
+
+def test_freeze_clip_only_trains_new_prompt_and_aggregation_parameters():
+    config = EMCLIPConfig(
+        num_classes=2,
+        class_names=["running", "jumping"],
+        candidate_frames=4,
+        selected_frames=2,
+        input_size=64,
+        patch_size=16,
+        width=32,
+        layers=1,
+        heads=4,
+        embed_dim=16,
+        text_width=32,
+        text_heads=4,
+        text_layers=1,
+        emclip_train_mode="freeze_clip",
+    )
+    model = EMCLIP(config)
+
+    assert not model.logit_scale.requires_grad
+    assert not model.melsc.i_encoder.proj.requires_grad
+    assert not model.text_encoder.token_embedding.weight.requires_grad
+    assert model.mgse.motion_encoder.proj.requires_grad
+    assert model.melsc.gs_i_proj[0].weight.requires_grad
+    assert model.melsc.temporal_blocks[0].attn.in_proj_weight.requires_grad
