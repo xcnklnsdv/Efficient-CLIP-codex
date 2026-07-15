@@ -114,13 +114,17 @@ def init_distributed():
 
 def apply_model_variant_defaults(args):
     model = args.model.lower()
-    if "diamond" in model:
+    is_diamond = "diamond" in model
+    if is_diamond:
         args.emclip_variant = "diamond"
     if model.endswith("_k16"):
-        args.candidate_frames = 32
+        # Full EM-CLIP first scores 2K candidate GOPs with MGSE. Diamond has
+        # no candidate-selection stage, so its TSN-style sampler produces the
+        # final K GOPs directly.
+        args.candidate_frames = 16 if is_diamond else 32
         args.selected_frames = 16
     elif model.endswith("_k8"):
-        args.candidate_frames = 16
+        args.candidate_frames = 8 if is_diamond else 16
         args.selected_frames = 8
 
 

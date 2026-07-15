@@ -44,6 +44,7 @@ def test_emclip_synthetic_forward_shapes_and_losses_are_finite():
     assert out["selected_residuals"].shape == (2, 2, 3, 64, 64)
     assert out["melsc_debug"]["gspl"].shape == (2, 2, 32)
     assert out["melsc_debug"]["lmpl"].shape == (2, 2, 32)
+    assert out["melsc_debug"]["residual_frame_cls"].shape == (2, 2, 32)
     assert out["video_features"].shape == (2, 16)
     assert out["logits"].shape == (2, 5)
     assert torch.isfinite(out["loss"])
@@ -73,6 +74,10 @@ def test_emclip_diamond_uses_i_and_residual_without_mgse_loss():
     assert not any(param.requires_grad for param in model.melsc.r_encoder.ln_post.parameters())
     assert not any(param.requires_grad for param in model.melsc.r_encoder.blocks[-1].parameters())
 
+    residual_block_calls = []
+    hook = model.melsc.r_encoder.blocks[-1].register_forward_hook(
+        lambda *_: residual_block_calls.append(True)
+    )
     out = model(
         i_frames=torch.randn(2, 4, 3, 64, 64),
         motion_vectors=None,
@@ -81,10 +86,12 @@ def test_emclip_diamond_uses_i_and_residual_without_mgse_loss():
         valid_mask=torch.ones(2, 4, dtype=torch.bool),
         training_mode=True,
     )
+    hook.remove()
 
     assert out["selected_indices"].shape == (2, 2)
     assert out["loss_mg"].item() == 0.0
     assert torch.isfinite(out["loss"])
+    assert residual_block_calls == [True]
 
 
 def test_emclip_full_class_bank_saliency_backward_has_no_unused_trainable_parameters():

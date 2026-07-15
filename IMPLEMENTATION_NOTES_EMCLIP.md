@@ -55,6 +55,11 @@ MV uses the last valid P-frame without accumulation. Residual uses `accumulate=T
 
 Videos are split into `T` non-overlapping GOP segments. Training randomly picks one GOP per segment. Evaluation picks deterministic per-view offsets. If GOP count is smaller than `T`, indices are repeated uniformly and `valid_mask` remains true because each repeated item maps to an actual GOP.
 
+The named presets use `T=16,K=8` and `T=32,K=16` for full EM-CLIP. Because
+Diamond has no MGSE candidate-selection stage, `emclip_diamond_b16_k8` and
+`emclip_diamond_b16_k16` sample the final GOPs directly with `T=K=8` and
+`T=K=16`, respectively.
+
 ## Transforms and Normalization
 
 Resize, crop, and flip parameters are shared across I/MV/R. Horizontal flip negates MV x. Resize scales MV x and y by width and height ratios. I uses CLIP mean/std. MV is clamped to `[-20,20] / 20`. Residual is divided by 255 and clamped to `[-1,1]`; CLIP mean/std is not applied to residual because residual is not RGB appearance.
@@ -66,6 +71,15 @@ All ViT branches interpolate absolute position embeddings with bicubic interpola
 ## Branch Independence
 
 I, residual, and MV encoders are separate module instances. They do not share `nn.Module` objects.
+
+MELSC executes the matching I-frame and Residual CLIP block at every visual
+layer, including the last Residual block. Prompts at layer `l` use the incoming
+I/R CLS states; the updated Residual state is therefore consumed by layer
+`l+1`. The final updated Residual state is exposed in debug output but is not
+fused into the paper-specified final I-CLS classifier. Its final block,
+`ln_post`, and projection remain frozen because they have no loss path; this
+keeps DDP compatible with `find_unused_parameters=False` without inventing an
+extra Residual classification term.
 
 ## Pretrained CLIP Loading and Audit
 

@@ -126,6 +126,11 @@ VARIANT=diamond T=8 K=8 bash scripts/train_emclip_hmdb51.sh
 VARIANT=diamond T=16 K=16 bash scripts/train_emclip_ucf101.sh
 ```
 
+The equivalent named presets are `emclip_diamond_b16_k8` (`T=K=8`) and
+`emclip_diamond_b16_k16` (`T=K=16`). Full EM-CLIP keeps its MGSE candidate
+bank: `emclip_b16_k8` uses `T=16,K=8`, and `emclip_b16_k16` uses
+`T=32,K=16`.
+
 ## Evaluation
 
 Fast 1x1 evaluation:

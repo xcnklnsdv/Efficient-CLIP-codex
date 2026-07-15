@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from engine_emclip import _finish_optimizer_step, train_one_epoch
-from main_emclip import DistributedEvalSampler
+from main_emclip import DistributedEvalSampler, apply_model_variant_defaults
 from models import EMCLIP, EMCLIPConfig
 
 
@@ -21,6 +21,32 @@ class _SyntheticCompressedDataset(Dataset):
             "valid_mask": torch.ones(4, dtype=torch.bool),
             "label": torch.tensor(index, dtype=torch.long),
         }
+
+
+@pytest.mark.parametrize(
+    ("model_name", "expected_variant", "expected_t", "expected_k"),
+    [
+        ("emclip_b16_k8", "emclip", 16, 8),
+        ("emclip_b16_k16", "emclip", 32, 16),
+        ("emclip_diamond_b16_k8", "diamond", 8, 8),
+        ("emclip_diamond_b16_k16", "diamond", 16, 16),
+    ],
+)
+def test_model_variant_defaults_match_paper_sampling(
+    model_name, expected_variant, expected_t, expected_k
+):
+    args = SimpleNamespace(
+        model=model_name,
+        emclip_variant="emclip",
+        candidate_frames=16,
+        selected_frames=8,
+    )
+
+    apply_model_variant_defaults(args)
+
+    assert args.emclip_variant == expected_variant
+    assert args.candidate_frames == expected_t
+    assert args.selected_frames == expected_k
 
 
 def test_distributed_eval_sampler_never_pads_duplicate_samples():

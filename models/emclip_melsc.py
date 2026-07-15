@@ -71,8 +71,9 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
         """Freeze residual-tail parameters that have no downstream loss path.
 
         Residual tokens are consumed only to generate prompts for I-frame SAG.
-        The last residual block output, residual ln_post, and residual projection
-        are never read by the video classifier or MGSE loss.
+        The final residual block is still executed to keep the two visual
+        branches layer-aligned, but its output, residual ln_post, and residual
+        projection are not consumed by the paper-specified I-CLS classifier.
         """
         if self.r_encoder.proj is not None:
             self.r_encoder.proj.requires_grad = False
@@ -135,17 +136,25 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
             z_i = i_flat[:, :N, :].reshape(B, K, N, self.width)
             assert z_i.shape == (B, K, N, self.width)
 
-            # The residual state is only needed by the next layer's prompt
-            # generator. Updating it after the final layer has no loss consumer.
-            if layer_idx + 1 < self.layers:
+            # Keep I/R visual depth aligned: every residual CLIP block executes.
+            # The final block is frozen because the paper-specified classifier
+            # pools only I-frame CLS tokens, so that tail has no loss path. Run
+            # the frozen tail without autograd to avoid retaining dead activations.
+            if layer_idx + 1 == self.layers:
+                with torch.no_grad():
+                    r_flat = z_r.reshape(B * K, N, self.width)
+                    r_flat = self.r_encoder.blocks[layer_idx](r_flat)
+            else:
                 r_flat = z_r.reshape(B * K, N, self.width)
                 r_flat = self.r_encoder.blocks[layer_idx](r_flat)
-                z_r = r_flat.reshape(B, K, N, self.width)
-                assert z_r.shape == (B, K, N, self.width)
+            z_r = r_flat.reshape(B, K, N, self.width)
+            assert z_r.shape == (B, K, N, self.width)
 
         z_i = self.i_encoder.ln_post(z_i.reshape(B * K, N, self.width)).reshape(B, K, N, self.width)
         frame_cls = z_i[:, :, 0, :]
         assert frame_cls.shape == (B, K, self.width)
+        residual_frame_cls = z_r[:, :, 0, :]
+        assert residual_frame_cls.shape == (B, K, self.width)
         temporal = frame_cls
         for block in self.temporal_blocks:
             temporal = block(temporal)
@@ -160,5 +169,6 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
                 "gspl": last_gs,
                 "lmpl": last_lm,
                 "frame_cls": frame_cls,
+                "residual_frame_cls": residual_frame_cls,
             },
         }
