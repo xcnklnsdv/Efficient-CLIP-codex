@@ -4,7 +4,7 @@
 #
 # Edit this line to choose the default physical GPU ids used by the scripts.
 # Examples: "0", "0,1", "2,3,6,7". An empty string disables the default list.
-EMCLIP_DEFAULT_GPU_IDS="0,1,2,3"
+EMCLIP_DEFAULT_GPU_IDS="6,7"
 #
 # One-off command-line overrides still take priority:
 #   GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh

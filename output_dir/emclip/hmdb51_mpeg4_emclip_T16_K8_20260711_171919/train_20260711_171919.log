@@ -1,0 +1,39 @@
+W0711 17:19:21.250000 686391 site-packages/torch/distributed/run.py:793] 
+W0711 17:19:21.250000 686391 site-packages/torch/distributed/run.py:793] *****************************************
+W0711 17:19:21.250000 686391 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0711 17:19:21.250000 686391 site-packages/torch/distributed/run.py:793] *****************************************
+[emclip] initialized world_size=2 device=cuda:0 batch_size=4 micro_batch_size=1
+[emclip] model moved to device
+Namespace(model='emclip_b16', emclip_variant='emclip', candidate_frames=16, selected_frames=8, gop_size=12, input_size=256, mgse_temperature=0.01, mgse_text_mode='class_bank', mgse_class_aggregation='mean', motion_pooling='saliency', lambda_mg=1.0, lambda_me=1.0, emclip_train_mode='full', temporal_aggregator_layers=1, allow_mgse_label_leakage_for_diagnostic=False, debug_shapes=False, clip_checkpoint=None, dataset='hmdb51_mpeg4', label_csv=None, class_names=None, epochs=30, lr=8e-06, weight_decay=0.2, warmup_epochs=0, batch_size=4, micro_batch_size=1, num_workers=0, pin_memory=False, amp=True, resume=None, output_dir='output_dir/emclip/hmdb51_mpeg4_emclip_T16_K8_20260711_171919', eval=False, test_num_temporal_views=1, test_num_spatial_crops=1, verify_compressed_inputs=False, preflight_compressed_inputs=False, coviar_data_loader_dir='/home/fuh/m2clip/Coviar/data_loader', scale_lr_by_global_batch=False, grad_clip_norm=1.0, seed=1024, print_freq=10, synthetic_smoke=False, find_unused_parameters=False, debug_unused_parameters=False)
+Total params: 467077121 (467.08 M)
+Trainable params: 459594497 (459.59 M)
+[emclip] datasets ready train=3570 val=1530
+[emclip][rank=1] epoch=0 entering DataLoader
+[emclip] DDP wrapper ready
+All params before optimizer: 467077121 (467.08 M)
+Requires-grad params before optimizer: 459594497 (459.59 M)
+Optimizer params: 459594497 (459.59 M)
+[emclip] optimizer and scheduler ready
+[emclip][rank=0] epoch=0 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(4, 16, 3, 256, 256) MV=(4, 16, 2, 256, 256) R=(4, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(1, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(4, 16, 3, 256, 256) MV=(4, 16, 2, 256, 256) R=(4, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(1, 16, 3, 256, 256)
+/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/optim/lr_scheduler.py:224: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn(
+epoch=0 step=0/446 loss=4.8322 loss_mg=0.9042 loss_me=3.9280 acc1=0.00 acc5=25.00 lr=0.00000800 grad_norm=nan entropy=1.6314 selected_mean=9.88 max_mem=12329MB
+/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/optim/lr_scheduler.py:224: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn(
+epoch=0 step=10/446 loss=5.2671 loss_mg=1.3438 loss_me=3.9234 acc1=6.82 acc5=11.36 lr=0.00000800 grad_norm=18.5001 entropy=1.7508 selected_mean=9.00 max_mem=15961MB
+epoch=0 step=20/446 loss=4.7630 loss_mg=0.8279 loss_me=3.9351 acc1=5.95 acc5=9.52 lr=0.00000800 grad_norm=7.4540 entropy=1.8561 selected_mean=8.75 max_mem=15961MB
+epoch=0 step=30/446 loss=4.6248 loss_mg=0.6864 loss_me=3.9384 acc1=5.65 acc5=10.48 lr=0.00000800 grad_norm=0.4818 entropy=1.9801 selected_mean=3.50 max_mem=15961MB
+epoch=0 step=40/446 loss=4.5500 loss_mg=0.6187 loss_me=3.9313 acc1=4.27 acc5=10.37 lr=0.00000800 grad_norm=2.5646 entropy=2.1205 selected_mean=7.00 max_mem=15961MB
+epoch=0 step=50/446 loss=4.7399 loss_mg=0.7860 loss_me=3.9539 acc1=3.43 acc5=12.25 lr=0.00000800 grad_norm=3.0789 entropy=2.2126 selected_mean=8.50 max_mem=15961MB
+epoch=0 step=60/446 loss=4.5935 loss_mg=0.6880 loss_me=3.9055 acc1=3.28 acc5=12.70 lr=0.00000800 grad_norm=0.9900 entropy=2.2693 selected_mean=10.00 max_mem=15961MB
+epoch=0 step=70/446 loss=4.6623 loss_mg=0.7039 loss_me=3.9585 acc1=3.17 acc5=12.68 lr=0.00000800 grad_norm=0.8827 entropy=2.3086 selected_mean=5.50 max_mem=15961MB
+epoch=0 step=80/446 loss=4.3964 loss_mg=0.5336 loss_me=3.8628 acc1=2.78 acc5=13.27 lr=0.00000800 grad_norm=2.4071 entropy=2.3463 selected_mean=8.12 max_mem=15961MB
+epoch=0 step=90/446 loss=4.8998 loss_mg=0.7016 loss_me=4.1982 acc1=2.75 acc5=12.91 lr=0.00000800 grad_norm=4.4702 entropy=2.3842 selected_mean=9.50 max_mem=15961MB
+epoch=0 step=100/446 loss=4.6027 loss_mg=0.7460 loss_me=3.8567 acc1=2.97 acc5=14.36 lr=0.00000800 grad_norm=9.6814 entropy=2.4173 selected_mean=8.50 max_mem=15961MB
+epoch=0 step=110/446 loss=4.4581 loss_mg=0.5002 loss_me=3.9579 acc1=3.15 acc5=13.96 lr=0.00000800 grad_norm=5.6083 entropy=2.4463 selected_mean=7.00 max_mem=15961MB
+epoch=0 step=120/446 loss=4.3796 loss_mg=0.6753 loss_me=3.7043 acc1=3.10 acc5=14.46 lr=0.00000800 grad_norm=9.9847 entropy=2.4699 selected_mean=5.88 max_mem=15961MB
+epoch=0 step=130/446 loss=4.5808 loss_mg=0.6830 loss_me=3.8978 acc1=3.05 acc5=14.69 lr=0.00000800 grad_norm=4.8784 entropy=2.4888 selected_mean=6.75 max_mem=15961MB

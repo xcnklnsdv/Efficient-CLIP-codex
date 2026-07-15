@@ -12,7 +12,7 @@ if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
 fi
 source "${SCRIPT_DIR}/_gpu_env.sh"
-BATCH_SIZE=${BATCH_SIZE:-4}
+BATCH_SIZE=${BATCH_SIZE:-12}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
 NUM_WORKERS=${NUM_WORKERS:-8}
 PIN_MEMORY=${PIN_MEMORY:-1}

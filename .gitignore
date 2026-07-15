@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.vscode/
+.idea/
+
+# *.log
+*.tmp
+*.swp
+
+.sh
+
+exps/
+# outputs/
+runs/
+# checkpoints/
+ckpt/
+*.pth
+*.pt
+*.ckpt
+models.zip
+data/
+# datasets/
+
+.env
+.DS_Store
+
+ucf101_coviar/
+ucf101_i3d/
+
+dmc_models/
