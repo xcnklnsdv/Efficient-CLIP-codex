@@ -89,6 +89,11 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=1024)
     parser.add_argument("--print-freq", type=int, default=10)
     parser.add_argument("--synthetic-smoke", action="store_true")
+    parser.add_argument(
+        "--validate-class-names-only",
+        action="store_true",
+        help="Resolve and validate semantic class texts under DDP, then exit before model or data loading.",
+    )
     parser.add_argument("--find-unused-parameters", action="store_true", default=False)
     parser.add_argument("--debug-unused-parameters", action="store_true", default=False)
     return parser.parse_args()
@@ -150,29 +155,67 @@ def resolve_dataset_config(args):
     return cfg
 
 
-def _validate_class_names(names, num_classes, source):
+def _validate_class_names(names, num_classes, source, normalize_underscores=False):
     if len(names) != num_classes:
         raise ValueError(
             "class text count %d from %s does not match NUM_CLASSES=%d."
             % (len(names), source, num_classes)
         )
-    empty = [index for index, name in enumerate(names) if not name.strip()]
+    normalized = []
+    for name in names:
+        name = " ".join(str(name).strip().split())
+        if normalize_underscores:
+            name = " ".join(name.replace("_", " ").split())
+        normalized.append(name)
+
+    empty = [index for index, name in enumerate(normalized) if not name]
     if empty:
         raise ValueError("empty class text entries in %s at indices %s" % (source, empty[:20]))
-    return names
+    numeric = []
+    for index, name in enumerate(normalized):
+        words = name.casefold().split()
+        if name.isdecimal() or (
+            len(words) == 2
+            and words[0] in {"class", "label", "category"}
+            and words[1].isdecimal()
+        ):
+            numeric.append(index)
+    if numeric:
+        raise ValueError(
+            "purely numeric class texts are forbidden in %s at indices %s"
+            % (source, numeric[:20])
+        )
+    duplicate_indices = {}
+    first_index = {}
+    for index, name in enumerate(normalized):
+        key = name.casefold()
+        if key in first_index:
+            duplicate_indices.setdefault(key, [first_index[key]]).append(index)
+        else:
+            first_index[key] = index
+    if duplicate_indices:
+        examples = [
+            "%r at indices %s" % (normalized[indices[0]], indices)
+            for indices in list(duplicate_indices.values())[:10]
+        ]
+        raise ValueError("duplicate class texts in %s: %s" % (source, "; ".join(examples)))
+    return normalized
 
 
 def _read_plain_class_names(path):
     indexed = {}
     sequential = []
-    with open(path, "r", encoding="utf-8") as handle:
+    with open(path, "r", encoding="utf-8-sig") as handle:
         for raw_line in handle:
             line = raw_line.strip()
             if not line:
                 continue
             fields = line.replace("\t", " ").split(maxsplit=1)
             if len(fields) == 2 and fields[0].isdigit():
-                indexed[int(fields[0])] = fields[1].strip()
+                class_index = int(fields[0])
+                if class_index in indexed:
+                    raise ValueError("duplicate class index %d in %s" % (class_index, path))
+                indexed[class_index] = fields[1].strip()
             else:
                 sequential.append(line)
     if indexed and sequential:
@@ -188,29 +231,37 @@ def _read_plain_class_names(path):
 def _read_class_csv(path):
     indexed = {}
     sequential = []
-    with open(path, "r", encoding="utf-8") as handle:
+    index_headers = {"id", "index", "label", "label_id", "class_id", "class_index"}
+    name_headers = {"name", "class", "class_name", "label_name", "category", "category_name"}
+    with open(path, "r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle)
-        for row_index, row in enumerate(reader):
-            row = [field.strip() for field in row if field.strip()]
-            if not row:
+        for row_number, row in enumerate(reader, start=1):
+            row = [field.strip() for field in row]
+            if not any(row):
                 continue
-            try:
+            lowered = {field.casefold() for field in row if field}
+            if lowered & index_headers and lowered & name_headers:
+                continue
+            if len(row) == 1:
+                sequential.append(row[0])
+                continue
+
+            first_is_index = row[0].isdigit()
+            last_is_index = row[-1].isdigit()
+            if first_is_index:
                 class_index = int(row[0])
-            except ValueError:
-                if row_index == 0 and row[0].lower() in {
-                    "id",
-                    "index",
-                    "label",
-                    "class_id",
-                    "name",
-                    "class",
-                    "class_name",
-                    "label_name",
-                }:
+                class_name = ",".join(row[1:]).strip()
+            elif last_is_index:
+                class_index = int(row[-1])
+                class_name = ",".join(row[:-1]).strip()
+            else:
+                if row_number == 1 and lowered & (index_headers | name_headers):
                     continue
                 sequential.append(row[-1])
-            else:
-                indexed[class_index] = row[-1]
+                continue
+            if class_index in indexed:
+                raise ValueError("duplicate class index %d in %s" % (class_index, path))
+            indexed[class_index] = class_name
     if indexed and sequential:
         raise ValueError("label CSV mixes indexed and sequential rows: %s" % path)
     if indexed:
@@ -219,6 +270,91 @@ def _read_class_csv(path):
             raise ValueError("label CSV indices are not contiguous from zero in %s" % path)
         return [indexed[index] for index in expected]
     return sequential
+
+
+def _load_class_name_file(path, num_classes, source, dataset_name, csv_format=None):
+    expanded = Path(os.path.expandvars(os.path.expanduser(str(path))))
+    if not expanded.is_absolute():
+        repo_relative = Path(__file__).resolve().parent / expanded
+        cwd_relative = Path.cwd() / expanded
+        expanded = repo_relative if repo_relative.is_file() else cwd_relative
+    if not expanded.is_file():
+        raise ValueError("class-name file does not exist for %s: %s" % (source, expanded))
+    use_csv = expanded.suffix.casefold() == ".csv" if csv_format is None else csv_format
+    names = _read_class_csv(expanded) if use_csv else _read_plain_class_names(expanded)
+    names = _validate_class_names(
+        names,
+        num_classes,
+        expanded,
+        normalize_underscores=dataset_name.casefold() == "k400",
+    )
+    return names, str(expanded.resolve())
+
+
+def _log_class_names(names, source):
+    if not is_main_process():
+        return
+    preview_count = min(5, len(names))
+    print("[emclip] class names source=%s" % source, flush=True)
+    print("[emclip] class names loaded=%d" % len(names), flush=True)
+    print("[emclip] class names first5=%s" % names[:preview_count], flush=True)
+    print("[emclip] class names last5=%s" % names[-preview_count:], flush=True)
+
+
+def _k400_project_class_name_candidates():
+    repo_root = Path(__file__).resolve().parent
+    names = (
+        "kinetics_400_labels.csv",
+        "kinetics400_labels.csv",
+        "k400_class_names.txt",
+        "kinetics_classnames.txt",
+        "category.csv",
+        "k400_mlm_labels.txt",
+        "k400_mlm_lables.txt",
+    )
+    roots = (
+        repo_root / "configs",
+        repo_root / "lists" / "k400",
+        repo_root / "data" / "k400",
+        repo_root / "datasets" / "k400",
+        repo_root,
+        Path("/home/fuh/CMPT/lists/k400"),
+        Path("/home/fuh/m2clip"),
+    )
+    return [root / name for root in roots for name in names]
+
+
+def _class_name_candidates_near_lists(cfg):
+    names = (
+        "kinetics_400_labels.csv",
+        "kinetics400_labels.csv",
+        "k400_class_names.txt",
+        "kinetics_classnames.txt",
+        "category.csv",
+        "k400_mlm_labels.txt",
+        "k400_mlm_lables.txt",
+    )
+    roots = []
+    for key in ("TRAIN_LIST", "VAL_LIST"):
+        list_path = cfg.get(key)
+        if list_path:
+            parent = Path(os.path.expandvars(os.path.expanduser(str(list_path)))).parent
+            roots.extend((parent, parent / "labels", parent.parent / "lists" / "k400"))
+    for key in ("TRAIN_ROOT", "VAL_ROOT", "COMPRESSED_VIDEO_ROOT"):
+        data_root = cfg.get(key)
+        if data_root:
+            root = Path(os.path.expandvars(os.path.expanduser(str(data_root))))
+            roots.extend((root, root / "datalist", root / "lists" / "k400"))
+    candidates = []
+    seen = set()
+    for root in roots:
+        for name in names:
+            candidate = root / name
+            key = os.path.normcase(os.path.abspath(str(candidate)))
+            if key not in seen:
+                seen.add(key)
+                candidates.append(candidate)
+    return candidates
 
 
 def _infer_class_names_from_lists(cfg, num_classes, dataset_name):
@@ -262,25 +398,119 @@ def _infer_class_names_from_lists(cfg, num_classes, dataset_name):
 
 def load_class_names(args, num_classes, cfg=None):
     cfg = cfg or resolve_dataset_config(args)
-    if args.class_names:
-        names = _read_plain_class_names(args.class_names)
-        return _validate_class_names(names, num_classes, args.class_names)
-    elif args.label_csv:
-        names = _read_class_csv(args.label_csv)
-        return _validate_class_names(names, num_classes, args.label_csv)
+    dataset_name = args.dataset
 
-    configured = cfg.get("CLASS_NAMES")
-    if configured and os.path.isfile(configured):
-        names = _read_plain_class_names(configured)
-        return _validate_class_names(names, num_classes, configured)
+    def finish(names, source):
+        _log_class_names(names, source)
+        return names
+
+    if getattr(args, "class_names", None):
+        names, source = _load_class_name_file(
+            args.class_names,
+            num_classes,
+            "command line --class-names",
+            dataset_name,
+        )
+        return finish(names, source)
+    if getattr(args, "label_csv", None):
+        names, source = _load_class_name_file(
+            args.label_csv,
+            num_classes,
+            "command line --label-csv",
+            dataset_name,
+            csv_format=True,
+        )
+        return finish(names, source)
+
+    config_fields = (
+        ("CLASS_NAMES", None),
+        ("CLASS_NAMES_FILE", None),
+        ("CLASS_NAME_FILE", None),
+        ("CLASS_NAMES_PATH", None),
+        ("LABEL_CSV", True),
+        ("LABELS_CSV", True),
+        ("LABEL_FILE", None),
+        ("LABELS_FILE", None),
+    )
+    missing_configured = []
+    for key, csv_format in config_fields:
+        configured = cfg.get(key)
+        if not configured:
+            continue
+        if key == "CLASS_NAMES" and isinstance(configured, (list, tuple)):
+            names = _validate_class_names(
+                configured,
+                num_classes,
+                "dataset config CLASS_NAMES",
+                normalize_underscores=dataset_name.casefold() == "k400",
+            )
+            return finish(names, "dataset config CLASS_NAMES")
+        try:
+            names, source = _load_class_name_file(
+                configured,
+                num_classes,
+                "dataset config %s" % key,
+                dataset_name,
+                csv_format=csv_format,
+            )
+        except ValueError as error:
+            if "does not exist" in str(error):
+                missing_configured.append(str(configured))
+                continue
+            raise
+        return finish(names, source)
+
+    rejected = []
+    searched = []
+    if dataset_name.casefold() == "k400":
+        candidates = _k400_project_class_name_candidates()
+        candidates.extend(_class_name_candidates_near_lists(cfg))
+        seen = set()
+        for candidate in candidates:
+            candidate_key = os.path.normcase(os.path.abspath(str(candidate)))
+            if candidate_key in seen:
+                continue
+            seen.add(candidate_key)
+            searched.append(str(candidate))
+            if not candidate.is_file():
+                continue
+            try:
+                names, source = _load_class_name_file(
+                    candidate,
+                    num_classes,
+                    "automatic K400 class-name discovery",
+                    dataset_name,
+                )
+            except ValueError as error:
+                rejected.append("%s (%s)" % (candidate, error))
+                continue
+            return finish(names, source)
 
     inferred, inspected = _infer_class_names_from_lists(cfg, num_classes, args.dataset)
     if inferred is not None:
-        return inferred
+        names = _validate_class_names(
+            inferred,
+            num_classes,
+            "dataset lists %s" % inspected,
+            normalize_underscores=dataset_name.casefold() == "k400",
+        )
+        return finish(names, "inferred from dataset lists %s" % inspected)
+    details = []
+    if missing_configured:
+        details.append("missing configured files: %s" % missing_configured)
+    if rejected:
+        details.append("rejected discovered files: %s" % rejected)
+    if dataset_name.casefold() == "k400":
+        details.append("searched K400 mapping paths: %s" % searched)
     raise ValueError(
         "cannot obtain %d semantic class texts for dataset %s from lists %s. "
-        "Pass --class-names or --label-csv; numeric placeholders are forbidden for CLIP training."
-        % (num_classes, args.dataset, inspected or "<no existing list files>")
+        "Pass --class-names or --label-csv; numeric placeholders are forbidden for CLIP training.%s"
+        % (
+            num_classes,
+            args.dataset,
+            inspected or "<no existing list files>",
+            (" " + " ".join(details)) if details else "",
+        )
     )
 
 
@@ -540,7 +770,12 @@ def main_worker():
     if args.synthetic_smoke:
         synthetic_smoke(args)
         return
-    if not args.clip_checkpoint and not args.resume and not args.allow_random_init:
+    if (
+        not args.validate_class_names_only
+        and not args.clip_checkpoint
+        and not args.resume
+        and not args.allow_random_init
+    ):
         raise RuntimeError(
             "real EM-CLIP training/evaluation requires --clip-checkpoint or --resume. "
             "Use --allow-random-init only for an explicit initialization ablation."
@@ -558,7 +793,7 @@ def main_worker():
     try:
         class_names = load_class_names(args, cfg["NUM_CLASSES"], cfg=cfg)
     except ValueError:
-        if not args.pretrained_audit_only:
+        if not args.pretrained_audit_only or args.validate_class_names_only:
             raise
         class_names = ["audit class %d" % index for index in range(cfg["NUM_CLASSES"])]
         if is_main_process():
@@ -566,6 +801,12 @@ def main_worker():
                 "[emclip][pretrained] class texts unavailable; using audit-only placeholders",
                 flush=True,
             )
+    if args.validate_class_names_only:
+        if is_main_process():
+            print("[emclip] class-name validation completed; exiting before model/data loading", flush=True)
+        if dist_ready():
+            dist.barrier()
+        return
     model_config = build_emclip_config_from_args(args, class_names)
     model = EMCLIP(model_config).to(device)
     if is_main_process():

@@ -7,6 +7,7 @@ set -euo pipefail
 DATASET="k400"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LABEL_CSV="${LABEL_CSV:-${REPO_ROOT}/configs/kinetics_400_labels.csv}"
 CLIP_CHECKPOINT="${CLIP_CHECKPOINT:-/home/fuh/CLIP-models/ViT-B-16.pt}"
 if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
@@ -78,6 +79,7 @@ fi
 if [[ -n "${CLASS_NAMES:-}" ]]; then
   CMD+=(--class-names "${CLASS_NAMES}")
 elif [[ -n "${LABEL_CSV:-}" ]]; then
+  [[ -f "${LABEL_CSV}" ]] || { echo "K400 label CSV not found: ${LABEL_CSV}" >&2; exit 1; }
   CMD+=(--label-csv "${LABEL_CSV}")
 fi
 

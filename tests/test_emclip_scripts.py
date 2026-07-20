@@ -38,6 +38,13 @@ def test_k400_launch_script_writes_torchrun_rank_logs():
     assert "--tee" in text
 
 
+def test_k400_launch_scripts_explicitly_pass_repository_label_csv():
+    for filename in ("train_emclip_k400.sh", "eval_emclip_k400.sh"):
+        text = (REPO_ROOT / "scripts" / filename).read_text(encoding="utf-8")
+        assert 'LABEL_CSV="${LABEL_CSV:-${REPO_ROOT}/configs/kinetics_400_labels.csv}"' in text
+        assert 'CMD+=(--label-csv "${LABEL_CSV}")' in text
+
+
 def test_scripts_centralize_default_gpu_ids_and_disable_unused_detection():
     gpu_text = (REPO_ROOT / "scripts" / "_gpu_env.sh").read_text(encoding="utf-8")
     k400_text = (REPO_ROOT / "scripts" / "train_emclip_k400.sh").read_text(encoding="utf-8")

@@ -1,3 +1,6 @@
+import os
+
+
 DATASETS = {
     "ssv2": dict(
         TRAIN_ROOT="/mnt/data/sthv2/videos",
@@ -45,6 +48,7 @@ DATASETS = {
         TRAIN_LIST="/mnt/data/CKinetics/datalist/k400_train.txt",
         VAL_LIST="/mnt/data/CKinetics/datalist/k400_val.txt",
         NUM_CLASSES=400,
+        LABEL_CSV=os.path.join(os.path.dirname(__file__), "kinetics_400_labels.csv"),
         USE_COVIAR=True,
         RETURN_MV_RES=True,
         COMPRESSED_VIDEO_ROOT="/mnt/data/CKinetics",

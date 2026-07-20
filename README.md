@@ -89,6 +89,7 @@ COVIAR_DATA_LOADER_DIR=/home/fuh/Efficient-CLIP-codex/pytorch-coviar/data_loader
 CLIP_CHECKPOINT=/home/fuh/CLIP-models/ViT-B-16.pt bash scripts/train_emclip_hmdb51.sh
 CLASS_NAMES=/path/to/ssv2_classes.txt bash scripts/train_emclip_ssv2.sh
 python main_emclip.py --dataset hmdb51_mpeg4 --preflight-compressed-inputs --num-workers 0 --no-pin-memory
+torchrun --standalone --nproc_per_node=4 main_emclip.py --dataset k400 --validate-class-names-only
 ```
 
 All train/eval scripts source `scripts/_gpu_env.sh`. Edit
@@ -112,10 +113,20 @@ overflows still raise an explicit error. Override with `--amp-init-scale` and
 Training and evaluation scripts append `--clip-checkpoint "${CLIP_CHECKPOINT}"`; the default is `/home/fuh/CLIP-models/ViT-B-16.pt`, with an environment override and a repository-local fallback when available.
 The scripts prefer a local `pytorch-coviar/data_loader` directory when present, then fall back to `/home/fuh/m2clip/Coviar/data_loader`. Build the extension with `cd pytorch-coviar/data_loader && bash install.sh` if `coviar*.so` is missing.
 
-HMDB51, UCF101, and K400 semantic class text can be inferred from class-directory
+K400 uses the repository-owned, ID-indexed mapping
+`configs/kinetics_400_labels.csv` by default; both K400 launch scripts pass it
+explicitly with `--label-csv`. It contains IDs 0 through 399 and was checked
+against the K400 train/validation list directory names. `LABEL_CSV` or
+`CLASS_NAMES` can override it. A similarly named `k400_mlm_lables.txt` from the
+older M2-CLIP code is a 520-token MLM vocabulary, not a K400 class mapping, and
+must not be used as class text.
+
+HMDB51 and UCF101 semantic class text can still be inferred from class-directory
 names when every label is present in the real lists. SSV2 numeric IDs do not
 contain class semantics, so pass `CLASS_NAMES`/`--class-names` or
-`LABEL_CSV`/`--label-csv`. Numeric placeholders such as `class 0` are rejected.
+`LABEL_CSV`/`--label-csv`. All class sources must have the exact configured
+count, unique non-numeric names, and contiguous IDs when indexed. Numeric
+placeholders such as `class 0` are rejected.
 Dataset locations can be overridden with `--train-root`, `--val-root`,
 `--train-list`, `--val-list`, and `--compressed-video-root`.
 
