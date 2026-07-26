@@ -13,7 +13,7 @@ from torch.distributed.elastic.multiprocessing.errors import record
 from torch.utils.data import DataLoader, DistributedSampler, Sampler
 
 from configs import DATASETS
-from datasets import CompressedVideoDataset
+from dataset_coviar import CoviarDataSet
 from engine_emclip import (
     dist_ready,
     evaluate,
@@ -83,6 +83,36 @@ def parse_args():
         "--coviar-data-loader-dir",
         default=os.environ.get("COVIAR_DATA_LOADER_DIR"),
         help="Directory containing coviar Python extension, e.g. /home/fuh/m2clip/Coviar/data_loader.",
+    )
+    parser.add_argument(
+        "--mv-clamp",
+        type=float,
+        default=20.0,
+        help="Clamp motion-vector x/y values to this magnitude before scaling to [-1,1].",
+    )
+    parser.add_argument(
+        "--residual-scale",
+        type=float,
+        default=255.0,
+        help="Divide signed CoViAR residual values by this scale before clamping.",
+    )
+    parser.add_argument(
+        "--residual-clamp",
+        type=float,
+        default=1.0,
+        help="Clamp scaled residual values to this symmetric magnitude.",
+    )
+    parser.add_argument(
+        "--mv-accumulate",
+        action="store_true",
+        help="Diagnostic ablation: request I-frame-relative accumulated MV instead of last-P direct MV.",
+    )
+    parser.add_argument(
+        "--no-residual-accumulate",
+        dest="residual_accumulate",
+        action="store_false",
+        default=True,
+        help="Diagnostic ablation: disable the default I-frame-relative accumulated residual.",
     )
     parser.add_argument("--scale-lr-by-global-batch", action="store_true")
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
@@ -532,16 +562,21 @@ def build_datasets(args, class_names=None, cfg=None):
         coviar_data_loader_dir=args.coviar_data_loader_dir,
         verify_paths=args.verify_compressed_inputs,
         class_to_idx=class_to_idx,
+        mv_clamp=args.mv_clamp,
+        residual_scale=args.residual_scale,
+        residual_clamp=args.residual_clamp,
+        mv_accumulate=args.mv_accumulate,
+        residual_accumulate=args.residual_accumulate,
     )
     train_dataset = None
     if not args.eval:
-        train_dataset = CompressedVideoDataset(
+        train_dataset = CoviarDataSet(
             list_path=cfg["TRAIN_LIST"],
             data_root=cfg["TRAIN_ROOT"],
             random_sample=True,
             **common,
         )
-    val_dataset = CompressedVideoDataset(
+    val_dataset = CoviarDataSet(
         list_path=cfg["VAL_LIST"],
         data_root=cfg["VAL_ROOT"],
         random_sample=False,

@@ -1,13 +1,18 @@
+import numpy as np
+import pytest
 import torch
 from types import SimpleNamespace
 
-import datasets.compressed_video_dataset as cvd
+import dataset_coviar as cvd
+import main_emclip
 from main_emclip import load_class_names
-from datasets.compressed_video_dataset import (
+from dataset_coviar import (
+    CoviarDataSet,
     crop_modalities,
     ensure_coviar_loader,
     horizontal_flip_modalities,
     parse_video_list_line,
+    resolve_video_path,
     resize_modalities,
     sample_gop_indices,
 )
@@ -183,3 +188,120 @@ def test_coviar_ffmpeg_candidate_dirs_include_local_pytorch_coviar_first():
     local_idx = next(i for i, path in enumerate(candidates) if path.endswith("pytorch-coviar/data_loader/ffmpeg/lib"))
     server_idx = next(i for i, path in enumerate(candidates) if path == "/home/fuh/ffmpeg_coviar/lib")
     assert local_idx < server_idx
+
+
+def test_training_entry_uses_root_dataset_coviar_as_canonical_source():
+    assert main_emclip.CoviarDataSet is CoviarDataSet
+    assert main_emclip.CoviarDataSet.__module__ == "dataset_coviar"
+
+
+def test_k400_path_does_not_duplicate_train_component(tmp_path):
+    root = tmp_path / "train"
+    video = root / "jump" / "clip.mp4"
+    video.parent.mkdir(parents=True)
+    video.touch()
+
+    resolved = resolve_video_path(
+        root,
+        "train/jump/clip.mp4",
+        dataset_name="k400",
+        raw_line="train/jump/clip.mp4 0",
+    )
+
+    assert resolved == str(video)
+
+
+def _install_fake_coviar(monkeypatch, num_frames, num_gops, return_none_for=None):
+    calls = []
+
+    def fake_load(path, gop_idx, position, representation, accumulate):
+        calls.append((gop_idx, position, representation, accumulate))
+        if representation == return_none_for:
+            return None
+        channels = 2 if representation == 1 else 3
+        dtype = np.uint8 if representation == 0 else np.int32
+        fill = 10 if representation == 1 else (255 if representation == 2 else 32)
+        return np.full((4, 4, channels), fill, dtype=dtype)
+
+    monkeypatch.setattr(cvd, "coviar_get_num_frames", lambda path: num_frames)
+    monkeypatch.setattr(cvd, "coviar_get_num_gops", lambda path: num_gops)
+    monkeypatch.setattr(cvd, "coviar_load", fake_load)
+    return calls
+
+
+def _make_fake_dataset(tmp_path, monkeypatch, num_frames=14, num_gops=2, return_none_for=None):
+    video = tmp_path / "clip.mp4"
+    video.touch()
+    video_list = tmp_path / "list.txt"
+    video_list.write_text("clip.mp4 %d 1\n" % num_frames, encoding="utf-8")
+    calls = _install_fake_coviar(
+        monkeypatch,
+        num_frames=num_frames,
+        num_gops=num_gops,
+        return_none_for=return_none_for,
+    )
+    dataset = CoviarDataSet(
+        dataset_name="unit",
+        list_path=str(video_list),
+        data_root=str(tmp_path),
+        num_classes=2,
+        candidate_frames=num_gops,
+        input_size=4,
+        gop_size=12,
+        random_sample=False,
+    )
+    return dataset, calls
+
+
+def test_coviar_dataset_reads_last_valid_p_and_accumulated_residual(tmp_path, monkeypatch):
+    dataset, calls = _make_fake_dataset(tmp_path, monkeypatch)
+
+    sample = dataset.preflight(0)
+
+    assert sample["candidate_gop_indices"].tolist() == [0, 1]
+    assert sample["metadata"]["last_p_positions"] == [11, 1]
+    assert sample["i_frames"].shape == (2, 3, 4, 4)
+    assert sample["motion_vectors"].shape == (2, 2, 4, 4)
+    assert sample["residuals"].shape == (2, 3, 4, 4)
+    assert torch.allclose(sample["motion_vectors"], torch.full((2, 2, 4, 4), 0.5))
+    assert torch.allclose(sample["residuals"], torch.ones(2, 3, 4, 4))
+    assert (0, 11, 1, False) in calls
+    assert (0, 11, 2, True) in calls
+    assert (1, 1, 1, False) in calls
+    assert (1, 1, 2, True) in calls
+
+
+def test_coviar_eval_stacks_all_views_under_one_video(tmp_path, monkeypatch):
+    dataset, _ = _make_fake_dataset(
+        tmp_path,
+        monkeypatch,
+        num_frames=48,
+        num_gops=4,
+    )
+    dataset.candidate_frames = 2
+    dataset.num_temporal_views = 2
+    dataset.num_spatial_crops = 3
+
+    sample = dataset[0]
+
+    assert sample["i_frames"].shape == (6, 2, 3, 4, 4)
+    assert sample["motion_vectors"].shape == (6, 2, 2, 4, 4)
+    assert sample["residuals"].shape == (6, 2, 3, 4, 4)
+    assert sample["valid_mask"].shape == (6, 2)
+    assert sample["candidate_gop_indices"].shape == (6, 2)
+    assert sample["label"].item() == 1
+
+
+def test_coviar_decode_failure_is_contextual_and_never_silently_zero_filled(
+    tmp_path, monkeypatch
+):
+    dataset, _ = _make_fake_dataset(
+        tmp_path,
+        monkeypatch,
+        num_frames=12,
+        num_gops=1,
+        return_none_for=1,
+    )
+
+    with pytest.raises(RuntimeError, match=r"dataset=unit.*gop=0.*returned None"):
+        dataset.preflight(0)

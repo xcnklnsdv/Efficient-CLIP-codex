@@ -66,6 +66,13 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun \
 
 ## Training
 
+The root-level `dataset_coviar.py` is the single compressed-video reader used
+by training, validation, preflight, and smoke tests. It owns list parsing, GOP
+sampling, native CoViAR I/MV/Residual reads, synchronized spatial transforms,
+normalization, and multi-view construction. The legacy
+`datasets.compressed_video_dataset` import resolves to this same module and has
+no independent data path.
+
 Default full EM-CLIP, 4 GPUs:
 
 ```bash

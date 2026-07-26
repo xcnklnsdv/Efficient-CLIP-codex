@@ -1,6 +1,8 @@
 # EM-CLIP Implementation Notes
 
-This is a standalone implementation because the active workspace only contained `AGENTS.md`.
+The root-level `dataset_coviar.py` supplied with the project is the canonical
+compressed-video data implementation. The rest of EM-CLIP uses its structured
+I/MV/Residual output directly.
 
 ## Module Map
 
@@ -9,7 +11,8 @@ This is a standalone implementation because the active workspace only contained 
 - End-to-end model and prompt text encoder: `models/emclip.py`
 - Original CLIP checkpoint parsing and coverage audit: `models/clip_checkpoint.py`
 - `L_MG`: `losses/emclip_loss.py`
-- CoViAR dataset and synchronized transforms: `datasets/compressed_video_dataset.py`
+- CoViAR dataset and synchronized transforms: `dataset_coviar.py`
+- Legacy dataset import compatibility (no independent implementation): `datasets/compressed_video_dataset.py`
 - DDP/AMP/checkpoints: `engine_emclip.py`, `main_emclip.py`
 - Dataset configs: `configs/emclip_datasets.py`
 
@@ -37,7 +40,8 @@ Formulas 28-30, temporal aggregation, video-text logits, and CE, map to MELSC fi
 
 ## CoViAR Calls
 
-`CompressedVideoDataset` uses `coviar.get_num_frames` and `coviar.load`. It calls:
+`CoviarDataSet` in `dataset_coviar.py` uses `coviar.get_num_frames`, optional
+`coviar.get_num_gops`, and `coviar.load`. It calls:
 
 - I-frame: `load(path, gop_idx, 0, 0, False)`
 - MV: `load(path, gop_idx, last_p_pos, 1, False)`
@@ -51,6 +55,12 @@ first sample before starting DDP.
 
 MV uses the last valid P-frame without accumulation. Residual uses `accumulate=True` to obtain cumulative residual relative to the GOP I-frame. If a GOP has no valid P-frame, MV/R fall back to explicit zeros for that GOP only.
 
+The choices are configurable as diagnostic ablations with `--mv-accumulate`
+and `--no-residual-accumulate`, while paper reproduction defaults remain direct
+last-P MV and I-frame-relative cumulative residual. A decoder returning `None`
+for a valid frame is an error with dataset/list/path/GOP context; it is never
+silently replaced by another sample or by zeros.
+
 ## Sampling
 
 Videos are split into `T` non-overlapping GOP segments. Training randomly picks one GOP per segment. Evaluation picks deterministic per-view offsets. If GOP count is smaller than `T`, indices are repeated uniformly and `valid_mask` remains true because each repeated item maps to an actual GOP.
@@ -62,7 +72,7 @@ Diamond has no MGSE candidate-selection stage, `emclip_diamond_b16_k8` and
 
 ## Transforms and Normalization
 
-Resize, crop, and flip parameters are shared across I/MV/R. Horizontal flip negates MV x. Resize scales MV x and y by width and height ratios. I uses CLIP mean/std. MV is clamped to `[-20,20] / 20`. Residual is divided by 255 and clamped to `[-1,1]`; CLIP mean/std is not applied to residual because residual is not RGB appearance.
+Resize, crop, and flip parameters are shared across I/MV/R. Horizontal flip negates MV x. Resize scales MV x and y by width and height ratios. I uses CLIP mean/std. MV is clamped to `[-20,20] / 20`. Residual is divided by 255 and clamped to `[-1,1]`; CLIP mean/std is not applied to residual because residual is not RGB appearance. These scales are centralized in `CoviarDataSet` and exposed as `--mv-clamp`, `--residual-scale`, and `--residual-clamp`.
 
 ## Position Embedding and Patch Init
 
