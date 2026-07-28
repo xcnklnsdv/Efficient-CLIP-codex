@@ -1,0 +1,28 @@
+[emclip] initialized world_size=5 device=cuda:0 batch_size=4 micro_batch_size=4
+[emclip] class names source=/home/fuh/Efficient-CLIP-codex/configs/kinetics_400_labels.csv
+[emclip] class names loaded=400
+[emclip] class names first5=['abseiling', 'air drumming', 'answering questions', 'applauding', 'applying cream']
+[emclip] class names last5=['wrestling', 'writing', 'yawning', 'yoga', 'zumba']
+[emclip][pretrained] checkpoint_type=torchscript
+[emclip][pretrained] checkpoint_path=/home/fuh/CLIP-models/ViT-B-16.pt
+[emclip][pretrained] first_source_keys=['positional_embedding', 'text_projection', 'logit_scale', 'input_resolution', 'context_length', 'vocab_size', 'visual.class_embedding', 'visual.positional_embedding', 'visual.proj', 'visual.conv1.weight', 'visual.ln_pre.weight', 'visual.ln_pre.bias', 'visual.transformer.resblocks.0.attn.in_proj_weight', 'visual.transformer.resblocks.0.attn.in_proj_bias', 'visual.transformer.resblocks.0.attn.out_proj.weight', 'visual.transformer.resblocks.0.attn.out_proj.bias', 'visual.transformer.resblocks.0.ln_1.weight', 'visual.transformer.resblocks.0.ln_1.bias', 'visual.transformer.resblocks.0.mlp.c_fc.weight', 'visual.transformer.resblocks.0.mlp.c_fc.bias']
+[emclip][pretrained] I_encoder_position_grid=14->16
+[emclip][pretrained] I_encoder source=152 loaded=152 numel=86238720/86238720 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] R_encoder_position_grid=14->16
+[emclip][pretrained] R_encoder source=152 loaded=152 numel=86238720/86238720 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] MV_encoder_position_grid=14->16
+[emclip][pretrained] MV_encoder source=151 loaded=151 numel=85648896/85648896 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] Text_encoder source=149 loaded=149 numel=63428096/63428096 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] logit_scale=4.60517025
+[emclip] model moved to device
+Namespace(model='emclip_b16', emclip_variant='emclip', candidate_frames=16, selected_frames=8, gop_size=12, input_size=256, mgse_temperature=0.01, mgse_text_mode='class_bank', mgse_class_aggregation='mean', motion_pooling='saliency', lambda_mg=1.0, lambda_me=1.0, emclip_train_mode='full', temporal_aggregator_layers=1, allow_mgse_label_leakage_for_diagnostic=False, debug_shapes=False, clip_checkpoint='/home/fuh/CLIP-models/ViT-B-16.pt', clip_bpe_path=None, allow_random_init=False, pretrained_audit_only=False, dataset='k400', label_csv='/home/fuh/Efficient-CLIP-codex/configs/kinetics_400_labels.csv', class_names=None, train_root=None, val_root=None, train_list=None, val_list=None, compressed_video_root=None, epochs=30, lr=8e-06, weight_decay=0.2, warmup_epochs=0, batch_size=4, micro_batch_size=4, num_workers=8, pin_memory=True, amp=True, amp_init_scale=1024.0, amp_growth_interval=2000, max_consecutive_amp_overflows=8, resume=None, output_dir='output_dir/emclip/k400_emclip_T16_K8_20260721_000841', eval=False, test_num_temporal_views=1, test_num_spatial_crops=1, verify_compressed_inputs=False, preflight_compressed_inputs=False, preflight_only=False, coviar_data_loader_dir='/home/fuh/m2clip/Coviar/data_loader', scale_lr_by_global_batch=False, grad_clip_norm=1.0, seed=1024, print_freq=10, synthetic_smoke=False, validate_class_names_only=False, find_unused_parameters=False, debug_unused_parameters=False)
+Total params: 407051521 (407.05 M)
+Trainable params: 399568897 (399.57 M)
+[emclip] datasets ready train=234584 val=19760
+[emclip] DDP wrapper ready
+[emclip] AMP GradScaler init_scale=1024.0 growth_interval=2000
+All params before optimizer: 407051521 (407.05 M)
+Requires-grad params before optimizer: 399568897 (399.57 M)
+Optimizer params: 399568897 (399.57 M)
+[emclip] optimizer and scheduler ready
+[emclip][rank=0] epoch=0 entering DataLoader

@@ -1,0 +1,1 @@
+[emclip] initialized world_size=2 device=cuda:0 batch_size=4 micro_batch_size=4

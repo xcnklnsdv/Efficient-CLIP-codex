@@ -1,0 +1,57 @@
+[emclip][rank=1] epoch=0 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=1 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=2 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=3 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=4 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=5 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=6 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=7 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=8 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=9 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=10 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=11 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=12 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=13 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=14 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=15 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=16 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=17 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] epoch=18 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)

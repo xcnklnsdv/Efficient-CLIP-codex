@@ -1,0 +1,19 @@
+[rank3]: Traceback (most recent call last):
+[rank3]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1013, in <module>
+[rank3]:     main()
+[rank3]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+[rank3]:     return f(*args, **kwargs)
+[rank3]:            ^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1004, in main
+[rank3]:     return main_worker()
+[rank3]:            ^^^^^^^^^^^^^
+[rank3]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 834, in main_worker
+[rank3]:     train_dataset, val_dataset = build_datasets(args, class_names=class_names, cfg=cfg)
+[rank3]:                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 538, in build_datasets
+[rank3]:     train_dataset = CompressedVideoDataset(
+[rank3]:                     ^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/home/fuh/Efficient-CLIP-codex/datasets/compressed_video_dataset.py", line 414, in __init__
+[rank3]:     with open(list_path, "r", encoding="utf-8") as handle:
+[rank3]:          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]: FileNotFoundError: [Errno 2] No such file or directory: '/NetMedia_Nas/Videodataset/k400/datalist/k400_train.txt'

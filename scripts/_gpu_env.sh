@@ -1,58 +1,81 @@
 #!/usr/bin/env bash
 
-# Central GPU selection for every EM-CLIP train/eval script.
+# EM-CLIP GPU environment configuration.
 #
-# Edit this line to choose the default physical GPU ids used by the scripts.
-# Examples: "0", "0,1", "2,3,6,7". An empty string disables the default list.
-EMCLIP_DEFAULT_GPU_IDS="6,7"
+# 每个训练/测试脚本必须在 source 本文件之前指定：
 #
-# One-off command-line overrides still take priority:
-#   GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh
-#   GPUS=2 bash scripts/eval_emclip_ucf101.sh
-#   CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
+#   EMCLIP_SCRIPT_GPU_IDS="3,4,5,6,7"
+#   source "${SCRIPT_DIR}/_gpu_env.sh"
 #
-# Priority: GPU_IDS > GPUS > CUDA_VISIBLE_DEVICES > EMCLIP_DEFAULT_GPU_IDS.
-# If NPROC_PER_NODE is not explicitly set, it is derived from the selected list.
+# PyTorch 内部会重新编号：
+#   cuda:0 -> 物理 GPU 3
+#   cuda:1 -> 物理 GPU 4
+#   cuda:2 -> 物理 GPU 5
+#   cuda:3 -> 物理 GPU 6
+#   cuda:4 -> 物理 GPU 7
+
+# ---------------------------------------------------------
+# CoViAR FFmpeg libraries
+# ---------------------------------------------------------
 
 if [[ -z "${COVIAR_FFMPEG_LIB:-}" ]]; then
   _EMCLIP_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
   if [[ -d "${_EMCLIP_SCRIPT_DIR}/../pytorch-coviar/data_loader/ffmpeg/lib" ]]; then
-    COVIAR_FFMPEG_LIB="$(cd "${_EMCLIP_SCRIPT_DIR}/../pytorch-coviar/data_loader/ffmpeg/lib" && pwd)"
+    COVIAR_FFMPEG_LIB="$(
+      cd "${_EMCLIP_SCRIPT_DIR}/../pytorch-coviar/data_loader/ffmpeg/lib" &&
+      pwd
+    )"
   else
-    COVIAR_FFMPEG_LIB=/home/fuh/ffmpeg_coviar/lib
+    COVIAR_FFMPEG_LIB="/home/fuh/ffmpeg_coviar/lib"
   fi
 fi
+
 export COVIAR_FFMPEG_LIB
 export LD_LIBRARY_PATH="${COVIAR_FFMPEG_LIB}:${LD_LIBRARY_PATH:-}"
 
-if [[ -n "${GPU_IDS+x}" ]]; then
-  GPU_IDS="${GPU_IDS}"
-elif [[ -n "${GPUS+x}" ]]; then
-  GPU_IDS="${GPUS}"
-elif [[ -n "${CUDA_VISIBLE_DEVICES+x}" ]]; then
-  GPU_IDS="${CUDA_VISIBLE_DEVICES}"
-else
-  GPU_IDS="${EMCLIP_DEFAULT_GPU_IDS}"
-fi
-GPU_IDS="${GPU_IDS//[[:space:]]/}"
+# ---------------------------------------------------------
+# GPU selection
+# ---------------------------------------------------------
 
-if [[ -n "${GPU_IDS}" ]]; then
-  if [[ ! "${GPU_IDS}" =~ ^[^,]+(,[^,]+)*$ ]]; then
-    echo "Invalid GPU list '${GPU_IDS}'. Use a comma-separated list such as 0,1,2,3." >&2
-    return 2 2>/dev/null || exit 2
-  fi
-  export CUDA_VISIBLE_DEVICES="${GPU_IDS}"
-else
-  export CUDA_VISIBLE_DEVICES=""
+if [[ -z "${EMCLIP_SCRIPT_GPU_IDS+x}" ]]; then
+  echo "[emclip][gpu] EMCLIP_SCRIPT_GPU_IDS is not defined." >&2
+  echo "[emclip][gpu] Add this before sourcing _gpu_env.sh:" >&2
+  echo 'EMCLIP_SCRIPT_GPU_IDS="0,1,2"' >&2
+  return 2 2>/dev/null || exit 2
 fi
 
-if [[ -z "${NPROC_PER_NODE:-}" ]]; then
-  if [[ -n "${GPU_IDS}" ]]; then
-    IFS=',' read -r -a _EMCLIP_GPU_ID_ARRAY <<< "${GPU_IDS}"
-    NPROC_PER_NODE="${#_EMCLIP_GPU_ID_ARRAY[@]}"
-  else
-    NPROC_PER_NODE=1
-  fi
+SELECTED_GPU_IDS="${EMCLIP_SCRIPT_GPU_IDS}"
+SELECTED_GPU_IDS="${SELECTED_GPU_IDS//[[:space:]]/}"
+
+if [[ -z "${SELECTED_GPU_IDS}" ]]; then
+  echo "[emclip][gpu] GPU list cannot be empty." >&2
+  return 2 2>/dev/null || exit 2
 fi
 
+if [[ ! "${SELECTED_GPU_IDS}" =~ ^[0-9]+(,[0-9]+)*$ ]]; then
+  echo "[emclip][gpu] Invalid GPU list: '${SELECTED_GPU_IDS}'" >&2
+  echo "[emclip][gpu] Expected format: 0 or 0,1 or 0,1,2" >&2
+  return 2 2>/dev/null || exit 2
+fi
+
+# 强制覆盖终端中遗留的显卡环境变量。
+export GPU_IDS="${SELECTED_GPU_IDS}"
+export CUDA_VISIBLE_DEVICES="${SELECTED_GPU_IDS}"
+
+# 始终根据脚本指定的显卡数量计算 torchrun 进程数，
+# 不使用终端中遗留的 NPROC_PER_NODE。
+IFS=',' read -r -a _EMCLIP_GPU_ID_ARRAY <<< "${SELECTED_GPU_IDS}"
+NPROC_PER_NODE="${#_EMCLIP_GPU_ID_ARRAY[@]}"
 export NPROC_PER_NODE
+
+echo "[emclip][gpu] physical GPU ids : ${CUDA_VISIBLE_DEVICES}"
+echo "[emclip][gpu] visible GPU count: ${NPROC_PER_NODE}"
+
+for ((i = 0; i < NPROC_PER_NODE; i++)); do
+  echo "[emclip][gpu] cuda:${i} -> physical GPU ${_EMCLIP_GPU_ID_ARRAY[$i]}"
+done
+
+unset SELECTED_GPU_IDS
+unset _EMCLIP_GPU_ID_ARRAY
+unset _EMCLIP_SCRIPT_DIR

@@ -1,0 +1,94 @@
+W0721 00:05:58.756000 399474 site-packages/torch/distributed/run.py:793] 
+W0721 00:05:58.756000 399474 site-packages/torch/distributed/run.py:793] *****************************************
+W0721 00:05:58.756000 399474 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0721 00:05:58.756000 399474 site-packages/torch/distributed/run.py:793] *****************************************
+[default3]:[rank3]: Traceback (most recent call last):
+[default3]:[rank3]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1013, in <module>
+[default3]:[rank3]:     main()
+[default3]:[rank3]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+[default3]:[rank3]:     return f(*args, **kwargs)
+[default3]:[rank3]:            ^^^^^^^^^^^^^^^^^^
+[default3]:[rank3]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1004, in main
+[default3]:[rank3]:     return main_worker()
+[default3]:[rank3]:            ^^^^^^^^^^^^^
+[default3]:[rank3]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 834, in main_worker
+[default3]:[rank3]:     train_dataset, val_dataset = build_datasets(args, class_names=class_names, cfg=cfg)
+[default3]:[rank3]:                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[default3]:[rank3]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 538, in build_datasets
+[default3]:[rank3]:     train_dataset = CompressedVideoDataset(
+[default3]:[rank3]:                     ^^^^^^^^^^^^^^^^^^^^^^^
+[default3]:[rank3]:   File "/home/fuh/Efficient-CLIP-codex/datasets/compressed_video_dataset.py", line 414, in __init__
+[default3]:[rank3]:     with open(list_path, "r", encoding="utf-8") as handle:
+[default3]:[rank3]:          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[default3]:[rank3]: FileNotFoundError: [Errno 2] No such file or directory: '/NetMedia_Nas/Videodataset/k400/datalist/k400_train.txt'
+W0721 00:06:08.985000 399474 site-packages/torch/distributed/elastic/multiprocessing/api.py:897] Sending process 399523 closing signal SIGTERM
+W0721 00:06:08.986000 399474 site-packages/torch/distributed/elastic/multiprocessing/api.py:897] Sending process 399524 closing signal SIGTERM
+W0721 00:06:08.986000 399474 site-packages/torch/distributed/elastic/multiprocessing/api.py:897] Sending process 399525 closing signal SIGTERM
+W0721 00:06:08.986000 399474 site-packages/torch/distributed/elastic/multiprocessing/api.py:897] Sending process 399527 closing signal SIGTERM
+E0721 00:06:09.678000 399474 site-packages/torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 3 (pid: 399526) of binary: /home/fuh/.conda/envs/mpeg4_fh/bin/python
+E0721 00:06:09.681000 399474 site-packages/torch/distributed/elastic/multiprocessing/errors/error_handler.py:141] no error file defined for parent, to copy child error file (output_dir/emclip/k400_emclip_T16_K8_20260721_000557/torchrun_logs/none_l5ija_bx/attempt_0/3/error.json)
+[default0]:[emclip] initialized world_size=5 device=cuda:0 batch_size=4 micro_batch_size=4
+[default0]:[emclip] class names source=/home/fuh/Efficient-CLIP-codex/configs/kinetics_400_labels.csv
+[default0]:[emclip] class names loaded=400
+[default0]:[emclip] class names first5=['abseiling', 'air drumming', 'answering questions', 'applauding', 'applying cream']
+[default0]:[emclip] class names last5=['wrestling', 'writing', 'yawning', 'yoga', 'zumba']
+[default0]:[emclip][pretrained] checkpoint_type=torchscript
+[default0]:[emclip][pretrained] checkpoint_path=/home/fuh/CLIP-models/ViT-B-16.pt
+[default0]:[emclip][pretrained] first_source_keys=['positional_embedding', 'text_projection', 'logit_scale', 'input_resolution', 'context_length', 'vocab_size', 'visual.class_embedding', 'visual.positional_embedding', 'visual.proj', 'visual.conv1.weight', 'visual.ln_pre.weight', 'visual.ln_pre.bias', 'visual.transformer.resblocks.0.attn.in_proj_weight', 'visual.transformer.resblocks.0.attn.in_proj_bias', 'visual.transformer.resblocks.0.attn.out_proj.weight', 'visual.transformer.resblocks.0.attn.out_proj.bias', 'visual.transformer.resblocks.0.ln_1.weight', 'visual.transformer.resblocks.0.ln_1.bias', 'visual.transformer.resblocks.0.mlp.c_fc.weight', 'visual.transformer.resblocks.0.mlp.c_fc.bias']
+[default0]:[emclip][pretrained] I_encoder_position_grid=14->16
+[default0]:[emclip][pretrained] I_encoder source=152 loaded=152 numel=86238720/86238720 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[default0]:[emclip][pretrained] R_encoder_position_grid=14->16
+[default0]:[emclip][pretrained] R_encoder source=152 loaded=152 numel=86238720/86238720 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[default0]:[emclip][pretrained] MV_encoder_position_grid=14->16
+[default0]:[emclip][pretrained] MV_encoder source=151 loaded=151 numel=85648896/85648896 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[default0]:[emclip][pretrained] Text_encoder source=149 loaded=149 numel=63428096/63428096 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[default0]:[emclip][pretrained] logit_scale=4.60517025
+Traceback (most recent call last):
+  File "/home/fuh/.conda/envs/mpeg4_fh/bin/torchrun", line 33, in <module>
+    sys.exit(load_entry_point('torch==2.5.1', 'console_scripts', 'torchrun')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/run.py", line 919, in main
+    run(args)
+  File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/run.py", line 910, in run
+    elastic_launch(
+  File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 269, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/home/fuh/Efficient-CLIP-codex/main_emclip.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-07-21_00:06:08
+  host      : neimedia-LinSeerCube-DR6000
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 399526)
+  error_file: output_dir/emclip/k400_emclip_T16_K8_20260721_000557/torchrun_logs/none_l5ija_bx/attempt_0/3/error.json
+  traceback : Traceback (most recent call last):
+    File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+      return f(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^
+    File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1004, in main
+      return main_worker()
+             ^^^^^^^^^^^^^
+    File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 834, in main_worker
+      train_dataset, val_dataset = build_datasets(args, class_names=class_names, cfg=cfg)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 538, in build_datasets
+      train_dataset = CompressedVideoDataset(
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+    File "/home/fuh/Efficient-CLIP-codex/datasets/compressed_video_dataset.py", line 414, in __init__
+      with open(list_path, "r", encoding="utf-8") as handle:
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  FileNotFoundError: [Errno 2] No such file or directory: '/NetMedia_Nas/Videodataset/k400/datalist/k400_train.txt'
+  
+============================================================

@@ -13,7 +13,7 @@ if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
 fi
 source "${SCRIPT_DIR}/_gpu_env.sh"
-BATCH_SIZE=${BATCH_SIZE:-4}
+BATCH_SIZE=${BATCH_SIZE:-16}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-1}
 NUM_WORKERS=${NUM_WORKERS:-8}
 PIN_MEMORY=${PIN_MEMORY:-1}
@@ -24,7 +24,7 @@ if [[ -z "${COVIAR_DATA_LOADER_DIR:-}" ]]; then
     COVIAR_DATA_LOADER_DIR=/home/fuh/m2clip/Coviar/data_loader
   fi
 fi
-MASTER_PORT=${MASTER_PORT:-29501}
+MASTER_PORT=${MASTER_PORT:-29502}
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip_eval}
 TEMPORAL_VIEWS=${TEMPORAL_VIEWS:-1}
 SPATIAL_CROPS=${SPATIAL_CROPS:-1}

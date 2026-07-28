@@ -1,0 +1,42 @@
+[rank4]: Traceback (most recent call last):
+[rank4]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1013, in <module>
+[rank4]:     main()
+[rank4]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+[rank4]:     return f(*args, **kwargs)
+[rank4]:            ^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1004, in main
+[rank4]:     return main_worker()
+[rank4]:            ^^^^^^^^^^^^^
+[rank4]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 990, in main_worker
+[rank4]:     train_stats = train_one_epoch(model, train_loader, optimizer, scheduler, scaler, device, epoch, args)
+[rank4]:                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/home/fuh/Efficient-CLIP-codex/engine_emclip.py", line 184, in train_one_epoch
+[rank4]:     for step, raw_batch in enumerate(loader):
+[rank4]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 701, in __next__
+[rank4]:     data = self._next_data()
+[rank4]:            ^^^^^^^^^^^^^^^^^
+[rank4]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 1465, in _next_data
+[rank4]:     return self._process_data(data)
+[rank4]:            ^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 1491, in _process_data
+[rank4]:     data.reraise()
+[rank4]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/_utils.py", line 715, in reraise
+[rank4]:     raise exception
+[rank4]: FileNotFoundError: Caught FileNotFoundError in DataLoader worker process 0.
+[rank4]: Original Traceback (most recent call last):
+[rank4]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/_utils/worker.py", line 351, in _worker_loop
+[rank4]:     data = fetcher.fetch(index)  # type: ignore[possibly-undefined]
+[rank4]:            ^^^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/_utils/fetch.py", line 52, in fetch
+[rank4]:     data = [self.dataset[idx] for idx in possibly_batched_index]
+[rank4]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/_utils/fetch.py", line 52, in <listcomp>
+[rank4]:     data = [self.dataset[idx] for idx in possibly_batched_index]
+[rank4]:             ~~~~~~~~~~~~^^^^^
+[rank4]:   File "/home/fuh/Efficient-CLIP-codex/datasets/compressed_video_dataset.py", line 595, in __getitem__
+[rank4]:     sample = self._load_view(item)
+[rank4]:              ^^^^^^^^^^^^^^^^^^^^^
+[rank4]:   File "/home/fuh/Efficient-CLIP-codex/datasets/compressed_video_dataset.py", line 525, in _load_view
+[rank4]:     raise FileNotFoundError(
+[rank4]: FileNotFoundError: dataset=k400 raw_line='train_256/bungee_jumping/pE1uFhNNYAM_000053_000063.mp4 bungee_jumping 40' parsed_path=/NetMedia_Nas/Videodataset/k400/mpeg4_videos/train_256/bungee_jumping/pE1uFhNNYAM_000053_000063.mp4 does not exist
+

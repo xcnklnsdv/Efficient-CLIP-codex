@@ -1,0 +1,15 @@
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 772, in <module>
+[rank0]:     main()
+[rank0]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+[rank0]:     return f(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 763, in main
+[rank0]:     return main_worker()
+[rank0]:            ^^^^^^^^^^^^^
+[rank0]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 559, in main_worker
+[rank0]:     class_names = load_class_names(args, cfg["NUM_CLASSES"], cfg=cfg)
+[rank0]:                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 280, in load_class_names
+[rank0]:     raise ValueError(
+[rank0]: ValueError: cannot obtain 400 semantic class texts for dataset k400 from lists <no existing list files>. Pass --class-names or --label-csv; numeric placeholders are forbidden for CLIP training.
