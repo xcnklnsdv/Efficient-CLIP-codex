@@ -5,7 +5,11 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from engine_emclip import _finish_optimizer_step, train_one_epoch
-from main_emclip import DistributedEvalSampler, apply_model_variant_defaults
+from main_emclip import (
+    DistributedEvalSampler,
+    apply_model_variant_defaults,
+    validate_resume_scheduler,
+)
 from models import EMCLIP, EMCLIPConfig
 
 
@@ -127,6 +131,26 @@ def test_engine_accumulates_micro_batches_when_motion_kl_is_disabled():
     assert torch.isfinite(torch.tensor(stats["acc1"]))
     assert "loss_mg_mv2text" in stats
     assert "loss_mg_text2mv" in stats
+    assert 0.0 <= stats["seconds"] < 60.0
+
+
+def test_cross_dataset_resume_scheduler_is_rejected_before_zero_lr_training():
+    parameter = torch.nn.Parameter(torch.tensor(1.0))
+    optimizer = torch.optim.SGD([parameter], lr=8e-6)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda _: 1.0)
+    scheduler.last_epoch = 41048
+
+    with pytest.raises(RuntimeError, match=r"another dataset.*--init-checkpoint"):
+        validate_resume_scheduler(scheduler, target_total_steps=2970)
+
+
+def test_same_run_resume_scheduler_inside_target_range_is_allowed():
+    parameter = torch.nn.Parameter(torch.tensor(1.0))
+    optimizer = torch.optim.SGD([parameter], lr=8e-6)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda _: 1.0)
+    scheduler.last_epoch = 1200
+
+    validate_resume_scheduler(scheduler, target_total_steps=2970)
 
 
 class _OverflowScaler:

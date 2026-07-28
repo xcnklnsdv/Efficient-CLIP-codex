@@ -19,6 +19,7 @@ from engine_emclip import (
     evaluate,
     is_main_process,
     load_checkpoint,
+    load_model_checkpoint,
     save_checkpoint,
     train_one_epoch,
 )
@@ -63,6 +64,16 @@ def parse_args():
     )
     parser.add_argument("--amp-growth-interval", type=int, default=2000)
     parser.add_argument("--max-consecutive-amp-overflows", type=int, default=8)
+    parser.add_argument(
+        "--init-checkpoint",
+        "--finetune",
+        dest="init_checkpoint",
+        default=None,
+        help=(
+            "Initialize model weights from an EM-CLIP checkpoint without restoring "
+            "optimizer, scheduler, scaler, epoch, or best accuracy. Use this for K400 transfer."
+        ),
+    )
     parser.add_argument("--resume", default=None)
     parser.add_argument("--output-dir", "--save-dir", dest="output_dir", default="output_dir/emclip")
     parser.add_argument("--eval", "--eval-only", dest="eval", action="store_true")
@@ -622,6 +633,21 @@ def build_scheduler(optimizer, steps_per_epoch, args):
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
 
+def validate_resume_scheduler(scheduler, target_total_steps):
+    if scheduler is None:
+        return
+    if target_total_steps <= 0:
+        raise ValueError("target_total_steps must be positive")
+    if scheduler.last_epoch >= target_total_steps:
+        raise RuntimeError(
+            "--resume restored scheduler last_epoch=%d, but this run has only "
+            "%d total steps. This usually means a checkpoint from another "
+            "dataset was passed to --resume. Use --init-checkpoint for K400 "
+            "transfer so optimizer/scheduler/epoch are reset."
+            % (scheduler.last_epoch, target_total_steps)
+        )
+
+
 def make_grad_scaler(device, enabled, init_scale=1024.0, growth_interval=2000):
     enabled = enabled and device.type == "cuda"
     if hasattr(torch, "amp") and hasattr(torch.amp, "GradScaler"):
@@ -788,6 +814,12 @@ def run_pretrained_audit(model, args, device):
 def main_worker():
     args = parse_args()
     apply_model_variant_defaults(args)
+    if args.init_checkpoint and args.resume:
+        raise ValueError(
+            "--init-checkpoint and --resume are mutually exclusive: use "
+            "--init-checkpoint for cross-dataset transfer and --resume only for "
+            "continuing the same training run."
+        )
     if args.micro_batch_size < 0:
         raise ValueError("--micro-batch-size must be >= 0.")
     if args.amp_init_scale <= 0:
@@ -808,6 +840,7 @@ def main_worker():
     if (
         not args.validate_class_names_only
         and not args.clip_checkpoint
+        and not args.init_checkpoint
         and not args.resume
         and not args.allow_random_init
     ):
@@ -865,6 +898,21 @@ def main_worker():
     if args.pretrained_audit_only:
         run_pretrained_audit(model, args, device)
         return
+
+    if args.init_checkpoint:
+        init_info = load_model_checkpoint(args.init_checkpoint, model, map_location="cpu")
+        if is_main_process():
+            print(
+                "[emclip][init] loaded model weights from %s "
+                "(source_epoch=%d source_best_acc1=%.6g); starting target training "
+                "with fresh optimizer/scheduler/scaler at epoch 0"
+                % (
+                    args.init_checkpoint,
+                    init_info["source_epoch"],
+                    init_info["source_best_acc1"],
+                ),
+                flush=True,
+            )
 
     train_dataset, val_dataset = build_datasets(args, class_names=class_names, cfg=cfg)
     if is_main_process():
@@ -1012,6 +1060,21 @@ def main_worker():
             print("[emclip] optimizer and scheduler ready", flush=True)
     if args.resume:
         start_epoch, best_acc1 = load_checkpoint(args.resume, model, optimizer, scheduler, scaler, map_location=device)
+        if scheduler is not None:
+            target_total_steps = max(1, args.epochs * len(train_loader))
+            validate_resume_scheduler(scheduler, target_total_steps)
+        if is_main_process():
+            print(
+                "[emclip][resume] restored model and training state from %s; "
+                "start_epoch=%d best_acc1=%.6g scheduler_step=%s"
+                % (
+                    args.resume,
+                    start_epoch,
+                    best_acc1,
+                    scheduler.last_epoch if scheduler is not None else "none",
+                ),
+                flush=True,
+            )
 
     if args.eval:
         metrics = evaluate(model, val_loader, device, args)

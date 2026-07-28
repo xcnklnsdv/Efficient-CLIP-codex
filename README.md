@@ -39,13 +39,21 @@ SOT/EOT ids 49406/49407, causal text attention, and BPE-derived label-token
 masks. No tokenizer or model file is downloaded at runtime. Use
 `--clip-bpe-path` only for an equivalent local vocabulary asset.
 
-`--resume` is intentionally separate. It only accepts an EM-CLIP training
-checkpoint containing `model`, `optimizer`, `scheduler`, `scaler`, `epoch`, and
-`best_acc1`; it is not a fallback for original CLIP files.
+`--init-checkpoint` (alias `--finetune`) loads only `checkpoint["model"]` from
+an EM-CLIP checkpoint. Use it to transfer a K400-trained EM-CLIP model to
+HMDB51 or UCF101: optimizer, scheduler, scaler, epoch, and best accuracy are
+reset for the target dataset.
 
-Real training refuses silent random initialization. Pass `--clip-checkpoint`, or
-resume a complete EM-CLIP checkpoint with `--resume`. `--allow-random-init` is
-reserved for an explicit initialization ablation.
+`--resume` is intentionally separate. It restores `model`, `optimizer`,
+`scheduler`, `scaler`, `epoch`, and `best_acc1` and is only for continuing the
+same dataset/run. The two options are mutually exclusive. A resumed scheduler
+whose step is outside the target run now raises an error instead of silently
+producing a zero learning rate.
+
+Real training refuses silent random initialization. Pass `--clip-checkpoint`,
+initialize from EM-CLIP with `--init-checkpoint`, or resume the same run with
+`--resume`. `--allow-random-init` is reserved for an explicit initialization
+ablation.
 
 Audit a real checkpoint without constructing dataset loaders or training:
 
@@ -88,6 +96,8 @@ Override common settings:
 NPROC_PER_NODE=1 BATCH_SIZE=2 MASTER_PORT=29601 bash scripts/train_emclip_hmdb51.sh
 NPROC_PER_NODE=4 BATCH_SIZE=4 bash scripts/train_emclip_hmdb51.sh
 RESUME=output_dir/emclip/run/latest.pth bash scripts/train_emclip_hmdb51.sh
+K400_CHECKPOINT=/path/to/k400/model_best.pth bash scripts/train_emclip_hmdb51.sh
+INIT_CHECKPOINT="" bash scripts/train_emclip_hmdb51.sh  # original CLIP only
 GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh
 GPU_IDS=2 bash scripts/train_emclip_ucf101.sh
 CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
@@ -119,6 +129,13 @@ overflows still raise an explicit error. Override with `--amp-init-scale` and
 `--max-consecutive-amp-overflows` when diagnosing another GPU architecture.
 Training and evaluation scripts append `--clip-checkpoint "${CLIP_CHECKPOINT}"`; the default is `/home/fuh/CLIP-models/ViT-B-16.pt`, with an environment override and a repository-local fallback when available.
 The scripts prefer a local `pytorch-coviar/data_loader` directory when present, then fall back to `/home/fuh/m2clip/Coviar/data_loader`. Build the extension with `cd pytorch-coviar/data_loader && bash install.sh` if `coviar*.so` is missing.
+
+HMDB51 and UCF101 training scripts default `INIT_CHECKPOINT` to the configured
+K400 `model_best.pth` and pass `--init-checkpoint`, so target training starts at
+epoch 0 with LR `8e-6`. Setting `RESUME=/path/to/target/latest.pth` instead
+continues a target run with its full state and takes priority over K400
+initialization. Set `INIT_CHECKPOINT=""` explicitly to train from original CLIP
+without K400 transfer.
 
 K400 uses the repository-owned, ID-indexed mapping
 `configs/kinetics_400_labels.csv` by default; both K400 launch scripts pass it

@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 import main_emclip
-from engine_emclip import load_checkpoint
+from engine_emclip import load_checkpoint, load_model_checkpoint
 from models.clip_checkpoint import load_clip_source_checkpoint
 from models.emclip import EMCLIP, EMCLIPConfig
 from models.emclip_layers import interpolate_positional_embedding
@@ -163,6 +163,41 @@ def test_resume_loader_rejects_an_original_clip_state_dict(tmp_path):
     torch.save({"visual.conv1.weight": torch.randn(4, 3, 2, 2)}, path)
     with pytest.raises(TypeError, match="--resume expects"):
         load_checkpoint(path, nn.Linear(2, 2))
+
+
+def test_init_checkpoint_loads_only_model_weights_and_reports_source_metadata(tmp_path):
+    source = nn.Linear(2, 2)
+    target = nn.Linear(2, 2)
+    with torch.no_grad():
+        source.weight.fill_(3.0)
+        source.bias.fill_(-2.0)
+        target.weight.zero_()
+        target.bias.zero_()
+    path = tmp_path / "k400-transfer.pth"
+    torch.save(
+        {
+            "model": source.state_dict(),
+            "optimizer": {"must_not_be_loaded": True},
+            "scheduler": {"last_epoch": 41048},
+            "scaler": {"scale": 2048.0},
+            "epoch": 13,
+            "best_acc1": 77.7834,
+        },
+        path,
+    )
+
+    info = load_model_checkpoint(path, target)
+
+    assert torch.equal(target.weight, source.weight)
+    assert torch.equal(target.bias, source.bias)
+    assert info == {"source_epoch": 13, "source_best_acc1": 77.7834}
+
+
+def test_init_checkpoint_rejects_an_original_clip_state_dict(tmp_path):
+    path = tmp_path / "not-an-emclip-init.pth"
+    torch.save({"visual.conv1.weight": torch.randn(4, 3, 2, 2)}, path)
+    with pytest.raises(TypeError, match="--init-checkpoint expects"):
+        load_model_checkpoint(path, nn.Linear(2, 2))
 
 
 def test_main_preserves_error_and_destroys_process_group(monkeypatch):

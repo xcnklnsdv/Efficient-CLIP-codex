@@ -54,3 +54,12 @@ def test_scripts_centralize_default_gpu_ids_and_disable_unused_detection():
     assert 'export CUDA_VISIBLE_DEVICES="${GPU_IDS}"' in gpu_text
     assert 'NPROC_PER_NODE="${#_EMCLIP_GPU_ID_ARRAY[@]}"' in gpu_text
     assert "FIND_UNUSED_PARAMETERS=${FIND_UNUSED_PARAMETERS:-false}" in k400_text
+
+
+def test_hmdb_and_ucf_use_k400_as_model_initialization_not_resume():
+    for filename in ("train_emclip_hmdb51.sh", "train_emclip_ucf101.sh"):
+        text = (REPO_ROOT / "scripts" / filename).read_text(encoding="utf-8")
+        assert 'INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"' in text
+        assert 'RESUME="${RESUME:-}"' in text
+        assert 'CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")' in text
+        assert 'RESUME="${RESUME:-${K400_CHECKPOINT}}"' not in text

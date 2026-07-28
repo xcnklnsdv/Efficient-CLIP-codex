@@ -165,7 +165,7 @@ def _finish_optimizer_step(model, optimizer, scaler, grad_clip_norm):
 
 def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, args):
     model.train()
-    start = time.time()
+    start_time = time.time()
     rank = dist.get_rank() if dist_ready() else 0
     consecutive_amp_overflows = 0
     amp_skipped_steps = 0
@@ -216,8 +216,10 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
         batch_loss_mg_mv2text_total = 0.0
         batch_loss_mg_text2mv_total = 0.0
         batch_loss_me_total = 0.0
-        for micro_idx, (start, end) in enumerate(micro_ranges):
-            batch = move_batch_to_device(_slice_batch(raw_batch, start, end), device)
+        for micro_idx, (micro_start, micro_end) in enumerate(micro_ranges):
+            batch = move_batch_to_device(
+                _slice_batch(raw_batch, micro_start, micro_end), device
+            )
             labels = batch["label"]
             if step == 0 and micro_idx == 0:
                 print(
@@ -240,10 +242,10 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
                     raise RuntimeError("EM-CLIP training loss must be a scalar Tensor.")
                 # Weight by sample count so a short final micro-batch does not
                 # change the effective loss, while bounding GPU activation.
-                micro_weight = float(end - start) / float(batch_size)
+                micro_weight = float(micro_end - micro_start) / float(batch_size)
                 scaler.scale(micro_loss * micro_weight).backward()
             out = micro_out
-            micro_bs = end - start
+            micro_bs = micro_end - micro_start
             batch_loss_total += micro_loss.detach().item() * micro_bs
             batch_loss_mg_total += micro_out["loss_mg"].detach().item() * micro_bs
             batch_loss_mg_mv2text_total += micro_out["loss_mg_mv2text"].detach().item() * micro_bs
@@ -365,7 +367,7 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
         "acc5": 100.0 * reduce_sum(totals["acc5"], device_for_reduce) / max(1.0, count),
         "mgse_saliency_entropy": reduce_sum(totals["entropy"], device_for_reduce) / max(1.0, count),
         "amp_skipped_steps": amp_skipped_steps,
-        "seconds": time.time() - start,
+        "seconds": time.time() - start_time,
     }
     return result
 
@@ -444,11 +446,31 @@ def save_checkpoint(path, model, optimizer, scheduler, scaler, epoch, best_acc1)
     )
 
 
-def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, map_location="cpu"):
+def _load_checkpoint_file(path, map_location):
     try:
-        ckpt = torch.load(path, map_location=map_location, weights_only=False)
+        return torch.load(path, map_location=map_location, weights_only=False)
     except TypeError:
-        ckpt = torch.load(path, map_location=map_location)
+        return torch.load(path, map_location=map_location)
+
+
+def load_model_checkpoint(path, model, map_location="cpu"):
+    """Load model weights for transfer without restoring training progress."""
+    ckpt = _load_checkpoint_file(path, map_location)
+    if not isinstance(ckpt, dict) or "model" not in ckpt:
+        raise TypeError(
+            "--init-checkpoint expects an EM-CLIP checkpoint containing a 'model' "
+            "state_dict; got %s" % type(ckpt)
+        )
+    module = model.module if hasattr(model, "module") else model
+    module.load_state_dict(ckpt["model"], strict=True)
+    return {
+        "source_epoch": int(ckpt.get("epoch", -1)),
+        "source_best_acc1": float(ckpt.get("best_acc1", -math.inf)),
+    }
+
+
+def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, map_location="cpu"):
+    ckpt = _load_checkpoint_file(path, map_location)
     if not isinstance(ckpt, dict) or "model" not in ckpt:
         raise TypeError(
             "--resume expects an EM-CLIP training checkpoint containing a 'model' state_dict; got %s"

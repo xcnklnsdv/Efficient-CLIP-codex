@@ -40,7 +40,12 @@ fi
 K400_CHECKPOINT="${K400_CHECKPOINT:-/home/fuh/Efficient-CLIP-codex/output_dir/emclip/k400_emclip_T16_K8_20260721_001418/model_best.pth}"
 
 # 默认加载 K400 权重
-RESUME="${RESUME:-${K400_CHECKPOINT}}"
+# K400 is a transfer-learning source: load model weights only and reset all
+# target-dataset training state. An explicitly empty value disables it.
+INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"
+
+# RESUME is only for continuing a UCF101 latest.pth/model_best.pth run.
+RESUME="${RESUME:-}"
 
 # =========================================================
 # Training configuration
@@ -132,12 +137,20 @@ fi
 
 if [[ -n "${RESUME:-}" ]]; then
   [[ -f "${RESUME}" ]] || {
-    echo "[emclip] EMCLIP checkpoint not found:" >&2
+    echo "[emclip] UCF101 resume checkpoint not found:" >&2
     echo "[emclip] ${RESUME}" >&2
     exit 1
   }
 
   CMD+=(--resume "${RESUME}")
+elif [[ -n "${INIT_CHECKPOINT:-}" ]]; then
+  [[ -f "${INIT_CHECKPOINT}" ]] || {
+    echo "[emclip] K400 initialization checkpoint not found:" >&2
+    echo "[emclip] ${INIT_CHECKPOINT}" >&2
+    exit 1
+  }
+
+  CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")
 fi
 
 # =========================================================
@@ -169,7 +182,8 @@ echo "[emclip] Starting UCF101 training"
 echo "[emclip] physical GPUs       : ${CUDA_VISIBLE_DEVICES}"
 echo "[emclip] process count       : ${NPROC_PER_NODE}"
 echo "[emclip] CLIP checkpoint     : ${CLIP_CHECKPOINT}"
-echo "[emclip] EMCLIP checkpoint   : ${RESUME}"
+echo "[emclip] init checkpoint     : ${INIT_CHECKPOINT}"
+echo "[emclip] resume checkpoint   : ${RESUME}"
 echo "[emclip] output directory    : ${OUTPUT_DIR}"
 echo "============================================================"
 echo

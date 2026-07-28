@@ -133,9 +133,16 @@ dataset-free no-grad forward through all layers and requires every tensor output
 to be finite. Under `torchrun`, all ranks participate and the process group is
 destroyed in `finally` even if the original error propagates.
 
-`--resume` only reads this project's training format and strictly loads
-`checkpoint["model"]` before restoring optimizer, scheduler, scaler, epoch, and
-best accuracy.
+`--init-checkpoint` strictly loads only `checkpoint["model"]` from an EM-CLIP
+training checkpoint. It is the cross-dataset transfer path used by the HMDB51
+and UCF101 scripts for K400 weights; target optimizer, scheduler, scaler, epoch,
+and best accuracy remain fresh.
+
+`--resume` restores the complete model/optimizer/scheduler/scaler/epoch/best
+state and is reserved for the same run. It is mutually exclusive with
+`--init-checkpoint`. After resume, the restored scheduler step is checked
+against the target run's total steps; an out-of-range cross-dataset scheduler
+raises before training rather than clamping cosine LR to zero.
 
 ## MGSE Label Leakage
 
