@@ -23,6 +23,13 @@ def reduce_sum(value, device):
     return tensor.item()
 
 
+def reduce_max(value, device):
+    tensor = torch.tensor(value, dtype=torch.float64, device=device)
+    if dist_ready():
+        dist.all_reduce(tensor, op=dist.ReduceOp.MAX)
+    return tensor.item()
+
+
 def move_batch_to_device(batch, device):
     moved = {}
     for key in ("i_frames", "motion_vectors", "residuals", "valid_mask", "label"):
@@ -166,6 +173,7 @@ def _finish_optimizer_step(model, optimizer, scaler, grad_clip_norm):
 def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, args):
     model.train()
     start_time = time.time()
+    raw_model = model.module if hasattr(model, "module") else model
     rank = dist.get_rank() if dist_ready() else 0
     consecutive_amp_overflows = 0
     amp_skipped_steps = 0
@@ -198,7 +206,6 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
             batch_size,
             getattr(args, "micro_batch_size", 0),
         )
-        raw_model = model.module if hasattr(model, "module") else model
         if (
             len(micro_ranges) > 1
             and getattr(raw_model, "use_mgse", False)
@@ -357,6 +364,8 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
             )
     device_for_reduce = device
     count = reduce_sum(totals["count"], device_for_reduce)
+    elapsed_seconds = reduce_max(time.time() - start_time, device_for_reduce)
+    candidate_frames = int(raw_model.config.candidate_frames)
     result = {
         "loss": reduce_sum(totals["loss"], device_for_reduce) / max(1.0, count),
         "loss_mg": reduce_sum(totals["loss_mg"], device_for_reduce) / max(1.0, count),
@@ -367,7 +376,11 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
         "acc5": 100.0 * reduce_sum(totals["acc5"], device_for_reduce) / max(1.0, count),
         "mgse_saliency_entropy": reduce_sum(totals["entropy"], device_for_reduce) / max(1.0, count),
         "amp_skipped_steps": amp_skipped_steps,
-        "seconds": time.time() - start_time,
+        "seconds": elapsed_seconds,
+        "global_videos_per_second": count / max(elapsed_seconds, 1e-12),
+        "global_candidate_gops_per_second": (
+            count * candidate_frames / max(elapsed_seconds, 1e-12)
+        ),
     }
     return result
 
@@ -375,6 +388,7 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
 @torch.no_grad()
 def evaluate(model, loader, device, args):
     model.eval()
+    start_time = time.time()
     totals = {"acc1": 0.0, "acc5": 0.0, "count": 0, "loss_me": 0.0}
     raw_model = model.module if hasattr(model, "module") else model
     diagnostic_ground_truth = (
@@ -424,10 +438,13 @@ def evaluate(model, loader, device, args):
         totals["loss_me"] += loss_me.item() * labels.numel()
         totals["count"] += labels.numel()
     count = reduce_sum(totals["count"], device)
+    elapsed_seconds = reduce_max(time.time() - start_time, device)
     return {
         "val_acc1": 100.0 * reduce_sum(totals["acc1"], device) / max(1.0, count),
         "val_acc5": 100.0 * reduce_sum(totals["acc5"], device) / max(1.0, count),
         "val_loss_me": reduce_sum(totals["loss_me"], device) / max(1.0, count),
+        "val_seconds": elapsed_seconds,
+        "val_global_videos_per_second": count / max(elapsed_seconds, 1e-12),
     }
 
 

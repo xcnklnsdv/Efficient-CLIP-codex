@@ -55,6 +55,7 @@ BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
 NUM_WORKERS=${NUM_WORKERS:-8}
 PIN_MEMORY=${PIN_MEMORY:-1}
+PROFILE_COMPUTE=${PROFILE_COMPUTE:-1}
 
 if [[ -z "${COVIAR_DATA_LOADER_DIR:-}" ]]; then
   if [[ -d "${SCRIPT_DIR}/../pytorch-coviar/data_loader" ]]; then
@@ -115,6 +116,12 @@ if [[ "${PIN_MEMORY}" == "0" ||
       "${PIN_MEMORY}" == "false" ||
       "${PIN_MEMORY}" == "False" ]]; then
   CMD+=(--no-pin-memory)
+fi
+
+if [[ "${PROFILE_COMPUTE}" == "1" ||
+      "${PROFILE_COMPUTE}" == "true" ||
+      "${PROFILE_COMPUTE}" == "True" ]]; then
+  CMD+=(--profile-compute)
 fi
 
 # =========================================================

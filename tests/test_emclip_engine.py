@@ -8,6 +8,7 @@ from engine_emclip import _finish_optimizer_step, train_one_epoch
 from main_emclip import (
     DistributedEvalSampler,
     apply_model_variant_defaults,
+    profile_model_compute,
     validate_resume_scheduler,
 )
 from models import EMCLIP, EMCLIPConfig
@@ -132,6 +133,25 @@ def test_engine_accumulates_micro_batches_when_motion_kl_is_disabled():
     assert "loss_mg_mv2text" in stats
     assert "loss_mg_text2mv" in stats
     assert 0.0 <= stats["seconds"] < 60.0
+    assert stats["global_videos_per_second"] > 0.0
+    assert stats["global_candidate_gops_per_second"] > 0.0
+
+
+def test_compute_profiler_reports_supported_flops_and_runtime_metrics():
+    model, _, _, _, _ = _build_engine_components(lambda_mg=0.0)
+
+    stats = profile_model_compute(model, torch.device("cpu"))
+
+    assert stats["batch_size"] == 1
+    assert stats["candidate_frames"] == 4
+    assert stats["selected_frames"] == 2
+    assert stats["input_size"] == 64
+    assert stats["precision"] == "fp32"
+    assert stats["forward_flops"] > 0
+    assert stats["forward_gflops_per_video"] > 0.0
+    assert stats["forward_latency_ms"] > 0.0
+    assert stats["forward_videos_per_second"] > 0.0
+    assert stats["peak_allocated_memory_mb"] == 0.0
 
 
 def test_cross_dataset_resume_scheduler_is_rejected_before_zero_lr_training():

@@ -137,6 +137,25 @@ continues a target run with its full state and takes priority over K400
 initialization. Set `INIT_CHECKPOINT=""` explicitly to train from original CLIP
 without K400 transfer.
 
+### Compute and throughput statistics
+
+All four training scripts enable `--profile-compute` by default. Before the
+DataLoader is built, rank 0 runs one batch-size-1, cached-class-text forward and
+logs `flops`, `gflops_per_video`, latency, videos/second, and peak allocated CUDA
+memory. Disable this startup profile with `PROFILE_COMPUTE=0` when needed, or
+add `--profile-compute` to any direct `main_emclip.py` invocation. The profile
+follows the run's `--amp` setting and prints its `fp32` or `amp_fp16` precision
+explicitly.
+
+The FLOP value is the sum of operators for which the installed
+`torch.profiler` has a FLOP formula; unsupported operators are omitted and the
+log prints this limitation. The class-text encoder is warmed up and cached, so
+the reported number represents the repeated per-video validation/inference
+path. Epoch summaries additionally contain `seconds`,
+`global_videos_per_second`, `global_candidate_gops_per_second`, `val_seconds`,
+and `val_global_videos_per_second`. In DDP, elapsed time is the slowest rank and
+the sample count is the globally reduced count.
+
 K400 uses the repository-owned, ID-indexed mapping
 `configs/kinetics_400_labels.csv` by default; both K400 launch scripts pass it
 explicitly with `--label-csv`. It contains IDs 0 through 399 and was checked

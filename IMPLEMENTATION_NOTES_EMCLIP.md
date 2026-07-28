@@ -144,6 +144,24 @@ state and is reserved for the same run. It is mutually exclusive with
 against the target run's total steps; an out-of-range cross-dataset scheduler
 raises before training rather than clamping cosine LR to zero.
 
+## Compute accounting
+
+`--profile-compute` profiles one batch-size-1 inference forward after a warmup
+that creates the evaluation class-text cache. It reports supported-operation
+FLOPs and GFLOPs/video together with measured latency, videos/second, and CUDA
+peak allocated memory. This is the repeated video path, not the one-time class
+text encoding cost. PyTorch does not provide FLOP formulas for every operator,
+so the reported FLOPs are explicitly logged as a supported-operator count and
+must not be interpreted as an exact architecture-wide total.
+Latency is measured in an ordinary warm forward outside the profiler context,
+and the measurement follows the run's AMP setting.
+
+Training and validation epoch dictionaries also report wall time and global
+videos/second. Training includes global candidate GOPs/second (`videos * T`),
+which measures compressed-domain candidate processing volume rather than FLOPs.
+For distributed runs, sample counts use SUM reduction and wall time uses MAX
+reduction, yielding aggregate throughput limited by the slowest rank.
+
 ## MGSE Label Leakage
 
 - `ground_truth`: uses true labels and is blocked in eval unless `--allow-mgse-label-leakage-for-diagnostic` is set.

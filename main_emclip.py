@@ -4,6 +4,7 @@ import json
 import math
 import os
 import random
+import time
 from pathlib import Path
 
 import numpy as np
@@ -15,6 +16,7 @@ from torch.utils.data import DataLoader, DistributedSampler, Sampler
 from configs import DATASETS
 from dataset_coviar import CoviarDataSet
 from engine_emclip import (
+    _autocast,
     dist_ready,
     evaluate,
     is_main_process,
@@ -129,6 +131,14 @@ def parse_args():
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=1024)
     parser.add_argument("--print-freq", type=int, default=10)
+    parser.add_argument(
+        "--profile-compute",
+        action="store_true",
+        help=(
+            "Profile one batch-size-1 cached-text inference and log supported-op "
+            "FLOPs/video, latency, throughput, and peak allocated memory."
+        ),
+    )
     parser.add_argument("--synthetic-smoke", action="store_true")
     parser.add_argument(
         "--validate-class-names-only",
@@ -745,6 +755,130 @@ def _all_tensor_outputs_finite(value):
 
 
 @torch.no_grad()
+def profile_model_compute(model, device, amp=False):
+    """Profile one video forward with cached class text at batch size one."""
+    try:
+        from torch.profiler import ProfilerActivity, profile
+    except ImportError as exc:
+        raise RuntimeError(
+            "--profile-compute requires torch.profiler support in the installed PyTorch"
+        ) from exc
+
+    raw_model = model.module if hasattr(model, "module") else model
+    config = raw_model.config
+    temporal = int(config.candidate_frames)
+    spatial = int(config.input_size)
+    use_amp = bool(amp and device.type == "cuda")
+    precision = "amp_fp16" if use_amp else "fp32"
+    was_training = raw_model.training
+    raw_model.eval()
+
+    i_frames = torch.randn(1, temporal, 3, spatial, spatial, device=device)
+    residuals = torch.randn_like(i_frames)
+    motion_vectors = None
+    if raw_model.use_mgse:
+        motion_vectors = torch.randn(1, temporal, 2, spatial, spatial, device=device)
+    valid_mask = torch.ones(1, temporal, dtype=torch.bool, device=device)
+
+    def forward_once():
+        with _autocast(device, use_amp):
+            return raw_model(
+                i_frames=i_frames,
+                motion_vectors=motion_vectors,
+                residuals=residuals,
+                labels=None,
+                valid_mask=valid_mask,
+                training_mode=False,
+            )
+
+    # Warmup also builds the safe eval-only class-text cache. The reported
+    # per-video compute therefore excludes text encoding that is amortized
+    # across the full validation/test set.
+    warmup_output = forward_once()
+    if not _all_tensor_outputs_finite(warmup_output):
+        raise FloatingPointError("compute profiling warmup produced non-finite output")
+    del warmup_output
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+        torch.cuda.reset_peak_memory_stats(device)
+
+    # Measure an ordinary warm forward separately. Timing the profiler context
+    # itself would mostly measure profiler instrumentation overhead.
+    start_time = time.perf_counter()
+    output = forward_once()
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+    elapsed_seconds = time.perf_counter() - start_time
+    if not _all_tensor_outputs_finite(output):
+        raise FloatingPointError("compute timing forward produced non-finite output")
+    peak_memory_mb = (
+        torch.cuda.max_memory_allocated(device) / 1024.0 ** 2
+        if device.type == "cuda"
+        else 0.0
+    )
+    del output
+
+    activities = [ProfilerActivity.CPU]
+    if device.type == "cuda":
+        activities.append(ProfilerActivity.CUDA)
+    with profile(activities=activities, record_shapes=True, with_flops=True) as prof:
+        profiled_output = forward_once()
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+
+    forward_flops = int(sum(int(event.flops or 0) for event in prof.key_averages()))
+    if forward_flops <= 0:
+        raise RuntimeError(
+            "torch.profiler reported zero FLOPs; this PyTorch build does not provide "
+            "the required operator FLOP formulas"
+        )
+    if not _all_tensor_outputs_finite(profiled_output):
+        raise FloatingPointError("compute profiling forward produced non-finite output")
+    result = {
+        "batch_size": 1,
+        "candidate_frames": temporal,
+        "selected_frames": int(config.selected_frames),
+        "input_size": spatial,
+        "precision": precision,
+        "forward_flops": forward_flops,
+        "forward_gflops_per_video": forward_flops / 1e9,
+        "forward_latency_ms": elapsed_seconds * 1000.0,
+        "forward_videos_per_second": 1.0 / max(elapsed_seconds, 1e-12),
+        "peak_allocated_memory_mb": peak_memory_mb,
+    }
+    print(
+        "[emclip][compute] cached_text_forward batch=1 precision=%s T=%d K=%d input=%dx%d "
+        "flops=%d gflops_per_video=%.3f latency_ms=%.3f videos_per_second=%.3f "
+        "peak_allocated_memory_mb=%.1f"
+        % (
+            precision,
+            result["candidate_frames"],
+            result["selected_frames"],
+            spatial,
+            spatial,
+            forward_flops,
+            result["forward_gflops_per_video"],
+            result["forward_latency_ms"],
+            result["forward_videos_per_second"],
+            peak_memory_mb,
+        ),
+        flush=True,
+    )
+    print(
+        "[emclip][compute] FLOPs include only operators supported by "
+        "torch.profiler formulas; class-text encoding is cached and excluded",
+        flush=True,
+    )
+
+    if was_training:
+        raw_model.train()
+    del i_frames, residuals, motion_vectors, valid_mask, profiled_output, prof
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+    return result
+
+
+@torch.no_grad()
 def run_pretrained_audit(model, args, device):
     """Audit pretrained coverage and run a dataset-free finite forward pass."""
     if model.pretrained_audit is None:
@@ -913,6 +1047,12 @@ def main_worker():
                 ),
                 flush=True,
             )
+
+    if args.profile_compute:
+        if is_main_process():
+            profile_model_compute(model, device, amp=args.amp)
+        if dist_ready():
+            dist.barrier()
 
     train_dataset, val_dataset = build_datasets(args, class_names=class_names, cfg=cfg)
     if is_main_process():

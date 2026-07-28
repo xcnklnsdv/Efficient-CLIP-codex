@@ -56,6 +56,18 @@ def test_scripts_centralize_default_gpu_ids_and_disable_unused_detection():
     assert "FIND_UNUSED_PARAMETERS=${FIND_UNUSED_PARAMETERS:-false}" in k400_text
 
 
+def test_training_scripts_enable_optional_compute_profile():
+    for filename in (
+        "train_emclip_hmdb51.sh",
+        "train_emclip_ucf101.sh",
+        "train_emclip_k400.sh",
+        "train_emclip_ssv2.sh",
+    ):
+        text = (REPO_ROOT / "scripts" / filename).read_text(encoding="utf-8")
+        assert "PROFILE_COMPUTE=${PROFILE_COMPUTE:-1}" in text
+        assert "CMD+=(--profile-compute)" in text
+
+
 def test_hmdb_and_ucf_use_k400_as_model_initialization_not_resume():
     for filename in ("train_emclip_hmdb51.sh", "train_emclip_ucf101.sh"):
         text = (REPO_ROOT / "scripts" / filename).read_text(encoding="utf-8")
