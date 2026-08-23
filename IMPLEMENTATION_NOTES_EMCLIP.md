@@ -134,9 +134,11 @@ to be finite. Under `torchrun`, all ranks participate and the process group is
 destroyed in `finally` even if the original error propagates.
 
 `--init-checkpoint` strictly loads only `checkpoint["model"]` from an EM-CLIP
-training checkpoint. It is the cross-dataset transfer path used by the HMDB51
-and UCF101 scripts for K400 weights; target optimizer, scheduler, scaler, epoch,
-and best accuracy remain fresh.
+training checkpoint. It is the cross-dataset transfer path used by the SSV2,
+HMDB51, and UCF101 scripts for K400 weights; target optimizer, scheduler, scaler,
+epoch, and best accuracy remain fresh. The SSV2 evaluation launcher also accepts
+this path for a direct pre-fine-tuning transfer evaluation, while `RESUME` takes
+priority for an SSV2-finetuned checkpoint.
 
 `--resume` restores the complete model/optimizer/scheduler/scaler/epoch/best
 state and is reserved for the same run. It is mutually exclusive with

@@ -193,6 +193,25 @@ def test_init_checkpoint_loads_only_model_weights_and_reports_source_metadata(tm
     assert info == {"source_epoch": 13, "source_best_acc1": 77.7834}
 
 
+def test_init_checkpoint_is_compatible_with_a_different_target_class_bank(tmp_path):
+    source = EMCLIP(_tiny_config())
+    target_config = _tiny_config()
+    target_config.num_classes = 3
+    target_config.class_names = ["open", "close", "move"]
+    target = EMCLIP(target_config)
+    path = tmp_path / "cross-dataset-transfer.pth"
+    torch.save({"model": source.state_dict(), "epoch": 4, "best_acc1": 12.5}, path)
+
+    load_model_checkpoint(path, target)
+
+    # Class prompts are generated from the target dataset at runtime and are
+    # intentionally absent from the checkpoint state. All learned tensors can
+    # therefore still be loaded strictly from a source dataset with C != 3.
+    assert target.text_encoder.class_names == ["open", "close", "move"]
+    for key, value in source.state_dict().items():
+        assert torch.equal(target.state_dict()[key], value)
+
+
 def test_init_checkpoint_rejects_an_original_clip_state_dict(tmp_path):
     path = tmp_path / "not-an-emclip-init.pth"
     torch.save({"visual.conv1.weight": torch.randn(4, 3, 2, 2)}, path)

@@ -41,8 +41,8 @@ masks. No tokenizer or model file is downloaded at runtime. Use
 
 `--init-checkpoint` (alias `--finetune`) loads only `checkpoint["model"]` from
 an EM-CLIP checkpoint. Use it to transfer a K400-trained EM-CLIP model to
-HMDB51 or UCF101: optimizer, scheduler, scaler, epoch, and best accuracy are
-reset for the target dataset.
+SSV2, HMDB51, or UCF101: optimizer, scheduler, scaler, epoch, and best accuracy
+are reset for the target dataset.
 
 `--resume` is intentionally separate. It restores `model`, `optimizer`,
 `scheduler`, `scaler`, `epoch`, and `best_acc1` and is only for continuing the
@@ -97,6 +97,7 @@ NPROC_PER_NODE=1 BATCH_SIZE=2 MASTER_PORT=29601 bash scripts/train_emclip_hmdb51
 NPROC_PER_NODE=4 BATCH_SIZE=4 bash scripts/train_emclip_hmdb51.sh
 RESUME=output_dir/emclip/run/latest.pth bash scripts/train_emclip_hmdb51.sh
 K400_CHECKPOINT=/path/to/k400/model_best.pth bash scripts/train_emclip_hmdb51.sh
+K400_CHECKPOINT=/path/to/k400/model_best.pth CLASS_NAMES=/path/to/ssv2_classes.txt bash scripts/train_emclip_ssv2.sh
 INIT_CHECKPOINT="" bash scripts/train_emclip_hmdb51.sh  # original CLIP only
 GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh
 GPU_IDS=2 bash scripts/train_emclip_ucf101.sh
@@ -130,12 +131,12 @@ overflows still raise an explicit error. Override with `--amp-init-scale` and
 Training and evaluation scripts append `--clip-checkpoint "${CLIP_CHECKPOINT}"`; the default is `/home/fuh/CLIP-models/ViT-B-16.pt`, with an environment override and a repository-local fallback when available.
 The scripts prefer a local `pytorch-coviar/data_loader` directory when present, then fall back to `/home/fuh/m2clip/Coviar/data_loader`. Build the extension with `cd pytorch-coviar/data_loader && bash install.sh` if `coviar*.so` is missing.
 
-HMDB51 and UCF101 training scripts default `INIT_CHECKPOINT` to the configured
-K400 `model_best.pth` and pass `--init-checkpoint`, so target training starts at
-epoch 0 with LR `8e-6`. Setting `RESUME=/path/to/target/latest.pth` instead
-continues a target run with its full state and takes priority over K400
-initialization. Set `INIT_CHECKPOINT=""` explicitly to train from original CLIP
-without K400 transfer.
+SSV2, HMDB51, and UCF101 training scripts default `INIT_CHECKPOINT` to the
+configured K400 `model_best.pth` and pass `--init-checkpoint`, so target training
+starts at epoch 0 with LR `8e-6`. Setting
+`RESUME=/path/to/target/latest.pth` instead continues a target run with its full
+state and takes priority over K400 initialization. Set `INIT_CHECKPOINT=""`
+explicitly to train from original CLIP without K400 transfer.
 
 ### Compute and throughput statistics
 
@@ -191,7 +192,14 @@ Fast 1x1 evaluation:
 
 ```bash
 RESUME=/path/to/model_best.pth bash scripts/eval_emclip_hmdb51.sh
+RESUME=/path/to/ssv2/model_best.pth CLASS_NAMES=/path/to/ssv2_classes.txt bash scripts/eval_emclip_ssv2.sh
 ```
+
+`eval_emclip_ssv2.sh` gives `RESUME` (an SSV2-finetuned checkpoint) priority.
+When `RESUME` is empty it defaults to the configured K400 checkpoint through
+`--init-checkpoint`, which evaluates the transferred model before SSV2
+fine-tuning. Override `K400_CHECKPOINT`, or set `INIT_CHECKPOINT=""` for the
+explicit original-CLIP initialization ablation.
 
 Paper-style 4 temporal views x 3 spatial crops:
 

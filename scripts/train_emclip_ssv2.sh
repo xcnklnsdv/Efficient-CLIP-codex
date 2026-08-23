@@ -11,6 +11,20 @@ CLIP_CHECKPOINT="${CLIP_CHECKPOINT:-/home/fuh/CLIP-models/ViT-B-16.pt}"
 if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
 fi
+
+K400_CHECKPOINT="${K400_CHECKPOINT:-/home/fuh/Efficient-CLIP-codex/output_dir/emclip/k400_emclip_T16_K8_20260721_001418/model_best.pth}"
+
+# K400 is a transfer-learning source: load model weights only and reset all
+# SSV2 optimizer/scheduler/scaler/epoch state. An explicitly empty value
+# disables K400 initialization and leaves the original CLIP initialization.
+INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"
+
+# RESUME is only for continuing an SSV2 latest.pth/model_best.pth run.
+RESUME="${RESUME:-}"
+
+# Keep the SSV2 launcher aligned with train_emclip_hmdb51.sh and the current
+# _gpu_env.sh contract. PyTorch sees these as cuda:0, cuda:1, and cuda:2.
+EMCLIP_SCRIPT_GPU_IDS="0,1,2"
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
@@ -59,12 +73,23 @@ if [[ "${PROFILE_COMPUTE}" == "1" || "${PROFILE_COMPUTE}" == "true" || "${PROFIL
   CMD+=(--profile-compute)
 fi
 
-if [[ -n "${RESUME:-}" ]]; then
-  CMD+=(--resume "${RESUME}")
-fi
 if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
   [[ -f "${CLIP_CHECKPOINT}" ]] || { echo "CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2; exit 1; }
   CMD+=(--clip-checkpoint "${CLIP_CHECKPOINT}")
+fi
+
+if [[ -n "${RESUME:-}" ]]; then
+  [[ -f "${RESUME}" ]] || {
+    echo "SSV2 resume checkpoint not found: ${RESUME}" >&2
+    exit 1
+  }
+  CMD+=(--resume "${RESUME}")
+elif [[ -n "${INIT_CHECKPOINT:-}" ]]; then
+  [[ -f "${INIT_CHECKPOINT}" ]] || {
+    echo "K400 initialization checkpoint not found: ${INIT_CHECKPOINT}" >&2
+    exit 1
+  }
+  CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")
 fi
 if [[ -n "${CLASS_NAMES:-}" ]]; then
   CMD+=(--class-names "${CLASS_NAMES}")

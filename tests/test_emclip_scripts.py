@@ -45,14 +45,15 @@ def test_k400_launch_scripts_explicitly_pass_repository_label_csv():
         assert 'CMD+=(--label-csv "${LABEL_CSV}")' in text
 
 
-def test_scripts_centralize_default_gpu_ids_and_disable_unused_detection():
+def test_scripts_require_explicit_gpu_ids_and_disable_unused_detection():
     gpu_text = (REPO_ROOT / "scripts" / "_gpu_env.sh").read_text(encoding="utf-8")
     k400_text = (REPO_ROOT / "scripts" / "train_emclip_k400.sh").read_text(encoding="utf-8")
 
-    assert 'EMCLIP_DEFAULT_GPU_IDS="0,1,2,3"' in gpu_text
-    assert 'GPU_IDS="${EMCLIP_DEFAULT_GPU_IDS}"' in gpu_text
-    assert 'export CUDA_VISIBLE_DEVICES="${GPU_IDS}"' in gpu_text
+    assert 'if [[ -z "${EMCLIP_SCRIPT_GPU_IDS+x}" ]]' in gpu_text
+    assert 'SELECTED_GPU_IDS="${EMCLIP_SCRIPT_GPU_IDS}"' in gpu_text
+    assert 'export CUDA_VISIBLE_DEVICES="${SELECTED_GPU_IDS}"' in gpu_text
     assert 'NPROC_PER_NODE="${#_EMCLIP_GPU_ID_ARRAY[@]}"' in gpu_text
+    assert 'EMCLIP_SCRIPT_GPU_IDS="0,1,2"' in k400_text
     assert "FIND_UNUSED_PARAMETERS=${FIND_UNUSED_PARAMETERS:-false}" in k400_text
 
 
@@ -68,10 +69,35 @@ def test_training_scripts_enable_optional_compute_profile():
         assert "CMD+=(--profile-compute)" in text
 
 
-def test_hmdb_and_ucf_use_k400_as_model_initialization_not_resume():
-    for filename in ("train_emclip_hmdb51.sh", "train_emclip_ucf101.sh"):
+def test_target_training_scripts_use_k400_as_model_initialization_not_resume():
+    for filename in (
+        "train_emclip_hmdb51.sh",
+        "train_emclip_ucf101.sh",
+        "train_emclip_ssv2.sh",
+    ):
         text = (REPO_ROOT / "scripts" / filename).read_text(encoding="utf-8")
         assert 'INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"' in text
         assert 'RESUME="${RESUME:-}"' in text
         assert 'CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")' in text
         assert 'RESUME="${RESUME:-${K400_CHECKPOINT}}"' not in text
+
+
+def test_ssv2_eval_supports_k400_transfer_without_misusing_resume():
+    text = (REPO_ROOT / "scripts" / "eval_emclip_ssv2.sh").read_text(encoding="utf-8")
+
+    assert 'EMCLIP_SCRIPT_GPU_IDS="0,1,2"' in text
+    assert 'INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"' in text
+    assert 'RESUME="${RESUME:-}"' in text
+    assert 'CMD+=(--resume "${RESUME}")' in text
+    assert 'CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")' in text
+    assert text.index('CMD+=(--resume "${RESUME}")') < text.index(
+        'CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")'
+    )
+
+
+def test_ssv2_training_declares_gpu_ids_before_loading_gpu_environment():
+    text = (REPO_ROOT / "scripts" / "train_emclip_ssv2.sh").read_text(encoding="utf-8")
+
+    gpu_ids = text.index('EMCLIP_SCRIPT_GPU_IDS="0,1,2"')
+    source = text.index('source "${SCRIPT_DIR}/_gpu_env.sh"')
+    assert gpu_ids < source

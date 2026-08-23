@@ -11,6 +11,16 @@ CLIP_CHECKPOINT="${CLIP_CHECKPOINT:-/home/fuh/CLIP-models/ViT-B-16.pt}"
 if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
 fi
+
+K400_CHECKPOINT="${K400_CHECKPOINT:-/home/fuh/Efficient-CLIP-codex/output_dir/emclip/k400_emclip_T16_K8_20260721_001418/model_best.pth}"
+
+# A target SSV2 checkpoint passed through RESUME takes priority. Without one,
+# evaluate the K400 EM-CLIP transfer weights through the model-only loader.
+# Set INIT_CHECKPOINT="" to explicitly evaluate from the original CLIP weights.
+INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"
+RESUME="${RESUME:-}"
+
+EMCLIP_SCRIPT_GPU_IDS="0,1,2"
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-1}
@@ -42,10 +52,16 @@ CMD=(torchrun --nproc_per_node="${NPROC_PER_NODE}" --master_port="${MASTER_PORT}
   --test-num-temporal-views "${TEMPORAL_VIEWS}" --test-num-spatial-crops "${SPATIAL_CROPS}"
   --amp --output-dir "${OUTPUT_DIR}")
 if [[ "${PIN_MEMORY}" == "0" || "${PIN_MEMORY}" == "false" || "${PIN_MEMORY}" == "False" ]]; then CMD+=(--no-pin-memory); fi
-if [[ -n "${RESUME:-}" ]]; then CMD+=(--resume "${RESUME}"); fi
 if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
   [[ -f "${CLIP_CHECKPOINT}" ]] || { echo "CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2; exit 1; }
   CMD+=(--clip-checkpoint "${CLIP_CHECKPOINT}")
+fi
+if [[ -n "${RESUME:-}" ]]; then
+  [[ -f "${RESUME}" ]] || { echo "SSV2 evaluation checkpoint not found: ${RESUME}" >&2; exit 1; }
+  CMD+=(--resume "${RESUME}")
+elif [[ -n "${INIT_CHECKPOINT:-}" ]]; then
+  [[ -f "${INIT_CHECKPOINT}" ]] || { echo "K400 initialization checkpoint not found: ${INIT_CHECKPOINT}" >&2; exit 1; }
+  CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")
 fi
 if [[ -n "${CLASS_NAMES:-}" ]]; then CMD+=(--class-names "${CLASS_NAMES}"); elif [[ -n "${LABEL_CSV:-}" ]]; then CMD+=(--label-csv "${LABEL_CSV}"); fi
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"; printf '\n' >> "${OUTPUT_DIR}/command.txt"

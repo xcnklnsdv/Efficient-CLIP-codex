@@ -73,7 +73,8 @@ def parse_args():
         default=None,
         help=(
             "Initialize model weights from an EM-CLIP checkpoint without restoring "
-            "optimizer, scheduler, scaler, epoch, or best accuracy. Use this for K400 transfer."
+            "optimizer, scheduler, scaler, epoch, or best accuracy. Use this for "
+            "K400-to-SSV2/HMDB51/UCF101 transfer."
         ),
     )
     parser.add_argument("--resume", default=None)
@@ -1036,14 +1037,19 @@ def main_worker():
     if args.init_checkpoint:
         init_info = load_model_checkpoint(args.init_checkpoint, model, map_location="cpu")
         if is_main_process():
+            target_action = (
+                "evaluating the target dataset with transferred weights"
+                if args.eval
+                else "starting target training with fresh optimizer/scheduler/scaler at epoch 0"
+            )
             print(
                 "[emclip][init] loaded model weights from %s "
-                "(source_epoch=%d source_best_acc1=%.6g); starting target training "
-                "with fresh optimizer/scheduler/scaler at epoch 0"
+                "(source_epoch=%d source_best_acc1=%.6g); %s"
                 % (
                     args.init_checkpoint,
                     init_info["source_epoch"],
                     init_info["source_best_acc1"],
+                    target_action,
                 ),
                 flush=True,
             )
