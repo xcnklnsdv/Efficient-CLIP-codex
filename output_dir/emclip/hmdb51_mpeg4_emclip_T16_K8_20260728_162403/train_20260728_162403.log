@@ -1,0 +1,632 @@
+W0728 16:24:04.380000 1999939 site-packages/torch/distributed/run.py:793] 
+W0728 16:24:04.380000 1999939 site-packages/torch/distributed/run.py:793] *****************************************
+W0728 16:24:04.380000 1999939 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0728 16:24:04.380000 1999939 site-packages/torch/distributed/run.py:793] *****************************************
+[emclip] initialized world_size=3 device=cuda:0 batch_size=12 micro_batch_size=12
+[emclip] class names source=inferred from dataset lists ['/home/fuh/CMPT/lists/hmdb51/train_rgb_split_1.txt', '/home/fuh/CMPT/lists/hmdb51/val_rgb_split_1.txt']
+[emclip] class names loaded=51
+[emclip] class names first5=['brush hair', 'cartwheel', 'catch', 'chew', 'clap']
+[emclip] class names last5=['talk', 'throw', 'turn', 'walk', 'wave']
+[emclip][pretrained] checkpoint_type=torchscript
+[emclip][pretrained] checkpoint_path=/home/fuh/CLIP-models/ViT-B-16.pt
+[emclip][pretrained] first_source_keys=['positional_embedding', 'text_projection', 'logit_scale', 'input_resolution', 'context_length', 'vocab_size', 'visual.class_embedding', 'visual.positional_embedding', 'visual.proj', 'visual.conv1.weight', 'visual.ln_pre.weight', 'visual.ln_pre.bias', 'visual.transformer.resblocks.0.attn.in_proj_weight', 'visual.transformer.resblocks.0.attn.in_proj_bias', 'visual.transformer.resblocks.0.attn.out_proj.weight', 'visual.transformer.resblocks.0.attn.out_proj.bias', 'visual.transformer.resblocks.0.ln_1.weight', 'visual.transformer.resblocks.0.ln_1.bias', 'visual.transformer.resblocks.0.mlp.c_fc.weight', 'visual.transformer.resblocks.0.mlp.c_fc.bias']
+[emclip][pretrained] I_encoder_position_grid=14->16
+[emclip][pretrained] I_encoder source=152 loaded=152 numel=86238720/86238720 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] R_encoder_position_grid=14->16
+[emclip][pretrained] R_encoder source=152 loaded=152 numel=86238720/86238720 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] MV_encoder_position_grid=14->16
+[emclip][pretrained] MV_encoder source=151 loaded=151 numel=85648896/85648896 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] Text_encoder source=149 loaded=149 numel=63428096/63428096 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] logit_scale=4.60517025
+[emclip] model moved to device
+Namespace(model='emclip_b16', emclip_variant='emclip', candidate_frames=16, selected_frames=8, gop_size=12, input_size=256, mgse_temperature=0.01, mgse_text_mode='class_bank', mgse_class_aggregation='mean', motion_pooling='saliency', lambda_mg=1.0, lambda_me=1.0, emclip_train_mode='full', temporal_aggregator_layers=1, allow_mgse_label_leakage_for_diagnostic=False, debug_shapes=False, clip_checkpoint='/home/fuh/CLIP-models/ViT-B-16.pt', clip_bpe_path=None, allow_random_init=False, pretrained_audit_only=False, dataset='hmdb51_mpeg4', label_csv=None, class_names=None, train_root=None, val_root=None, train_list=None, val_list=None, compressed_video_root=None, epochs=30, lr=8e-06, weight_decay=0.2, warmup_epochs=0, batch_size=12, micro_batch_size=12, num_workers=8, pin_memory=True, amp=True, amp_init_scale=1024.0, amp_growth_interval=2000, max_consecutive_amp_overflows=8, init_checkpoint='/home/fuh/Efficient-CLIP-codex/output_dir/emclip/k400_emclip_T16_K8_20260721_001418/model_best.pth', resume=None, output_dir='output_dir/emclip/hmdb51_mpeg4_emclip_T16_K8_20260728_162403', eval=False, test_num_temporal_views=1, test_num_spatial_crops=1, verify_compressed_inputs=False, preflight_compressed_inputs=False, preflight_only=False, coviar_data_loader_dir='/home/fuh/m2clip/Coviar/data_loader', mv_clamp=20.0, residual_scale=255.0, residual_clamp=1.0, mv_accumulate=False, residual_accumulate=True, scale_lr_by_global_batch=False, grad_clip_norm=1.0, seed=1024, print_freq=10, synthetic_smoke=False, validate_class_names_only=False, find_unused_parameters=False, debug_unused_parameters=False)
+Total params: 407051521 (407.05 M)
+Trainable params: 399568897 (399.57 M)
+[emclip][init] loaded model weights from /home/fuh/Efficient-CLIP-codex/output_dir/emclip/k400_emclip_T16_K8_20260721_001418/model_best.pth (source_epoch=13 source_best_acc1=77.7834); starting target training with fresh optimizer/scheduler/scaler at epoch 0
+[emclip] datasets ready train=3570 val=1530
+[emclip][rank=2] epoch=0 entering DataLoader
+[emclip][rank=1] epoch=0 entering DataLoader
+[emclip] DDP wrapper ready
+[emclip] AMP GradScaler init_scale=1024.0 growth_interval=2000
+All params before optimizer: 407051521 (407.05 M)
+Requires-grad params before optimizer: 399568897 (399.57 M)
+Optimizer params: 399568897 (399.57 M)
+[emclip] optimizer and scheduler ready
+[emclip][rank=0] epoch=0 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+epoch=0 step=0/99 loss=8.5127 loss_mg=4.8377 loss_mg_mv2text=4.7158 loss_mg_text2mv=4.9597 loss_me=3.6750 acc1=41.67 acc5=66.67 lr=0.00000800 grad_norm=255.0009 entropy=2.4667 selected_mean=6.26 max_mem=45212MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=10/99 loss=5.3944 loss_mg=2.2091 loss_mg_mv2text=1.9531 loss_mg_text2mv=2.4651 loss_me=3.1853 acc1=48.48 acc5=75.00 lr=0.00000800 grad_norm=177.1147 entropy=2.4458 selected_mean=6.70 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=20/99 loss=4.1586 loss_mg=2.7610 loss_mg_mv2text=2.9048 loss_mg_text2mv=2.6173 loss_me=1.3975 acc1=50.40 acc5=77.38 lr=0.00000800 grad_norm=104.8109 entropy=2.4938 selected_mean=6.74 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=30/99 loss=5.3284 loss_mg=2.2534 loss_mg_mv2text=2.2766 loss_mg_text2mv=2.2302 loss_me=3.0749 acc1=50.81 acc5=78.23 lr=0.00000800 grad_norm=89.7069 entropy=2.5364 selected_mean=6.93 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=40/99 loss=2.8080 loss_mg=1.7060 loss_mg_mv2text=1.6047 loss_mg_text2mv=1.8073 loss_me=1.1020 acc1=55.08 acc5=81.50 lr=0.00000800 grad_norm=67.2606 entropy=2.5559 selected_mean=6.65 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=50/99 loss=1.4597 loss_mg=1.1856 loss_mg_mv2text=1.0480 loss_mg_text2mv=1.3231 loss_me=0.2742 acc1=58.33 acc5=83.50 lr=0.00000799 grad_norm=55.3837 entropy=2.5604 selected_mean=5.70 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=60/99 loss=2.1634 loss_mg=1.7045 loss_mg_mv2text=1.3228 loss_mg_text2mv=2.0862 loss_me=0.4589 acc1=60.79 acc5=85.11 lr=0.00000799 grad_norm=60.6358 entropy=2.5649 selected_mean=7.41 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=70/99 loss=2.5900 loss_mg=1.6236 loss_mg_mv2text=1.3701 loss_mg_text2mv=1.8771 loss_me=0.9664 acc1=62.91 acc5=86.74 lr=0.00000799 grad_norm=77.9240 entropy=2.5744 selected_mean=6.02 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=80/99 loss=2.2019 loss_mg=1.5211 loss_mg_mv2text=1.4242 loss_mg_text2mv=1.6180 loss_me=0.6808 acc1=64.81 acc5=87.96 lr=0.00000799 grad_norm=60.1799 entropy=2.5778 selected_mean=6.05 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=90/99 loss=2.2850 loss_mg=1.6873 loss_mg_mv2text=1.5693 loss_mg_text2mv=1.8052 loss_me=0.5977 acc1=66.30 acc5=88.74 lr=0.00000798 grad_norm=70.9275 entropy=2.5806 selected_mean=7.38 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=0 train={'loss': 3.2021312292176063, 'loss_mg': 1.9341972805434204, 'loss_mg_mv2text': 1.8517833243716846, 'loss_mg_text2mv': 2.0166112423344495, 'loss_me': 1.267933946215745, 'acc1': 66.69472502805836, 'acc5': 89.02918069584736, 'mgse_saliency_entropy': 2.5800433921492862, 'amp_skipped_steps': 0, 'seconds': 363.33121943473816} val={'val_acc1': 66.33986928104575, 'val_acc5': 92.48366013071896, 'val_loss_me': 1.115321332144245}
+[emclip][rank=2] epoch=1 entering DataLoader
+[emclip][rank=1] epoch=1 entering DataLoader
+[emclip][rank=0] epoch=1 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=1 step=0/99 loss=2.1397 loss_mg=1.4741 loss_mg_mv2text=1.4213 loss_mg_text2mv=1.5270 loss_me=0.6655 acc1=75.00 acc5=100.00 lr=0.00000798 grad_norm=65.3578 entropy=2.4936 selected_mean=7.58 max_mem=48553MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=10/99 loss=1.0481 loss_mg=0.9319 loss_mg_mv2text=0.9296 loss_mg_text2mv=0.9342 loss_me=0.1163 acc1=89.39 acc5=98.48 lr=0.00000797 grad_norm=37.4770 entropy=2.5634 selected_mean=8.23 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=20/99 loss=0.8542 loss_mg=0.7650 loss_mg_mv2text=0.5244 loss_mg_text2mv=1.0057 loss_me=0.0892 acc1=88.10 acc5=98.41 lr=0.00000797 grad_norm=68.6727 entropy=2.5435 selected_mean=7.14 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=30/99 loss=1.6361 loss_mg=1.5035 loss_mg_mv2text=1.1589 loss_mg_text2mv=1.8480 loss_me=0.1326 acc1=89.25 acc5=98.66 lr=0.00000796 grad_norm=70.4411 entropy=2.5250 selected_mean=6.60 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=40/99 loss=1.3422 loss_mg=1.0293 loss_mg_mv2text=0.8351 loss_mg_text2mv=1.2235 loss_me=0.3128 acc1=89.02 acc5=98.78 lr=0.00000796 grad_norm=46.0928 entropy=2.5221 selected_mean=7.18 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=50/99 loss=1.2030 loss_mg=1.0738 loss_mg_mv2text=0.8854 loss_mg_text2mv=1.2623 loss_me=0.1292 acc1=89.05 acc5=98.69 lr=0.00000795 grad_norm=51.5654 entropy=2.5290 selected_mean=6.32 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=60/99 loss=0.9657 loss_mg=0.7001 loss_mg_mv2text=0.6151 loss_mg_text2mv=0.7851 loss_me=0.2656 acc1=88.25 acc5=98.63 lr=0.00000794 grad_norm=47.3476 entropy=2.5354 selected_mean=8.06 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=70/99 loss=1.2414 loss_mg=0.8951 loss_mg_mv2text=0.7655 loss_mg_text2mv=1.0246 loss_me=0.3464 acc1=88.26 acc5=98.59 lr=0.00000794 grad_norm=70.6611 entropy=2.5400 selected_mean=7.34 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=80/99 loss=3.1217 loss_mg=1.7428 loss_mg_mv2text=1.8567 loss_mg_text2mv=1.6288 loss_me=1.3790 acc1=87.55 acc5=98.25 lr=0.00000793 grad_norm=59.7258 entropy=2.5433 selected_mean=7.05 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=90/99 loss=1.4654 loss_mg=0.8104 loss_mg_mv2text=0.7735 loss_mg_text2mv=0.8472 loss_me=0.6550 acc1=87.64 acc5=98.35 lr=0.00000792 grad_norm=69.1856 entropy=2.5439 selected_mean=7.10 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=1 train={'loss': 1.6004853423195655, 'loss_mg': 1.1564770344933275, 'loss_mg_mv2text': 1.0891859193241555, 'loss_mg_text2mv': 1.2237681500638775, 'loss_me': 0.44400830839067595, 'acc1': 86.05499438832773, 'acc5': 98.09203142536475, 'mgse_saliency_entropy': 2.551148104747939, 'amp_skipped_steps': 0, 'seconds': 303.683153629303} val={'val_acc1': 68.10457516339869, 'val_acc5': 92.61437908496733, 'val_loss_me': 1.2205048523018893}
+[emclip][rank=2] epoch=2 entering DataLoader
+[emclip][rank=1] epoch=2 entering DataLoader
+[emclip][rank=0] epoch=2 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=2 step=0/99 loss=0.7991 loss_mg=0.7200 loss_mg_mv2text=0.7185 loss_mg_text2mv=0.7215 loss_me=0.0791 acc1=100.00 acc5=100.00 lr=0.00000791 grad_norm=48.4518 entropy=2.5058 selected_mean=6.45 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=10/99 loss=0.5923 loss_mg=0.5298 loss_mg_mv2text=0.4461 loss_mg_text2mv=0.6135 loss_me=0.0625 acc1=97.73 acc5=100.00 lr=0.00000790 grad_norm=49.9221 entropy=2.5388 selected_mean=7.17 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=20/99 loss=1.0241 loss_mg=0.7457 loss_mg_mv2text=0.6732 loss_mg_text2mv=0.8182 loss_me=0.2784 acc1=96.03 acc5=100.00 lr=0.00000789 grad_norm=73.7441 entropy=2.5300 selected_mean=7.18 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=30/99 loss=1.1587 loss_mg=0.8043 loss_mg_mv2text=0.7700 loss_mg_text2mv=0.8386 loss_me=0.3544 acc1=95.43 acc5=100.00 lr=0.00000788 grad_norm=60.6087 entropy=2.5332 selected_mean=7.46 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=40/99 loss=0.6582 loss_mg=0.4802 loss_mg_mv2text=0.4156 loss_mg_text2mv=0.5448 loss_me=0.1780 acc1=94.51 acc5=99.59 lr=0.00000787 grad_norm=71.5529 entropy=2.5336 selected_mean=6.94 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=50/99 loss=0.8359 loss_mg=0.7174 loss_mg_mv2text=0.5423 loss_mg_text2mv=0.8925 loss_me=0.1185 acc1=94.28 acc5=99.67 lr=0.00000786 grad_norm=58.0597 entropy=2.5374 selected_mean=6.12 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=60/99 loss=0.7282 loss_mg=0.4527 loss_mg_mv2text=0.4483 loss_mg_text2mv=0.4571 loss_me=0.2755 acc1=93.31 acc5=99.18 lr=0.00000785 grad_norm=64.4462 entropy=2.5396 selected_mean=6.24 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=70/99 loss=0.9350 loss_mg=0.7838 loss_mg_mv2text=0.6768 loss_mg_text2mv=0.8908 loss_me=0.1511 acc1=93.66 acc5=99.30 lr=0.00000784 grad_norm=49.5214 entropy=2.5405 selected_mean=6.66 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=80/99 loss=1.2197 loss_mg=0.6933 loss_mg_mv2text=0.7999 loss_mg_text2mv=0.5868 loss_me=0.5264 acc1=93.72 acc5=99.38 lr=0.00000783 grad_norm=67.7088 entropy=2.5344 selected_mean=7.64 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=90/99 loss=0.9986 loss_mg=0.8960 loss_mg_mv2text=0.7412 loss_mg_text2mv=1.0508 loss_me=0.1026 acc1=93.86 acc5=99.36 lr=0.00000781 grad_norm=44.4961 entropy=2.5288 selected_mean=6.84 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=2 train={'loss': 1.0189107758830291, 'loss_mg': 0.8071122546790024, 'loss_mg_mv2text': 0.7160490488363838, 'loss_mg_text2mv': 0.8981754566081847, 'loss_me': 0.21179852098021154, 'acc1': 92.95735129068463, 'acc5': 99.5230078563412, 'mgse_saliency_entropy': 2.525506859275227, 'amp_skipped_steps': 0, 'seconds': 282.56754970550537} val={'val_acc1': 67.58169934640523, 'val_acc5': 92.41830065359477, 'val_loss_me': 1.3430458507375436}
+[emclip][rank=2] epoch=3 entering DataLoader
+[emclip][rank=1] epoch=3 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] epoch=3 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=3 step=0/99 loss=0.7691 loss_mg=0.7127 loss_mg_mv2text=0.5702 loss_mg_text2mv=0.8552 loss_me=0.0564 acc1=100.00 acc5=100.00 lr=0.00000780 grad_norm=50.1003 entropy=2.5779 selected_mean=7.66 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=10/99 loss=0.2157 loss_mg=0.2030 loss_mg_mv2text=0.1755 loss_mg_text2mv=0.2305 loss_me=0.0127 acc1=96.97 acc5=100.00 lr=0.00000779 grad_norm=41.6178 entropy=2.5346 selected_mean=7.58 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=20/99 loss=0.3161 loss_mg=0.3128 loss_mg_mv2text=0.0965 loss_mg_text2mv=0.5291 loss_me=0.0033 acc1=96.43 acc5=100.00 lr=0.00000778 grad_norm=39.6811 entropy=2.5295 selected_mean=8.77 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=30/99 loss=1.3794 loss_mg=1.3102 loss_mg_mv2text=1.2322 loss_mg_text2mv=1.3883 loss_me=0.0691 acc1=96.24 acc5=100.00 lr=0.00000776 grad_norm=59.2213 entropy=2.5272 selected_mean=7.22 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=40/99 loss=0.5857 loss_mg=0.5504 loss_mg_mv2text=0.5281 loss_mg_text2mv=0.5728 loss_me=0.0353 acc1=96.54 acc5=100.00 lr=0.00000775 grad_norm=82.5801 entropy=2.5222 selected_mean=6.85 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=50/99 loss=0.3195 loss_mg=0.2282 loss_mg_mv2text=0.0970 loss_mg_text2mv=0.3593 loss_me=0.0913 acc1=96.73 acc5=100.00 lr=0.00000773 grad_norm=31.9691 entropy=2.5194 selected_mean=7.61 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=60/99 loss=0.6956 loss_mg=0.6881 loss_mg_mv2text=0.6132 loss_mg_text2mv=0.7629 loss_me=0.0076 acc1=96.99 acc5=100.00 lr=0.00000772 grad_norm=74.6204 entropy=2.5117 selected_mean=7.25 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=70/99 loss=1.0152 loss_mg=0.7434 loss_mg_mv2text=0.5906 loss_mg_text2mv=0.8962 loss_me=0.2717 acc1=96.24 acc5=100.00 lr=0.00000770 grad_norm=97.6874 entropy=2.5079 selected_mean=7.11 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=80/99 loss=0.6729 loss_mg=0.6387 loss_mg_mv2text=0.6081 loss_mg_text2mv=0.6692 loss_me=0.0342 acc1=96.30 acc5=100.00 lr=0.00000768 grad_norm=46.1714 entropy=2.5077 selected_mean=7.24 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=90/99 loss=0.9908 loss_mg=0.7557 loss_mg_mv2text=0.5272 loss_mg_text2mv=0.9842 loss_me=0.2351 acc1=96.34 acc5=100.00 lr=0.00000767 grad_norm=66.1193 entropy=2.5082 selected_mean=6.38 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=3 train={'loss': 0.6811671417068552, 'loss_mg': 0.551355570303872, 'loss_mg_mv2text': 0.4605018804571043, 'loss_mg_text2mv': 0.6422092568392705, 'loss_me': 0.12981157219770398, 'acc1': 95.67901234567901, 'acc5': 99.85970819304153, 'mgse_saliency_entropy': 2.5009241304815015, 'amp_skipped_steps': 0, 'seconds': 318.44226336479187} val={'val_acc1': 66.60130718954248, 'val_acc5': 90.84967320261438, 'val_loss_me': 1.5884593715445587}
+[emclip][rank=2] epoch=4 entering DataLoader
+[emclip][rank=1] epoch=4 entering DataLoader
+[emclip][rank=0] epoch=4 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+epoch=4 step=0/99 loss=0.4469 loss_mg=0.4059 loss_mg_mv2text=0.2653 loss_mg_text2mv=0.5465 loss_me=0.0410 acc1=100.00 acc5=100.00 lr=0.00000765 grad_norm=41.3222 entropy=2.5303 selected_mean=7.19 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=10/99 loss=0.4938 loss_mg=0.4922 loss_mg_mv2text=0.4302 loss_mg_text2mv=0.5542 loss_me=0.0016 acc1=97.73 acc5=100.00 lr=0.00000764 grad_norm=41.0443 entropy=2.5279 selected_mean=6.55 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=20/99 loss=0.6922 loss_mg=0.3319 loss_mg_mv2text=0.2169 loss_mg_text2mv=0.4469 loss_me=0.3602 acc1=97.62 acc5=100.00 lr=0.00000762 grad_norm=60.5024 entropy=2.5094 selected_mean=6.70 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=30/99 loss=0.4469 loss_mg=0.4363 loss_mg_mv2text=0.4533 loss_mg_text2mv=0.4192 loss_me=0.0106 acc1=97.85 acc5=100.00 lr=0.00000760 grad_norm=46.3148 entropy=2.4954 selected_mean=7.55 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=40/99 loss=0.6430 loss_mg=0.6249 loss_mg_mv2text=0.5148 loss_mg_text2mv=0.7350 loss_me=0.0180 acc1=98.17 acc5=100.00 lr=0.00000758 grad_norm=47.1927 entropy=2.4845 selected_mean=5.94 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=50/99 loss=0.6173 loss_mg=0.4250 loss_mg_mv2text=0.2262 loss_mg_text2mv=0.6239 loss_me=0.1922 acc1=98.20 acc5=100.00 lr=0.00000756 grad_norm=59.6117 entropy=2.4810 selected_mean=6.43 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=60/99 loss=0.5820 loss_mg=0.5549 loss_mg_mv2text=0.6010 loss_mg_text2mv=0.5087 loss_me=0.0271 acc1=98.36 acc5=100.00 lr=0.00000754 grad_norm=67.2527 entropy=2.4771 selected_mean=7.34 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=70/99 loss=0.3717 loss_mg=0.3693 loss_mg_mv2text=0.2035 loss_mg_text2mv=0.5351 loss_me=0.0023 acc1=98.12 acc5=100.00 lr=0.00000752 grad_norm=41.7022 entropy=2.4728 selected_mean=6.12 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=80/99 loss=0.4565 loss_mg=0.4248 loss_mg_mv2text=0.2296 loss_mg_text2mv=0.6201 loss_me=0.0316 acc1=97.74 acc5=100.00 lr=0.00000750 grad_norm=63.0047 entropy=2.4687 selected_mean=7.84 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=90/99 loss=0.5297 loss_mg=0.4782 loss_mg_mv2text=0.3339 loss_mg_text2mv=0.6225 loss_me=0.0515 acc1=97.53 acc5=100.00 lr=0.00000748 grad_norm=48.2983 entropy=2.4652 selected_mean=6.82 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=4 train={'loss': 0.527633843523284, 'loss_mg': 0.44824870595526617, 'loss_mg_mv2text': 0.34522043159764626, 'loss_mg_text2mv': 0.5512769802250846, 'loss_me': 0.07938513833353679, 'acc1': 97.44668911335577, 'acc5': 99.91582491582491, 'mgse_saliency_entropy': 2.4759270904040096, 'amp_skipped_steps': 0, 'seconds': 213.98488020896912} val={'val_acc1': 66.73202614379085, 'val_acc5': 91.76470588235294, 'val_loss_me': 1.5348137077270354}
+[emclip][rank=1] epoch=5 entering DataLoader
+[emclip][rank=2] epoch=5 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] epoch=5 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=5 step=0/99 loss=0.6786 loss_mg=0.6700 loss_mg_mv2text=0.5639 loss_mg_text2mv=0.7761 loss_me=0.0086 acc1=100.00 acc5=100.00 lr=0.00000746 grad_norm=42.8316 entropy=2.5238 selected_mean=7.91 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=10/99 loss=0.2709 loss_mg=0.2609 loss_mg_mv2text=0.1544 loss_mg_text2mv=0.3674 loss_me=0.0100 acc1=97.73 acc5=100.00 lr=0.00000744 grad_norm=31.8778 entropy=2.5263 selected_mean=6.32 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=20/99 loss=0.2143 loss_mg=0.1972 loss_mg_mv2text=0.1938 loss_mg_text2mv=0.2006 loss_me=0.0171 acc1=98.41 acc5=100.00 lr=0.00000742 grad_norm=80.6334 entropy=2.5221 selected_mean=7.84 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=30/99 loss=0.5575 loss_mg=0.4970 loss_mg_mv2text=0.4395 loss_mg_text2mv=0.5544 loss_me=0.0605 acc1=98.66 acc5=100.00 lr=0.00000740 grad_norm=36.6761 entropy=2.5167 selected_mean=6.62 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=40/99 loss=0.1127 loss_mg=0.0888 loss_mg_mv2text=0.0673 loss_mg_text2mv=0.1103 loss_me=0.0239 acc1=98.78 acc5=100.00 lr=0.00000737 grad_norm=29.2349 entropy=2.5136 selected_mean=6.78 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=50/99 loss=0.3666 loss_mg=0.3525 loss_mg_mv2text=0.2350 loss_mg_text2mv=0.4701 loss_me=0.0141 acc1=98.86 acc5=100.00 lr=0.00000735 grad_norm=49.7378 entropy=2.4960 selected_mean=6.71 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=60/99 loss=0.3626 loss_mg=0.3227 loss_mg_mv2text=0.0668 loss_mg_text2mv=0.5786 loss_me=0.0399 acc1=98.77 acc5=100.00 lr=0.00000733 grad_norm=54.4155 entropy=2.4846 selected_mean=7.69 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=70/99 loss=0.6098 loss_mg=0.6016 loss_mg_mv2text=0.3776 loss_mg_text2mv=0.8257 loss_me=0.0082 acc1=98.36 acc5=100.00 lr=0.00000730 grad_norm=42.9138 entropy=2.4839 selected_mean=6.94 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=80/99 loss=0.3703 loss_mg=0.3351 loss_mg_mv2text=0.2890 loss_mg_text2mv=0.3812 loss_me=0.0352 acc1=98.15 acc5=100.00 lr=0.00000728 grad_norm=41.5584 entropy=2.4760 selected_mean=7.55 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 step=90/99 loss=0.1473 loss_mg=0.1429 loss_mg_mv2text=0.0268 loss_mg_text2mv=0.2591 loss_me=0.0043 acc1=97.99 acc5=100.00 lr=0.00000726 grad_norm=60.0005 entropy=2.4755 selected_mean=7.23 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=5 train={'loss': 0.44075302049668147, 'loss_mg': 0.3555767710261072, 'loss_mg_mv2text': 0.2550642416320164, 'loss_mg_text2mv': 0.4560892988585864, 'loss_me': 0.0851762493912982, 'acc1': 97.8395061728395, 'acc5': 99.94388327721661, 'mgse_saliency_entropy': 2.462618401556304, 'amp_skipped_steps': 0, 'seconds': 344.9585032463074} val={'val_acc1': 65.55555555555556, 'val_acc5': 91.96078431372548, 'val_loss_me': 1.6862187770708617}
+[emclip][rank=2] epoch=6 entering DataLoader
+[emclip][rank=1] epoch=6 entering DataLoader
+[emclip][rank=0] epoch=6 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=6 step=0/99 loss=0.2490 loss_mg=0.2457 loss_mg_mv2text=0.0778 loss_mg_text2mv=0.4136 loss_me=0.0032 acc1=100.00 acc5=100.00 lr=0.00000723 grad_norm=33.1829 entropy=2.4680 selected_mean=5.93 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=10/99 loss=0.3957 loss_mg=0.3928 loss_mg_mv2text=0.2370 loss_mg_text2mv=0.5487 loss_me=0.0029 acc1=98.48 acc5=100.00 lr=0.00000721 grad_norm=45.9632 entropy=2.4880 selected_mean=7.21 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=20/99 loss=0.1979 loss_mg=0.1966 loss_mg_mv2text=0.0728 loss_mg_text2mv=0.3205 loss_me=0.0012 acc1=98.02 acc5=100.00 lr=0.00000718 grad_norm=37.0344 entropy=2.4736 selected_mean=7.48 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=30/99 loss=0.2721 loss_mg=0.2685 loss_mg_mv2text=0.1573 loss_mg_text2mv=0.3796 loss_me=0.0037 acc1=98.39 acc5=100.00 lr=0.00000716 grad_norm=32.0054 entropy=2.4469 selected_mean=7.17 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=40/99 loss=0.4290 loss_mg=0.2962 loss_mg_mv2text=0.2211 loss_mg_text2mv=0.3713 loss_me=0.1327 acc1=98.17 acc5=100.00 lr=0.00000713 grad_norm=49.6120 entropy=2.4351 selected_mean=6.61 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=50/99 loss=0.4104 loss_mg=0.4081 loss_mg_mv2text=0.2762 loss_mg_text2mv=0.5400 loss_me=0.0023 acc1=98.53 acc5=100.00 lr=0.00000710 grad_norm=45.2474 entropy=2.4408 selected_mean=6.62 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=60/99 loss=0.4871 loss_mg=0.4422 loss_mg_mv2text=0.2280 loss_mg_text2mv=0.6563 loss_me=0.0449 acc1=98.63 acc5=100.00 lr=0.00000708 grad_norm=50.2375 entropy=2.4473 selected_mean=7.64 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=70/99 loss=0.3251 loss_mg=0.3175 loss_mg_mv2text=0.4283 loss_mg_text2mv=0.2067 loss_me=0.0076 acc1=98.47 acc5=100.00 lr=0.00000705 grad_norm=41.6270 entropy=2.4497 selected_mean=6.23 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=80/99 loss=0.2220 loss_mg=0.2179 loss_mg_mv2text=0.2396 loss_mg_text2mv=0.1962 loss_me=0.0042 acc1=98.15 acc5=100.00 lr=0.00000702 grad_norm=32.7887 entropy=2.4485 selected_mean=6.72 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 step=90/99 loss=0.4912 loss_mg=0.3838 loss_mg_mv2text=0.0696 loss_mg_text2mv=0.6980 loss_me=0.1074 acc1=98.08 acc5=100.00 lr=0.00000700 grad_norm=43.6256 entropy=2.4441 selected_mean=7.99 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=6 train={'loss': 0.38508363356594283, 'loss_mg': 0.3267983662259298, 'loss_mg_mv2text': 0.21240536511094885, 'loss_mg_text2mv': 0.44119136640018086, 'loss_me': 0.058285267852343385, 'acc1': 98.31649831649831, 'acc5': 99.9719416386083, 'mgse_saliency_entropy': 2.446552036587237, 'amp_skipped_steps': 0, 'seconds': 283.6810209751129} val={'val_acc1': 67.18954248366013, 'val_acc5': 91.56862745098039, 'val_loss_me': 1.7152210289428707}
+[emclip][rank=1] epoch=7 entering DataLoader
+[emclip][rank=2] epoch=7 entering DataLoader
+[emclip][rank=0] epoch=7 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=7 step=0/99 loss=0.5617 loss_mg=0.5566 loss_mg_mv2text=0.3699 loss_mg_text2mv=0.7432 loss_me=0.0051 acc1=100.00 acc5=100.00 lr=0.00000697 grad_norm=38.2841 entropy=2.5043 selected_mean=6.71 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=10/99 loss=0.2874 loss_mg=0.2677 loss_mg_mv2text=0.3335 loss_mg_text2mv=0.2018 loss_me=0.0197 acc1=100.00 acc5=100.00 lr=0.00000694 grad_norm=29.9665 entropy=2.4526 selected_mean=7.40 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=20/99 loss=0.0971 loss_mg=0.0961 loss_mg_mv2text=0.0680 loss_mg_text2mv=0.1242 loss_me=0.0009 acc1=98.81 acc5=100.00 lr=0.00000691 grad_norm=22.2040 entropy=2.4650 selected_mean=7.35 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=30/99 loss=0.2712 loss_mg=0.2699 loss_mg_mv2text=0.1225 loss_mg_text2mv=0.4173 loss_me=0.0013 acc1=98.92 acc5=100.00 lr=0.00000688 grad_norm=37.5607 entropy=2.4794 selected_mean=7.55 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=40/99 loss=0.5056 loss_mg=0.5016 loss_mg_mv2text=0.3490 loss_mg_text2mv=0.6541 loss_me=0.0041 acc1=98.98 acc5=100.00 lr=0.00000685 grad_norm=36.1710 entropy=2.4818 selected_mean=7.43 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=50/99 loss=0.3019 loss_mg=0.2975 loss_mg_mv2text=0.1142 loss_mg_text2mv=0.4807 loss_me=0.0044 acc1=98.86 acc5=100.00 lr=0.00000682 grad_norm=33.0432 entropy=2.4772 selected_mean=8.00 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=60/99 loss=0.3930 loss_mg=0.3862 loss_mg_mv2text=0.3551 loss_mg_text2mv=0.4172 loss_me=0.0068 acc1=99.04 acc5=100.00 lr=0.00000679 grad_norm=35.9818 entropy=2.4738 selected_mean=7.04 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=70/99 loss=0.4305 loss_mg=0.4302 loss_mg_mv2text=0.1273 loss_mg_text2mv=0.7331 loss_me=0.0002 acc1=98.83 acc5=100.00 lr=0.00000676 grad_norm=44.8524 entropy=2.4703 selected_mean=6.61 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=80/99 loss=0.2753 loss_mg=0.2024 loss_mg_mv2text=0.0881 loss_mg_text2mv=0.3166 loss_me=0.0730 acc1=98.87 acc5=100.00 lr=0.00000673 grad_norm=36.6142 entropy=2.4722 selected_mean=7.40 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 step=90/99 loss=0.3227 loss_mg=0.3221 loss_mg_mv2text=0.1498 loss_mg_text2mv=0.4944 loss_me=0.0006 acc1=98.81 acc5=100.00 lr=0.00000670 grad_norm=33.2597 entropy=2.4735 selected_mean=7.25 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=7 train={'loss': 0.3179462526984488, 'loss_mg': 0.27865965214090715, 'loss_mg_mv2text': 0.17639249359705933, 'loss_mg_text2mv': 0.3809268090259347, 'loss_me': 0.03928660038659335, 'acc1': 98.73737373737374, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4711308407061026, 'amp_skipped_steps': 0, 'seconds': 365.6217415332794} val={'val_acc1': 65.16339869281046, 'val_acc5': 90.7843137254902, 'val_loss_me': 1.8001625222605009}
+[emclip][rank=1] epoch=8 entering DataLoader
+[emclip][rank=2] epoch=8 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] epoch=8 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=8 step=0/99 loss=0.4281 loss_mg=0.3745 loss_mg_mv2text=0.1371 loss_mg_text2mv=0.6120 loss_me=0.0536 acc1=100.00 acc5=100.00 lr=0.00000667 grad_norm=34.1829 entropy=2.5073 selected_mean=6.77 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=10/99 loss=0.2220 loss_mg=0.2208 loss_mg_mv2text=0.1227 loss_mg_text2mv=0.3190 loss_me=0.0012 acc1=97.73 acc5=100.00 lr=0.00000664 grad_norm=32.1525 entropy=2.4655 selected_mean=6.46 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=20/99 loss=0.2166 loss_mg=0.2163 loss_mg_mv2text=0.1317 loss_mg_text2mv=0.3008 loss_me=0.0003 acc1=98.41 acc5=100.00 lr=0.00000661 grad_norm=29.5744 entropy=2.4525 selected_mean=6.76 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=30/99 loss=0.3120 loss_mg=0.3101 loss_mg_mv2text=0.0291 loss_mg_text2mv=0.5910 loss_me=0.0019 acc1=98.66 acc5=100.00 lr=0.00000658 grad_norm=38.5588 entropy=2.4461 selected_mean=7.77 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=40/99 loss=0.3415 loss_mg=0.3405 loss_mg_mv2text=0.1977 loss_mg_text2mv=0.4833 loss_me=0.0010 acc1=98.58 acc5=100.00 lr=0.00000655 grad_norm=29.8814 entropy=2.4494 selected_mean=7.38 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=50/99 loss=0.1452 loss_mg=0.1439 loss_mg_mv2text=0.0418 loss_mg_text2mv=0.2459 loss_me=0.0014 acc1=98.86 acc5=100.00 lr=0.00000651 grad_norm=21.7827 entropy=2.4471 selected_mean=6.84 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=60/99 loss=0.2156 loss_mg=0.2147 loss_mg_mv2text=0.1043 loss_mg_text2mv=0.3251 loss_me=0.0008 acc1=98.63 acc5=100.00 lr=0.00000648 grad_norm=35.5664 entropy=2.4467 selected_mean=7.16 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=70/99 loss=0.0837 loss_mg=0.0788 loss_mg_mv2text=0.0562 loss_mg_text2mv=0.1014 loss_me=0.0049 acc1=98.83 acc5=100.00 lr=0.00000645 grad_norm=35.4340 entropy=2.4505 selected_mean=7.94 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=80/99 loss=0.3468 loss_mg=0.3465 loss_mg_mv2text=0.0906 loss_mg_text2mv=0.6024 loss_me=0.0003 acc1=98.97 acc5=100.00 lr=0.00000641 grad_norm=33.9658 entropy=2.4515 selected_mean=6.62 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 step=90/99 loss=0.1709 loss_mg=0.1626 loss_mg_mv2text=0.0457 loss_mg_text2mv=0.2795 loss_me=0.0083 acc1=98.99 acc5=100.00 lr=0.00000638 grad_norm=43.7481 entropy=2.4514 selected_mean=7.24 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=8 train={'loss': 0.28194706839343114, 'loss_mg': 0.25587023606505055, 'loss_mg_mv2text': 0.15144234748325164, 'loss_mg_text2mv': 0.36029812432700137, 'loss_me': 0.026076831844664118, 'acc1': 99.15824915824916, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4570857731982914, 'amp_skipped_steps': 0, 'seconds': 220.7425239086151} val={'val_acc1': 65.88235294117646, 'val_acc5': 90.91503267973856, 'val_loss_me': 1.8611487394109556}
+[emclip][rank=2] epoch=9 entering DataLoader
+[emclip][rank=1] epoch=9 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] epoch=9 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=9 step=0/99 loss=0.2216 loss_mg=0.2200 loss_mg_mv2text=0.0188 loss_mg_text2mv=0.4212 loss_me=0.0015 acc1=100.00 acc5=100.00 lr=0.00000635 grad_norm=31.6171 entropy=2.3875 selected_mean=6.96 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=10/99 loss=0.3095 loss_mg=0.2854 loss_mg_mv2text=0.1363 loss_mg_text2mv=0.4346 loss_me=0.0241 acc1=99.24 acc5=100.00 lr=0.00000631 grad_norm=36.0995 entropy=2.4542 selected_mean=6.68 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=20/99 loss=0.5212 loss_mg=0.5106 loss_mg_mv2text=0.3007 loss_mg_text2mv=0.7206 loss_me=0.0106 acc1=99.60 acc5=100.00 lr=0.00000628 grad_norm=42.0443 entropy=2.4631 selected_mean=7.19 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=30/99 loss=0.0965 loss_mg=0.0964 loss_mg_mv2text=0.0108 loss_mg_text2mv=0.1820 loss_me=0.0001 acc1=99.46 acc5=100.00 lr=0.00000624 grad_norm=23.1779 entropy=2.4563 selected_mean=6.56 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=40/99 loss=0.4058 loss_mg=0.3993 loss_mg_mv2text=0.2394 loss_mg_text2mv=0.5593 loss_me=0.0064 acc1=99.39 acc5=100.00 lr=0.00000621 grad_norm=34.7656 entropy=2.4584 selected_mean=6.22 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=50/99 loss=0.1432 loss_mg=0.1401 loss_mg_mv2text=0.0849 loss_mg_text2mv=0.1953 loss_me=0.0031 acc1=99.51 acc5=100.00 lr=0.00000617 grad_norm=75.9001 entropy=2.4600 selected_mean=7.84 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=60/99 loss=0.3920 loss_mg=0.3357 loss_mg_mv2text=0.1579 loss_mg_text2mv=0.5136 loss_me=0.0563 acc1=99.32 acc5=100.00 lr=0.00000614 grad_norm=46.5514 entropy=2.4561 selected_mean=6.44 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=70/99 loss=0.1894 loss_mg=0.1711 loss_mg_mv2text=0.1191 loss_mg_text2mv=0.2231 loss_me=0.0183 acc1=99.30 acc5=100.00 lr=0.00000610 grad_norm=25.4817 entropy=2.4594 selected_mean=6.58 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=80/99 loss=0.5218 loss_mg=0.5083 loss_mg_mv2text=0.4614 loss_mg_text2mv=0.5551 loss_me=0.0135 acc1=99.28 acc5=100.00 lr=0.00000607 grad_norm=38.9061 entropy=2.4585 selected_mean=7.42 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 step=90/99 loss=0.1233 loss_mg=0.1212 loss_mg_mv2text=0.0190 loss_mg_text2mv=0.2235 loss_me=0.0020 acc1=99.36 acc5=100.00 lr=0.00000603 grad_norm=30.1636 entropy=2.4582 selected_mean=8.09 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=9 train={'loss': 0.26589522034130514, 'loss_mg': 0.22918305216162693, 'loss_mg_mv2text': 0.12423807769850749, 'loss_mg_text2mv': 0.33412802485303844, 'loss_me': 0.03671216780042197, 'acc1': 99.15824915824916, 'acc5': 99.94388327721661, 'mgse_saliency_entropy': 2.449828193645285, 'amp_skipped_steps': 0, 'seconds': 290.48056626319885} val={'val_acc1': 66.33986928104575, 'val_acc5': 91.17647058823529, 'val_loss_me': 1.7780699093884464}
+[emclip][rank=1] epoch=10 entering DataLoader
+[emclip][rank=2] epoch=10 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] epoch=10 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=10 step=0/99 loss=0.0739 loss_mg=0.0728 loss_mg_mv2text=0.0600 loss_mg_text2mv=0.0856 loss_me=0.0011 acc1=100.00 acc5=100.00 lr=0.00000600 grad_norm=28.0043 entropy=2.4418 selected_mean=6.28 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=10/99 loss=0.1811 loss_mg=0.1705 loss_mg_mv2text=0.1023 loss_mg_text2mv=0.2387 loss_me=0.0106 acc1=100.00 acc5=100.00 lr=0.00000596 grad_norm=27.5831 entropy=2.4254 selected_mean=7.41 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=20/99 loss=0.2184 loss_mg=0.2154 loss_mg_mv2text=0.0464 loss_mg_text2mv=0.3844 loss_me=0.0030 acc1=99.60 acc5=100.00 lr=0.00000592 grad_norm=32.8413 entropy=2.4181 selected_mean=6.24 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=30/99 loss=0.1638 loss_mg=0.1631 loss_mg_mv2text=0.1013 loss_mg_text2mv=0.2250 loss_me=0.0007 acc1=99.46 acc5=100.00 lr=0.00000589 grad_norm=20.2217 entropy=2.4329 selected_mean=6.52 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=40/99 loss=0.1315 loss_mg=0.0774 loss_mg_mv2text=0.0592 loss_mg_text2mv=0.0956 loss_me=0.0541 acc1=98.98 acc5=100.00 lr=0.00000585 grad_norm=34.2248 entropy=2.4354 selected_mean=6.60 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=50/99 loss=0.1356 loss_mg=0.1351 loss_mg_mv2text=0.0417 loss_mg_text2mv=0.2286 loss_me=0.0005 acc1=99.18 acc5=100.00 lr=0.00000581 grad_norm=40.0402 entropy=2.4294 selected_mean=7.18 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=60/99 loss=0.4387 loss_mg=0.4382 loss_mg_mv2text=0.2010 loss_mg_text2mv=0.6754 loss_me=0.0005 acc1=99.32 acc5=100.00 lr=0.00000577 grad_norm=45.4383 entropy=2.4173 selected_mean=6.32 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=70/99 loss=0.1144 loss_mg=0.1058 loss_mg_mv2text=0.0281 loss_mg_text2mv=0.1836 loss_me=0.0086 acc1=99.41 acc5=100.00 lr=0.00000573 grad_norm=27.6735 entropy=2.4197 selected_mean=7.01 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=80/99 loss=0.2685 loss_mg=0.2665 loss_mg_mv2text=0.2140 loss_mg_text2mv=0.3191 loss_me=0.0019 acc1=99.28 acc5=100.00 lr=0.00000570 grad_norm=29.7068 entropy=2.4294 selected_mean=7.51 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 step=90/99 loss=0.1149 loss_mg=0.1148 loss_mg_mv2text=0.0117 loss_mg_text2mv=0.2179 loss_me=0.0001 acc1=99.36 acc5=100.00 lr=0.00000566 grad_norm=22.2585 entropy=2.4333 selected_mean=7.16 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=10 train={'loss': 0.21023994818430156, 'loss_mg': 0.19151303022849037, 'loss_mg_mv2text': 0.1032381610919781, 'loss_mg_text2mv': 0.2797878989793034, 'loss_me': 0.0187269182318321, 'acc1': 99.4668911335578, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4457896189256148, 'amp_skipped_steps': 0, 'seconds': 239.50144624710083} val={'val_acc1': 66.33986928104575, 'val_acc5': 90.32679738562092, 'val_loss_me': 1.8747180894673545}
+[emclip][rank=1] epoch=11 entering DataLoader
+[emclip][rank=2] epoch=11 entering DataLoader
+[emclip][rank=0] epoch=11 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=11 step=0/99 loss=0.3370 loss_mg=0.3358 loss_mg_mv2text=0.0592 loss_mg_text2mv=0.6125 loss_me=0.0011 acc1=100.00 acc5=100.00 lr=0.00000562 grad_norm=27.3583 entropy=2.5608 selected_mean=6.54 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=10/99 loss=0.1143 loss_mg=0.1137 loss_mg_mv2text=0.0735 loss_mg_text2mv=0.1539 loss_me=0.0005 acc1=100.00 acc5=100.00 lr=0.00000558 grad_norm=36.7658 entropy=2.4313 selected_mean=7.05 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=20/99 loss=0.0769 loss_mg=0.0754 loss_mg_mv2text=0.0227 loss_mg_text2mv=0.1281 loss_me=0.0015 acc1=100.00 acc5=100.00 lr=0.00000555 grad_norm=19.9196 entropy=2.4098 selected_mean=7.65 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=30/99 loss=0.1311 loss_mg=0.1303 loss_mg_mv2text=0.0579 loss_mg_text2mv=0.2027 loss_me=0.0008 acc1=99.73 acc5=100.00 lr=0.00000551 grad_norm=23.0630 entropy=2.4240 selected_mean=7.77 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=40/99 loss=0.1881 loss_mg=0.1880 loss_mg_mv2text=0.1219 loss_mg_text2mv=0.2541 loss_me=0.0001 acc1=99.59 acc5=100.00 lr=0.00000547 grad_norm=24.6512 entropy=2.4390 selected_mean=7.21 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=50/99 loss=0.3012 loss_mg=0.3005 loss_mg_mv2text=0.2284 loss_mg_text2mv=0.3725 loss_me=0.0008 acc1=99.67 acc5=100.00 lr=0.00000543 grad_norm=31.1841 entropy=2.4440 selected_mean=6.64 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=60/99 loss=0.0747 loss_mg=0.0745 loss_mg_mv2text=0.0448 loss_mg_text2mv=0.1043 loss_me=0.0002 acc1=99.73 acc5=100.00 lr=0.00000539 grad_norm=21.7387 entropy=2.4471 selected_mean=6.91 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=70/99 loss=0.1262 loss_mg=0.1240 loss_mg_mv2text=0.0432 loss_mg_text2mv=0.2048 loss_me=0.0022 acc1=99.65 acc5=100.00 lr=0.00000535 grad_norm=23.0329 entropy=2.4467 selected_mean=5.81 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=80/99 loss=0.2047 loss_mg=0.2008 loss_mg_mv2text=0.1610 loss_mg_text2mv=0.2405 loss_me=0.0040 acc1=99.59 acc5=100.00 lr=0.00000531 grad_norm=27.9317 entropy=2.4502 selected_mean=8.12 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 step=90/99 loss=0.3587 loss_mg=0.3556 loss_mg_mv2text=0.1916 loss_mg_text2mv=0.5196 loss_me=0.0030 acc1=99.45 acc5=100.00 lr=0.00000527 grad_norm=31.1309 entropy=2.4537 selected_mean=7.19 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=11 train={'loss': 0.21268132974954967, 'loss_mg': 0.19410198602060277, 'loss_mg_mv2text': 0.09359852102450299, 'loss_mg_text2mv': 0.29460545131303245, 'loss_me': 0.018579343760488316, 'acc1': 99.43883277216611, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4524549562923035, 'amp_skipped_steps': 0, 'seconds': 220.88429713249207} val={'val_acc1': 66.14379084967321, 'val_acc5': 89.80392156862744, 'val_loss_me': 1.9026503855244798}
+[emclip][rank=2] epoch=12 entering DataLoader
+[emclip][rank=1] epoch=12 entering DataLoader
+[emclip][rank=0] epoch=12 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=12 step=0/99 loss=0.2203 loss_mg=0.2164 loss_mg_mv2text=0.0691 loss_mg_text2mv=0.3637 loss_me=0.0039 acc1=100.00 acc5=100.00 lr=0.00000523 grad_norm=31.5413 entropy=2.5248 selected_mean=7.06 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=10/99 loss=0.3771 loss_mg=0.3761 loss_mg_mv2text=0.0398 loss_mg_text2mv=0.7124 loss_me=0.0010 acc1=99.24 acc5=100.00 lr=0.00000519 grad_norm=39.7989 entropy=2.5008 selected_mean=7.90 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=20/99 loss=0.1242 loss_mg=0.1213 loss_mg_mv2text=0.0691 loss_mg_text2mv=0.1735 loss_me=0.0029 acc1=99.60 acc5=100.00 lr=0.00000515 grad_norm=21.8049 entropy=2.5018 selected_mean=7.16 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=30/99 loss=0.1120 loss_mg=0.1119 loss_mg_mv2text=0.0519 loss_mg_text2mv=0.1719 loss_me=0.0001 acc1=99.73 acc5=100.00 lr=0.00000511 grad_norm=20.2872 entropy=2.4938 selected_mean=6.97 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=40/99 loss=0.1120 loss_mg=0.1019 loss_mg_mv2text=0.0694 loss_mg_text2mv=0.1343 loss_me=0.0101 acc1=99.59 acc5=100.00 lr=0.00000507 grad_norm=17.0954 entropy=2.4801 selected_mean=7.58 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=50/99 loss=0.2212 loss_mg=0.2208 loss_mg_mv2text=0.0361 loss_mg_text2mv=0.4056 loss_me=0.0004 acc1=99.67 acc5=100.00 lr=0.00000503 grad_norm=19.6984 entropy=2.4727 selected_mean=6.47 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=60/99 loss=0.1175 loss_mg=0.1170 loss_mg_mv2text=0.0134 loss_mg_text2mv=0.2206 loss_me=0.0005 acc1=99.73 acc5=100.00 lr=0.00000499 grad_norm=18.0850 entropy=2.4639 selected_mean=6.51 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=70/99 loss=0.2827 loss_mg=0.2813 loss_mg_mv2text=0.1515 loss_mg_text2mv=0.4111 loss_me=0.0013 acc1=99.77 acc5=100.00 lr=0.00000495 grad_norm=34.2040 entropy=2.4658 selected_mean=6.79 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=80/99 loss=0.0439 loss_mg=0.0436 loss_mg_mv2text=0.0334 loss_mg_text2mv=0.0538 loss_me=0.0003 acc1=99.69 acc5=100.00 lr=0.00000491 grad_norm=11.4098 entropy=2.4631 selected_mean=7.20 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 step=90/99 loss=0.1973 loss_mg=0.1972 loss_mg_mv2text=0.1938 loss_mg_text2mv=0.2006 loss_me=0.0001 acc1=99.73 acc5=100.00 lr=0.00000486 grad_norm=36.9157 entropy=2.4610 selected_mean=7.05 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=12 train={'loss': 0.17894987567556828, 'loss_mg': 0.16374453073147974, 'loss_mg_mv2text': 0.07453966747204262, 'loss_mg_text2mv': 0.252949394310765, 'loss_me': 0.015205344943773133, 'acc1': 99.66329966329967, 'acc5': 100.0, 'mgse_saliency_entropy': 2.453325045229209, 'amp_skipped_steps': 0, 'seconds': 348.31712079048157} val={'val_acc1': 67.18954248366013, 'val_acc5': 90.0, 'val_loss_me': 1.7624928452013866}
+[emclip][rank=2] epoch=13 entering DataLoader
+[emclip][rank=1] epoch=13 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] epoch=13 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=13 step=0/99 loss=0.1742 loss_mg=0.1738 loss_mg_mv2text=0.0740 loss_mg_text2mv=0.2737 loss_me=0.0004 acc1=100.00 acc5=100.00 lr=0.00000483 grad_norm=21.6761 entropy=2.5331 selected_mean=7.78 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=10/99 loss=0.1141 loss_mg=0.1137 loss_mg_mv2text=0.0209 loss_mg_text2mv=0.2065 loss_me=0.0004 acc1=99.24 acc5=100.00 lr=0.00000479 grad_norm=20.7063 entropy=2.4484 selected_mean=6.71 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=20/99 loss=0.1699 loss_mg=0.1695 loss_mg_mv2text=0.0229 loss_mg_text2mv=0.3161 loss_me=0.0004 acc1=99.60 acc5=100.00 lr=0.00000474 grad_norm=19.4133 entropy=2.4415 selected_mean=7.16 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=30/99 loss=0.0857 loss_mg=0.0854 loss_mg_mv2text=0.0746 loss_mg_text2mv=0.0962 loss_me=0.0003 acc1=99.46 acc5=100.00 lr=0.00000470 grad_norm=17.2728 entropy=2.4469 selected_mean=6.90 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=40/99 loss=0.1385 loss_mg=0.1381 loss_mg_mv2text=0.0489 loss_mg_text2mv=0.2274 loss_me=0.0004 acc1=99.59 acc5=100.00 lr=0.00000466 grad_norm=22.7109 entropy=2.4484 selected_mean=7.73 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=50/99 loss=0.0421 loss_mg=0.0417 loss_mg_mv2text=0.0189 loss_mg_text2mv=0.0645 loss_me=0.0004 acc1=99.67 acc5=100.00 lr=0.00000462 grad_norm=17.2254 entropy=2.4538 selected_mean=7.34 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=60/99 loss=0.1448 loss_mg=0.1442 loss_mg_mv2text=0.0300 loss_mg_text2mv=0.2583 loss_me=0.0006 acc1=99.73 acc5=100.00 lr=0.00000458 grad_norm=21.5320 entropy=2.4552 selected_mean=6.73 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=70/99 loss=0.1808 loss_mg=0.1795 loss_mg_mv2text=0.0181 loss_mg_text2mv=0.3410 loss_me=0.0013 acc1=99.77 acc5=100.00 lr=0.00000454 grad_norm=28.9183 entropy=2.4545 selected_mean=6.05 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=80/99 loss=0.1266 loss_mg=0.1241 loss_mg_mv2text=0.0088 loss_mg_text2mv=0.2393 loss_me=0.0026 acc1=99.79 acc5=100.00 lr=0.00000449 grad_norm=25.1965 entropy=2.4556 selected_mean=7.14 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 step=90/99 loss=0.1608 loss_mg=0.1607 loss_mg_mv2text=0.0302 loss_mg_text2mv=0.2912 loss_me=0.0001 acc1=99.73 acc5=100.00 lr=0.00000445 grad_norm=21.3539 entropy=2.4563 selected_mean=7.05 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=13 train={'loss': 0.16729080727204731, 'loss_mg': 0.15841529588293446, 'loss_mg_mv2text': 0.07178203478104338, 'loss_mg_text2mv': 0.24504855682803725, 'loss_me': 0.008875510767134824, 'acc1': 99.83164983164983, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4452229437201916, 'amp_skipped_steps': 0, 'seconds': 287.71031308174133} val={'val_acc1': 65.62091503267973, 'val_acc5': 88.43137254901961, 'val_loss_me': 1.8755735694326034}
+[emclip][rank=2] epoch=14 entering DataLoader
+[emclip][rank=1] epoch=14 entering DataLoader
+[emclip][rank=0] epoch=14 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=14 step=0/99 loss=0.0713 loss_mg=0.0710 loss_mg_mv2text=0.0219 loss_mg_text2mv=0.1200 loss_me=0.0004 acc1=100.00 acc5=100.00 lr=0.00000441 grad_norm=17.1935 entropy=2.4218 selected_mean=6.65 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=10/99 loss=0.0825 loss_mg=0.0822 loss_mg_mv2text=0.0169 loss_mg_text2mv=0.1475 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000437 grad_norm=19.6700 entropy=2.4529 selected_mean=5.77 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=20/99 loss=0.1426 loss_mg=0.1425 loss_mg_mv2text=0.0142 loss_mg_text2mv=0.2708 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000433 grad_norm=21.2425 entropy=2.4406 selected_mean=6.76 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=30/99 loss=0.1618 loss_mg=0.1616 loss_mg_mv2text=0.0320 loss_mg_text2mv=0.2911 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000429 grad_norm=25.3331 entropy=2.4504 selected_mean=6.88 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=40/99 loss=0.1144 loss_mg=0.1108 loss_mg_mv2text=0.0352 loss_mg_text2mv=0.1865 loss_me=0.0036 acc1=100.00 acc5=100.00 lr=0.00000425 grad_norm=21.8369 entropy=2.4498 selected_mean=6.83 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=50/99 loss=0.1625 loss_mg=0.1619 loss_mg_mv2text=0.0655 loss_mg_text2mv=0.2584 loss_me=0.0005 acc1=100.00 acc5=100.00 lr=0.00000420 grad_norm=16.2683 entropy=2.4436 selected_mean=5.36 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=60/99 loss=0.1179 loss_mg=0.1171 loss_mg_mv2text=0.0832 loss_mg_text2mv=0.1509 loss_me=0.0008 acc1=99.73 acc5=100.00 lr=0.00000416 grad_norm=21.5169 entropy=2.4415 selected_mean=7.31 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=70/99 loss=0.2983 loss_mg=0.2977 loss_mg_mv2text=0.1766 loss_mg_text2mv=0.4189 loss_me=0.0006 acc1=99.77 acc5=100.00 lr=0.00000412 grad_norm=25.2888 entropy=2.4408 selected_mean=7.21 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=80/99 loss=0.0714 loss_mg=0.0704 loss_mg_mv2text=0.0062 loss_mg_text2mv=0.1345 loss_me=0.0010 acc1=99.69 acc5=100.00 lr=0.00000408 grad_norm=17.9026 entropy=2.4431 selected_mean=7.04 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 step=90/99 loss=0.1765 loss_mg=0.1169 loss_mg_mv2text=0.0422 loss_mg_text2mv=0.1917 loss_me=0.0595 acc1=99.54 acc5=100.00 lr=0.00000403 grad_norm=21.1359 entropy=2.4398 selected_mean=6.40 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=14 train={'loss': 0.1535450440301538, 'loss_mg': 0.1406375568498064, 'loss_mg_mv2text': 0.05865854191709849, 'loss_mg_text2mv': 0.2226165720333756, 'loss_me': 0.012907487037572038, 'acc1': 99.63524130190797, 'acc5': 99.9719416386083, 'mgse_saliency_entropy': 2.4452779349253233, 'amp_skipped_steps': 0, 'seconds': 346.0410180091858} val={'val_acc1': 65.49019607843137, 'val_acc5': 90.45751633986929, 'val_loss_me': 1.8787854775578285}
+[emclip][rank=2] epoch=15 entering DataLoader
+[emclip][rank=1] epoch=15 entering DataLoader
+[emclip][rank=0] epoch=15 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=15 step=0/99 loss=0.0774 loss_mg=0.0772 loss_mg_mv2text=0.0263 loss_mg_text2mv=0.1281 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000400 grad_norm=18.7261 entropy=2.3837 selected_mean=6.59 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=10/99 loss=0.1012 loss_mg=0.1008 loss_mg_mv2text=0.0110 loss_mg_text2mv=0.1906 loss_me=0.0005 acc1=100.00 acc5=100.00 lr=0.00000395 grad_norm=17.2328 entropy=2.4184 selected_mean=6.84 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=20/99 loss=0.1802 loss_mg=0.1796 loss_mg_mv2text=0.0201 loss_mg_text2mv=0.3391 loss_me=0.0006 acc1=100.00 acc5=100.00 lr=0.00000391 grad_norm=22.9111 entropy=2.4384 selected_mean=7.36 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=30/99 loss=0.3528 loss_mg=0.3521 loss_mg_mv2text=0.1762 loss_mg_text2mv=0.5281 loss_me=0.0007 acc1=100.00 acc5=100.00 lr=0.00000387 grad_norm=28.0480 entropy=2.4359 selected_mean=7.40 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=40/99 loss=0.1242 loss_mg=0.1239 loss_mg_mv2text=0.0182 loss_mg_text2mv=0.2297 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000383 grad_norm=18.9600 entropy=2.4423 selected_mean=7.62 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=50/99 loss=0.1405 loss_mg=0.1384 loss_mg_mv2text=0.0900 loss_mg_text2mv=0.1869 loss_me=0.0021 acc1=100.00 acc5=100.00 lr=0.00000378 grad_norm=18.0585 entropy=2.4416 selected_mean=6.40 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=60/99 loss=0.1709 loss_mg=0.1698 loss_mg_mv2text=0.0232 loss_mg_text2mv=0.3164 loss_me=0.0011 acc1=100.00 acc5=100.00 lr=0.00000374 grad_norm=20.2378 entropy=2.4492 selected_mean=6.93 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=70/99 loss=0.1036 loss_mg=0.1003 loss_mg_mv2text=0.0436 loss_mg_text2mv=0.1570 loss_me=0.0033 acc1=100.00 acc5=100.00 lr=0.00000370 grad_norm=21.3351 entropy=2.4516 selected_mean=7.21 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=80/99 loss=0.0582 loss_mg=0.0574 loss_mg_mv2text=0.0139 loss_mg_text2mv=0.1008 loss_me=0.0009 acc1=100.00 acc5=100.00 lr=0.00000366 grad_norm=18.7336 entropy=2.4520 selected_mean=6.73 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 step=90/99 loss=0.0761 loss_mg=0.0758 loss_mg_mv2text=0.0384 loss_mg_text2mv=0.1133 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000362 grad_norm=17.3708 entropy=2.4568 selected_mean=7.34 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=15 train={'loss': 0.13372893280252462, 'loss_mg': 0.1277494821007605, 'loss_mg_mv2text': 0.054378262289834244, 'loss_mg_text2mv': 0.2011207022048809, 'loss_me': 0.0059794503776532965, 'acc1': 99.83164983164983, 'acc5': 100.0, 'mgse_saliency_entropy': 2.450250737996214, 'amp_skipped_steps': 0, 'seconds': 488.1387460231781} val={'val_acc1': 66.79738562091504, 'val_acc5': 91.43790849673202, 'val_loss_me': 1.7713499786700255}
+[emclip][rank=2] epoch=16 entering DataLoader
+[emclip][rank=1] epoch=16 entering DataLoader
+[emclip][rank=0] epoch=16 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=16 step=0/99 loss=0.3317 loss_mg=0.0521 loss_mg_mv2text=0.0144 loss_mg_text2mv=0.0898 loss_me=0.2796 acc1=91.67 acc5=100.00 lr=0.00000358 grad_norm=34.6710 entropy=2.4861 selected_mean=6.65 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=10/99 loss=0.0799 loss_mg=0.0799 loss_mg_mv2text=0.0298 loss_mg_text2mv=0.1300 loss_me=0.0001 acc1=99.24 acc5=100.00 lr=0.00000354 grad_norm=19.1195 entropy=2.4518 selected_mean=7.52 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=20/99 loss=0.1001 loss_mg=0.0995 loss_mg_mv2text=0.0456 loss_mg_text2mv=0.1533 loss_me=0.0007 acc1=99.21 acc5=100.00 lr=0.00000349 grad_norm=15.2394 entropy=2.4543 selected_mean=7.71 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=30/99 loss=0.1925 loss_mg=0.1924 loss_mg_mv2text=0.2687 loss_mg_text2mv=0.1162 loss_me=0.0001 acc1=99.46 acc5=100.00 lr=0.00000345 grad_norm=17.5714 entropy=2.4606 selected_mean=6.66 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=40/99 loss=0.1616 loss_mg=0.1615 loss_mg_mv2text=0.0669 loss_mg_text2mv=0.2561 loss_me=0.0001 acc1=99.59 acc5=100.00 lr=0.00000341 grad_norm=25.4614 entropy=2.4679 selected_mean=6.89 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=50/99 loss=0.0308 loss_mg=0.0284 loss_mg_mv2text=0.0186 loss_mg_text2mv=0.0382 loss_me=0.0023 acc1=99.67 acc5=100.00 lr=0.00000337 grad_norm=14.3052 entropy=2.4651 selected_mean=8.09 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=60/99 loss=0.2076 loss_mg=0.2074 loss_mg_mv2text=0.0497 loss_mg_text2mv=0.3651 loss_me=0.0002 acc1=99.59 acc5=100.00 lr=0.00000333 grad_norm=23.7654 entropy=2.4651 selected_mean=6.56 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=70/99 loss=0.0726 loss_mg=0.0720 loss_mg_mv2text=0.0086 loss_mg_text2mv=0.1355 loss_me=0.0005 acc1=99.65 acc5=100.00 lr=0.00000328 grad_norm=17.4790 entropy=2.4566 selected_mean=6.73 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=80/99 loss=0.1179 loss_mg=0.1170 loss_mg_mv2text=0.0823 loss_mg_text2mv=0.1518 loss_me=0.0008 acc1=99.69 acc5=100.00 lr=0.00000324 grad_norm=15.9337 entropy=2.4568 selected_mean=6.71 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 step=90/99 loss=0.2301 loss_mg=0.2298 loss_mg_mv2text=0.0188 loss_mg_text2mv=0.4407 loss_me=0.0004 acc1=99.63 acc5=100.00 lr=0.00000320 grad_norm=21.0094 entropy=2.4587 selected_mean=7.58 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=16 train={'loss': 0.12402984060924062, 'loss_mg': 0.11694087332697829, 'loss_mg_mv2text': 0.04543081602639823, 'loss_mg_text2mv': 0.1884509308282474, 'loss_me': 0.007088967570079109, 'acc1': 99.80359147025814, 'acc5': 100.0, 'mgse_saliency_entropy': 2.466899382144915, 'amp_skipped_steps': 0, 'seconds': 591.2928810119629} val={'val_acc1': 67.18954248366013, 'val_acc5': 90.32679738562092, 'val_loss_me': 1.7892951317972088}
+[emclip][rank=2] epoch=17 entering DataLoader
+[emclip][rank=1] epoch=17 entering DataLoader
+[emclip][rank=0] epoch=17 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+epoch=17 step=0/99 loss=0.2558 loss_mg=0.2551 loss_mg_mv2text=0.0311 loss_mg_text2mv=0.4791 loss_me=0.0007 acc1=100.00 acc5=100.00 lr=0.00000316 grad_norm=19.6978 entropy=2.4216 selected_mean=7.58 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=10/99 loss=0.0936 loss_mg=0.0935 loss_mg_mv2text=0.0146 loss_mg_text2mv=0.1725 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000312 grad_norm=16.5258 entropy=2.4465 selected_mean=7.51 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=20/99 loss=0.0997 loss_mg=0.0986 loss_mg_mv2text=0.0699 loss_mg_text2mv=0.1274 loss_me=0.0011 acc1=99.60 acc5=100.00 lr=0.00000308 grad_norm=12.0093 entropy=2.4387 selected_mean=6.77 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=30/99 loss=0.1149 loss_mg=0.1146 loss_mg_mv2text=0.0143 loss_mg_text2mv=0.2150 loss_me=0.0003 acc1=99.73 acc5=100.00 lr=0.00000304 grad_norm=15.0853 entropy=2.4337 selected_mean=7.27 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=40/99 loss=0.1472 loss_mg=0.1471 loss_mg_mv2text=0.0282 loss_mg_text2mv=0.2659 loss_me=0.0001 acc1=99.80 acc5=100.00 lr=0.00000300 grad_norm=19.6395 entropy=2.4321 selected_mean=6.57 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=50/99 loss=0.1337 loss_mg=0.1336 loss_mg_mv2text=0.0379 loss_mg_text2mv=0.2292 loss_me=0.0001 acc1=99.84 acc5=100.00 lr=0.00000296 grad_norm=18.3808 entropy=2.4266 selected_mean=7.67 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=60/99 loss=0.1699 loss_mg=0.1699 loss_mg_mv2text=0.0219 loss_mg_text2mv=0.3178 loss_me=0.0001 acc1=99.86 acc5=100.00 lr=0.00000292 grad_norm=18.5505 entropy=2.4201 selected_mean=7.86 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=70/99 loss=0.0650 loss_mg=0.0648 loss_mg_mv2text=0.0212 loss_mg_text2mv=0.1085 loss_me=0.0001 acc1=99.88 acc5=100.00 lr=0.00000288 grad_norm=15.0160 entropy=2.4228 selected_mean=7.38 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=80/99 loss=0.0415 loss_mg=0.0413 loss_mg_mv2text=0.0174 loss_mg_text2mv=0.0651 loss_me=0.0002 acc1=99.90 acc5=100.00 lr=0.00000284 grad_norm=10.8180 entropy=2.4192 selected_mean=6.91 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 step=90/99 loss=0.1010 loss_mg=0.1007 loss_mg_mv2text=0.0201 loss_mg_text2mv=0.1814 loss_me=0.0002 acc1=99.91 acc5=100.00 lr=0.00000280 grad_norm=23.3474 entropy=2.4191 selected_mean=5.99 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=17 train={'loss': 0.09627170173407404, 'loss_mg': 0.09372664923130562, 'loss_mg_mv2text': 0.0335221554494466, 'loss_mg_text2mv': 0.15393114322639675, 'loss_me': 0.002545052385651827, 'acc1': 99.91582491582491, 'acc5': 100.0, 'mgse_saliency_entropy': 2.44591204967563, 'amp_skipped_steps': 0, 'seconds': 533.1830906867981} val={'val_acc1': 67.7124183006536, 'val_acc5': 91.50326797385621, 'val_loss_me': 1.7372766125620265}
+[emclip][rank=2] epoch=18 entering DataLoader
+[emclip][rank=1] epoch=18 entering DataLoader
+[emclip][rank=0] epoch=18 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=18 step=0/99 loss=0.0933 loss_mg=0.0924 loss_mg_mv2text=0.0149 loss_mg_text2mv=0.1698 loss_me=0.0009 acc1=100.00 acc5=100.00 lr=0.00000276 grad_norm=19.6814 entropy=2.4215 selected_mean=7.42 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=10/99 loss=0.1209 loss_mg=0.1208 loss_mg_mv2text=0.0081 loss_mg_text2mv=0.2335 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000272 grad_norm=19.6868 entropy=2.4623 selected_mean=7.33 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=20/99 loss=0.0716 loss_mg=0.0711 loss_mg_mv2text=0.0128 loss_mg_text2mv=0.1294 loss_me=0.0004 acc1=100.00 acc5=100.00 lr=0.00000268 grad_norm=15.0530 entropy=2.4598 selected_mean=6.93 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=30/99 loss=0.0315 loss_mg=0.0314 loss_mg_mv2text=0.0223 loss_mg_text2mv=0.0406 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000264 grad_norm=20.0791 entropy=2.4546 selected_mean=6.23 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=40/99 loss=0.0924 loss_mg=0.0923 loss_mg_mv2text=0.0393 loss_mg_text2mv=0.1453 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000260 grad_norm=19.2869 entropy=2.4498 selected_mean=7.70 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=50/99 loss=0.0660 loss_mg=0.0657 loss_mg_mv2text=0.0124 loss_mg_text2mv=0.1190 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000256 grad_norm=14.2792 entropy=2.4488 selected_mean=7.43 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=60/99 loss=0.0617 loss_mg=0.0617 loss_mg_mv2text=0.0333 loss_mg_text2mv=0.0900 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000252 grad_norm=14.7710 entropy=2.4423 selected_mean=7.19 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=70/99 loss=0.1249 loss_mg=0.1246 loss_mg_mv2text=0.0569 loss_mg_text2mv=0.1923 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000248 grad_norm=19.1330 entropy=2.4468 selected_mean=6.71 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=80/99 loss=0.1475 loss_mg=0.1474 loss_mg_mv2text=0.0266 loss_mg_text2mv=0.2683 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000244 grad_norm=20.5330 entropy=2.4489 selected_mean=6.85 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 step=90/99 loss=0.0440 loss_mg=0.0438 loss_mg_mv2text=0.0098 loss_mg_text2mv=0.0778 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000240 grad_norm=12.2281 entropy=2.4495 selected_mean=7.53 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=18 train={'loss': 0.09224306920587214, 'loss_mg': 0.09160263448803112, 'loss_mg_mv2text': 0.0324049492755447, 'loss_mg_text2mv': 0.150800319332065, 'loss_me': 0.0006404346723356621, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4550210972024935, 'amp_skipped_steps': 0, 'seconds': 473.19843912124634} val={'val_acc1': 66.86274509803921, 'val_acc5': 90.98039215686275, 'val_loss_me': 1.7577607615495299}
+[emclip][rank=2] epoch=19 entering DataLoader
+[emclip][rank=1] epoch=19 entering DataLoader
+[emclip][rank=0] epoch=19 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=19 step=0/99 loss=0.0363 loss_mg=0.0362 loss_mg_mv2text=0.0164 loss_mg_text2mv=0.0560 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000237 grad_norm=10.7462 entropy=2.5760 selected_mean=6.91 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=10/99 loss=0.1092 loss_mg=0.1091 loss_mg_mv2text=0.1127 loss_mg_text2mv=0.1056 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000233 grad_norm=10.7419 entropy=2.4911 selected_mean=7.06 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=20/99 loss=0.0216 loss_mg=0.0215 loss_mg_mv2text=0.0175 loss_mg_text2mv=0.0256 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000229 grad_norm=10.0506 entropy=2.4622 selected_mean=6.77 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=30/99 loss=0.0351 loss_mg=0.0350 loss_mg_mv2text=0.0074 loss_mg_text2mv=0.0626 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000225 grad_norm=13.8424 entropy=2.4453 selected_mean=6.72 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=40/99 loss=0.0919 loss_mg=0.0817 loss_mg_mv2text=0.0231 loss_mg_text2mv=0.1403 loss_me=0.0103 acc1=100.00 acc5=100.00 lr=0.00000222 grad_norm=16.6188 entropy=2.4436 selected_mean=7.30 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=50/99 loss=0.0315 loss_mg=0.0311 loss_mg_mv2text=0.0121 loss_mg_text2mv=0.0500 loss_me=0.0004 acc1=100.00 acc5=100.00 lr=0.00000218 grad_norm=12.9309 entropy=2.4416 selected_mean=6.22 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=60/99 loss=0.0799 loss_mg=0.0797 loss_mg_mv2text=0.0310 loss_mg_text2mv=0.1284 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000214 grad_norm=13.6842 entropy=2.4365 selected_mean=6.21 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=70/99 loss=0.0725 loss_mg=0.0722 loss_mg_mv2text=0.0098 loss_mg_text2mv=0.1347 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000210 grad_norm=11.7392 entropy=2.4374 selected_mean=6.62 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=80/99 loss=0.0248 loss_mg=0.0247 loss_mg_mv2text=0.0070 loss_mg_text2mv=0.0424 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000207 grad_norm=11.2101 entropy=2.4426 selected_mean=7.30 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 step=90/99 loss=0.0233 loss_mg=0.0232 loss_mg_mv2text=0.0134 loss_mg_text2mv=0.0331 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000203 grad_norm=14.5409 entropy=2.4441 selected_mean=6.74 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=19 train={'loss': 0.07784143646846617, 'loss_mg': 0.0773486111200217, 'loss_mg_mv2text': 0.030622991057495375, 'loss_mg_text2mv': 0.12407423124996701, 'loss_me': 0.0004928253496969278, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4455288098717376, 'amp_skipped_steps': 0, 'seconds': 533.3999698162079} val={'val_acc1': 67.77777777777777, 'val_acc5': 91.63398692810458, 'val_loss_me': 1.756570477709039}
+[emclip][rank=1] epoch=20 entering DataLoader
+[emclip][rank=2] epoch=20 entering DataLoader
+[emclip][rank=0] epoch=20 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=20 step=0/99 loss=0.0701 loss_mg=0.0700 loss_mg_mv2text=0.0230 loss_mg_text2mv=0.1170 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000200 grad_norm=12.4872 entropy=2.5133 selected_mean=6.88 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=20 step=10/99 loss=0.0606 loss_mg=0.0605 loss_mg_mv2text=0.0057 loss_mg_text2mv=0.1154 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000196 grad_norm=15.2933 entropy=2.4167 selected_mean=7.25 max_mem=48555MB amp_scale=1024.0 amp_skips=0
+epoch=20 step=20/99 loss=0.0501 loss_mg=0.0500 loss_mg_mv2text=0.0077 loss_mg_text2mv=0.0924 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000192 grad_norm=14.7426 entropy=2.4247 selected_mean=7.32 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=20 step=30/99 loss=0.1913 loss_mg=0.1913 loss_mg_mv2text=0.0065 loss_mg_text2mv=0.3761 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000189 grad_norm=23.1837 entropy=2.4162 selected_mean=6.96 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=20 step=40/99 loss=0.0573 loss_mg=0.0573 loss_mg_mv2text=0.0212 loss_mg_text2mv=0.0934 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000185 grad_norm=14.9491 entropy=2.4155 selected_mean=6.83 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=20 step=50/99 loss=0.0668 loss_mg=0.0664 loss_mg_mv2text=0.0130 loss_mg_text2mv=0.1198 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000182 grad_norm=13.2833 entropy=2.4091 selected_mean=6.19 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=20 step=60/99 loss=0.0819 loss_mg=0.0818 loss_mg_mv2text=0.0080 loss_mg_text2mv=0.1556 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000178 grad_norm=13.7304 entropy=2.4146 selected_mean=7.60 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=20 step=70/99 loss=0.0574 loss_mg=0.0570 loss_mg_mv2text=0.0269 loss_mg_text2mv=0.0870 loss_me=0.0004 acc1=100.00 acc5=100.00 lr=0.00000175 grad_norm=13.8106 entropy=2.4177 selected_mean=6.19 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=20 step=80/99 loss=0.0681 loss_mg=0.0681 loss_mg_mv2text=0.0241 loss_mg_text2mv=0.1120 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000171 grad_norm=15.0909 entropy=2.4255 selected_mean=6.81 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=20 step=90/99 loss=0.0414 loss_mg=0.0413 loss_mg_mv2text=0.0083 loss_mg_text2mv=0.0743 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000168 grad_norm=17.8370 entropy=2.4277 selected_mean=7.31 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=20 train={'loss': 0.07325758433489989, 'loss_mg': 0.07296386984198884, 'loss_mg_mv2text': 0.0231155743720543, 'loss_mg_text2mv': 0.12281216508850004, 'loss_me': 0.0002937144652954738, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4402512171453097, 'amp_skipped_steps': 0, 'seconds': 531.8710741996765} val={'val_acc1': 67.97385620915033, 'val_acc5': 90.7843137254902, 'val_loss_me': 1.7707582172206948}
+[emclip][rank=1] epoch=21 entering DataLoader
+[emclip][rank=2] epoch=21 entering DataLoader
+[emclip][rank=0] epoch=21 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=21 step=0/99 loss=0.0330 loss_mg=0.0330 loss_mg_mv2text=0.0149 loss_mg_text2mv=0.0511 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000165 grad_norm=8.2583 entropy=2.4872 selected_mean=7.84 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=10/99 loss=0.0258 loss_mg=0.0258 loss_mg_mv2text=0.0145 loss_mg_text2mv=0.0372 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000161 grad_norm=9.4686 entropy=2.4815 selected_mean=7.29 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=20/99 loss=0.0210 loss_mg=0.0208 loss_mg_mv2text=0.0108 loss_mg_text2mv=0.0308 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000158 grad_norm=9.2014 entropy=2.4815 selected_mean=6.98 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=30/99 loss=0.0498 loss_mg=0.0497 loss_mg_mv2text=0.0194 loss_mg_text2mv=0.0801 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000154 grad_norm=18.2330 entropy=2.4646 selected_mean=7.27 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=40/99 loss=0.0675 loss_mg=0.0674 loss_mg_mv2text=0.0190 loss_mg_text2mv=0.1157 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000151 grad_norm=24.6411 entropy=2.4606 selected_mean=7.09 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=50/99 loss=0.0466 loss_mg=0.0464 loss_mg_mv2text=0.0085 loss_mg_text2mv=0.0843 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000148 grad_norm=10.6112 entropy=2.4606 selected_mean=6.86 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=60/99 loss=0.1077 loss_mg=0.1075 loss_mg_mv2text=0.0145 loss_mg_text2mv=0.2006 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000145 grad_norm=20.1214 entropy=2.4589 selected_mean=6.71 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=70/99 loss=0.0577 loss_mg=0.0568 loss_mg_mv2text=0.0097 loss_mg_text2mv=0.1039 loss_me=0.0009 acc1=100.00 acc5=100.00 lr=0.00000141 grad_norm=15.8547 entropy=2.4572 selected_mean=7.62 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=80/99 loss=0.1309 loss_mg=0.1308 loss_mg_mv2text=0.0166 loss_mg_text2mv=0.2450 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000138 grad_norm=19.0429 entropy=2.4552 selected_mean=7.95 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 step=90/99 loss=0.0659 loss_mg=0.0657 loss_mg_mv2text=0.0092 loss_mg_text2mv=0.1222 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000135 grad_norm=19.8139 entropy=2.4535 selected_mean=6.93 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=21 train={'loss': 0.06594697978372627, 'loss_mg': 0.065633929789267, 'loss_mg_mv2text': 0.021464739252753582, 'loss_mg_text2mv': 0.10980312044572349, 'loss_me': 0.000313049992243703, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4484889571514192, 'amp_skipped_steps': 0, 'seconds': 418.2504315376282} val={'val_acc1': 67.7124183006536, 'val_acc5': 90.91503267973856, 'val_loss_me': 1.8043186516242953}
+[emclip][rank=2] epoch=22 entering DataLoader[emclip][rank=1] epoch=22 entering DataLoader
+
+[emclip][rank=0] epoch=22 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=22 step=0/99 loss=0.0478 loss_mg=0.0478 loss_mg_mv2text=0.0144 loss_mg_text2mv=0.0811 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000132 grad_norm=20.6990 entropy=2.5535 selected_mean=6.89 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=10/99 loss=0.0520 loss_mg=0.0518 loss_mg_mv2text=0.0118 loss_mg_text2mv=0.0917 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000129 grad_norm=9.8064 entropy=2.4388 selected_mean=6.88 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=20/99 loss=0.0379 loss_mg=0.0376 loss_mg_mv2text=0.0203 loss_mg_text2mv=0.0548 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000126 grad_norm=9.1632 entropy=2.4296 selected_mean=7.28 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=30/99 loss=0.0699 loss_mg=0.0699 loss_mg_mv2text=0.0125 loss_mg_text2mv=0.1272 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000123 grad_norm=15.2314 entropy=2.4293 selected_mean=5.67 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=40/99 loss=0.0176 loss_mg=0.0168 loss_mg_mv2text=0.0126 loss_mg_text2mv=0.0211 loss_me=0.0007 acc1=100.00 acc5=100.00 lr=0.00000120 grad_norm=12.3632 entropy=2.4390 selected_mean=6.85 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=50/99 loss=0.0303 loss_mg=0.0302 loss_mg_mv2text=0.0057 loss_mg_text2mv=0.0548 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000117 grad_norm=12.8733 entropy=2.4431 selected_mean=7.43 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=60/99 loss=0.1388 loss_mg=0.1386 loss_mg_mv2text=0.0278 loss_mg_text2mv=0.2494 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000114 grad_norm=16.3159 entropy=2.4489 selected_mean=5.62 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=70/99 loss=0.0422 loss_mg=0.0415 loss_mg_mv2text=0.0203 loss_mg_text2mv=0.0628 loss_me=0.0007 acc1=100.00 acc5=100.00 lr=0.00000111 grad_norm=12.5541 entropy=2.4530 selected_mean=7.06 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=80/99 loss=0.0253 loss_mg=0.0253 loss_mg_mv2text=0.0125 loss_mg_text2mv=0.0380 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000108 grad_norm=11.9107 entropy=2.4533 selected_mean=6.33 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 step=90/99 loss=0.0551 loss_mg=0.0550 loss_mg_mv2text=0.0056 loss_mg_text2mv=0.1044 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000105 grad_norm=11.3010 entropy=2.4499 selected_mean=7.06 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=22 train={'loss': 0.05955845370625305, 'loss_mg': 0.05933373502333357, 'loss_mg_mv2text': 0.020502826930352984, 'loss_mg_text2mv': 0.09816464315159153, 'loss_me': 0.00022471858063195658, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4526998779990454, 'amp_skipped_steps': 0, 'seconds': 259.75777435302734} val={'val_acc1': 68.56209150326798, 'val_acc5': 91.11111111111111, 'val_loss_me': 1.7799604383354874}
+[emclip][rank=2] epoch=23 entering DataLoader
+[emclip][rank=1] epoch=23 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] epoch=23 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=23 step=0/99 loss=0.1138 loss_mg=0.1133 loss_mg_mv2text=0.0042 loss_mg_text2mv=0.2224 loss_me=0.0005 acc1=100.00 acc5=100.00 lr=0.00000102 grad_norm=15.8944 entropy=2.4480 selected_mean=7.02 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=10/99 loss=0.0652 loss_mg=0.0651 loss_mg_mv2text=0.0263 loss_mg_text2mv=0.1039 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000100 grad_norm=15.2851 entropy=2.4475 selected_mean=7.79 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=20/99 loss=0.0186 loss_mg=0.0185 loss_mg_mv2text=0.0054 loss_mg_text2mv=0.0317 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000097 grad_norm=6.4212 entropy=2.4498 selected_mean=7.51 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=30/99 loss=0.0217 loss_mg=0.0217 loss_mg_mv2text=0.0074 loss_mg_text2mv=0.0360 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000094 grad_norm=11.0091 entropy=2.4331 selected_mean=6.38 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=40/99 loss=0.0582 loss_mg=0.0582 loss_mg_mv2text=0.0082 loss_mg_text2mv=0.1082 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000091 grad_norm=14.2907 entropy=2.4294 selected_mean=7.00 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=50/99 loss=0.0479 loss_mg=0.0476 loss_mg_mv2text=0.0398 loss_mg_text2mv=0.0553 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000089 grad_norm=8.6440 entropy=2.4337 selected_mean=7.32 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=60/99 loss=0.0730 loss_mg=0.0729 loss_mg_mv2text=0.0070 loss_mg_text2mv=0.1388 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000086 grad_norm=18.2436 entropy=2.4434 selected_mean=7.07 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=70/99 loss=0.0328 loss_mg=0.0327 loss_mg_mv2text=0.0146 loss_mg_text2mv=0.0508 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000083 grad_norm=11.0970 entropy=2.4470 selected_mean=7.44 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=80/99 loss=0.0805 loss_mg=0.0804 loss_mg_mv2text=0.0136 loss_mg_text2mv=0.1472 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000081 grad_norm=16.5505 entropy=2.4476 selected_mean=6.92 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 step=90/99 loss=0.0315 loss_mg=0.0314 loss_mg_mv2text=0.0157 loss_mg_text2mv=0.0470 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000078 grad_norm=9.6676 entropy=2.4517 selected_mean=7.96 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=23 train={'loss': 0.05189329618274513, 'loss_mg': 0.05170796251532807, 'loss_mg_mv2text': 0.017421316217493127, 'loss_mg_text2mv': 0.08599460907970313, 'loss_me': 0.00018533363557403376, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.450762805713949, 'amp_skipped_steps': 0, 'seconds': 230.26851963996887} val={'val_acc1': 67.7124183006536, 'val_acc5': 91.37254901960785, 'val_loss_me': 1.77361190076273}
+[emclip][rank=1] epoch=24 entering DataLoader
+[emclip][rank=2] epoch=24 entering DataLoader
+[emclip][rank=0] epoch=24 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=24 step=0/99 loss=0.1924 loss_mg=0.1924 loss_mg_mv2text=0.1325 loss_mg_text2mv=0.2523 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000076 grad_norm=15.8970 entropy=2.6008 selected_mean=7.49 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=10/99 loss=0.0431 loss_mg=0.0430 loss_mg_mv2text=0.0152 loss_mg_text2mv=0.0707 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000074 grad_norm=11.7700 entropy=2.4523 selected_mean=8.03 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=20/99 loss=0.0261 loss_mg=0.0261 loss_mg_mv2text=0.0142 loss_mg_text2mv=0.0379 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000071 grad_norm=7.8510 entropy=2.4698 selected_mean=7.43 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=30/99 loss=0.0484 loss_mg=0.0483 loss_mg_mv2text=0.0058 loss_mg_text2mv=0.0908 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000069 grad_norm=11.9625 entropy=2.4604 selected_mean=7.41 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=40/99 loss=0.0386 loss_mg=0.0385 loss_mg_mv2text=0.0208 loss_mg_text2mv=0.0563 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000067 grad_norm=18.7046 entropy=2.4689 selected_mean=6.72 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=50/99 loss=0.0368 loss_mg=0.0367 loss_mg_mv2text=0.0060 loss_mg_text2mv=0.0674 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000064 grad_norm=14.7961 entropy=2.4591 selected_mean=6.81 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=60/99 loss=0.0458 loss_mg=0.0457 loss_mg_mv2text=0.0074 loss_mg_text2mv=0.0840 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000062 grad_norm=10.9033 entropy=2.4570 selected_mean=7.73 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=70/99 loss=0.0282 loss_mg=0.0282 loss_mg_mv2text=0.0068 loss_mg_text2mv=0.0496 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000060 grad_norm=13.1946 entropy=2.4585 selected_mean=6.88 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=80/99 loss=0.0497 loss_mg=0.0497 loss_mg_mv2text=0.0114 loss_mg_text2mv=0.0880 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000057 grad_norm=11.8742 entropy=2.4546 selected_mean=6.75 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 step=90/99 loss=0.0723 loss_mg=0.0723 loss_mg_mv2text=0.0055 loss_mg_text2mv=0.1390 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000055 grad_norm=10.7629 entropy=2.4521 selected_mean=6.85 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=24 train={'loss': 0.045747226105708166, 'loss_mg': 0.04553211307911961, 'loss_mg_mv2text': 0.016479411147149146, 'loss_mg_text2mv': 0.07458481493465577, 'loss_me': 0.0002151130259638497, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4505760629570443, 'amp_skipped_steps': 0, 'seconds': 310.345041513443} val={'val_acc1': 68.56209150326798, 'val_acc5': 91.69934640522875, 'val_loss_me': 1.7609106400041885}
+[emclip][rank=1] epoch=25 entering DataLoader
+[emclip][rank=2] epoch=25 entering DataLoader
+[emclip][rank=0] epoch=25 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=25 step=0/99 loss=0.0506 loss_mg=0.0505 loss_mg_mv2text=0.0080 loss_mg_text2mv=0.0930 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000053 grad_norm=11.1340 entropy=2.5940 selected_mean=8.97 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=10/99 loss=0.0251 loss_mg=0.0250 loss_mg_mv2text=0.0137 loss_mg_text2mv=0.0364 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000051 grad_norm=12.7244 entropy=2.4905 selected_mean=7.21 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=20/99 loss=0.0177 loss_mg=0.0176 loss_mg_mv2text=0.0056 loss_mg_text2mv=0.0297 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000049 grad_norm=9.8422 entropy=2.4561 selected_mean=6.16 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=30/99 loss=0.1836 loss_mg=0.1835 loss_mg_mv2text=0.1358 loss_mg_text2mv=0.2313 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000047 grad_norm=17.6756 entropy=2.4473 selected_mean=6.46 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=40/99 loss=0.1120 loss_mg=0.1120 loss_mg_mv2text=0.0077 loss_mg_text2mv=0.2162 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000045 grad_norm=13.8502 entropy=2.4482 selected_mean=7.86 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=50/99 loss=0.0205 loss_mg=0.0205 loss_mg_mv2text=0.0061 loss_mg_text2mv=0.0348 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000043 grad_norm=8.7694 entropy=2.4492 selected_mean=7.46 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=60/99 loss=0.0898 loss_mg=0.0898 loss_mg_mv2text=0.0030 loss_mg_text2mv=0.1765 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000041 grad_norm=18.7769 entropy=2.4512 selected_mean=6.77 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=70/99 loss=0.0100 loss_mg=0.0099 loss_mg_mv2text=0.0038 loss_mg_text2mv=0.0159 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000040 grad_norm=6.7123 entropy=2.4503 selected_mean=8.00 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=80/99 loss=0.0157 loss_mg=0.0156 loss_mg_mv2text=0.0081 loss_mg_text2mv=0.0231 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000038 grad_norm=7.9622 entropy=2.4495 selected_mean=6.25 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 step=90/99 loss=0.0480 loss_mg=0.0480 loss_mg_mv2text=0.0121 loss_mg_text2mv=0.0839 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000036 grad_norm=9.6183 entropy=2.4508 selected_mean=6.57 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=25 train={'loss': 0.04172685568813573, 'loss_mg': 0.04163105619180734, 'loss_mg_mv2text': 0.01312976381004559, 'loss_mg_text2mv': 0.07013234857043332, 'loss_me': 9.579952959690921e-05, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4503268649682455, 'amp_skipped_steps': 0, 'seconds': 525.1213026046753} val={'val_acc1': 68.69281045751634, 'val_acc5': 91.89542483660131, 'val_loss_me': 1.7638108230173417}
+[emclip][rank=1] epoch=26 entering DataLoader
+[emclip][rank=2] epoch=26 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] epoch=26 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=26 step=0/99 loss=0.0327 loss_mg=0.0327 loss_mg_mv2text=0.0109 loss_mg_text2mv=0.0544 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000034 grad_norm=9.4368 entropy=2.4496 selected_mean=7.05 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=10/99 loss=0.0306 loss_mg=0.0306 loss_mg_mv2text=0.0119 loss_mg_text2mv=0.0492 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000033 grad_norm=14.0645 entropy=2.4869 selected_mean=7.55 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=20/99 loss=0.0465 loss_mg=0.0465 loss_mg_mv2text=0.0063 loss_mg_text2mv=0.0867 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000031 grad_norm=13.0075 entropy=2.4705 selected_mean=6.14 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=30/99 loss=0.0193 loss_mg=0.0192 loss_mg_mv2text=0.0176 loss_mg_text2mv=0.0209 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000029 grad_norm=8.1954 entropy=2.4674 selected_mean=7.45 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=40/99 loss=0.0994 loss_mg=0.0994 loss_mg_mv2text=0.0051 loss_mg_text2mv=0.1936 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000028 grad_norm=15.8073 entropy=2.4686 selected_mean=7.12 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=50/99 loss=0.1623 loss_mg=0.1623 loss_mg_mv2text=0.0183 loss_mg_text2mv=0.3062 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000026 grad_norm=20.1209 entropy=2.4565 selected_mean=7.28 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=60/99 loss=0.0526 loss_mg=0.0526 loss_mg_mv2text=0.0055 loss_mg_text2mv=0.0997 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000025 grad_norm=14.3449 entropy=2.4537 selected_mean=7.76 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=70/99 loss=0.0354 loss_mg=0.0354 loss_mg_mv2text=0.0074 loss_mg_text2mv=0.0634 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000023 grad_norm=14.0804 entropy=2.4465 selected_mean=6.36 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=80/99 loss=0.0248 loss_mg=0.0248 loss_mg_mv2text=0.0044 loss_mg_text2mv=0.0452 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000022 grad_norm=10.0930 entropy=2.4465 selected_mean=6.92 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 step=90/99 loss=0.0232 loss_mg=0.0232 loss_mg_mv2text=0.0094 loss_mg_text2mv=0.0370 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000021 grad_norm=8.6883 entropy=2.4467 selected_mean=7.09 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=26 train={'loss': 0.04033084861582979, 'loss_mg': 0.04020922036484034, 'loss_mg_mv2text': 0.013738561867303545, 'loss_mg_text2mv': 0.06667987869030197, 'loss_me': 0.00012162829979440392, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4453758856262824, 'amp_skipped_steps': 0, 'seconds': 565.7272112369537} val={'val_acc1': 68.30065359477125, 'val_acc5': 91.76470588235294, 'val_loss_me': 1.773634734078134}
+[emclip][rank=1] epoch=27 entering DataLoader
+[emclip][rank=2] epoch=27 entering DataLoader
+[emclip][rank=0] epoch=27 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=27 step=0/99 loss=0.0222 loss_mg=0.0216 loss_mg_mv2text=0.0081 loss_mg_text2mv=0.0352 loss_me=0.0006 acc1=100.00 acc5=100.00 lr=0.00000019 grad_norm=5.6641 entropy=2.5178 selected_mean=6.60 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=10/99 loss=0.0110 loss_mg=0.0110 loss_mg_mv2text=0.0051 loss_mg_text2mv=0.0169 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000018 grad_norm=6.9878 entropy=2.4570 selected_mean=6.56 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=20/99 loss=0.0228 loss_mg=0.0227 loss_mg_mv2text=0.0090 loss_mg_text2mv=0.0364 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000017 grad_norm=11.2966 entropy=2.4617 selected_mean=7.52 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=30/99 loss=0.0404 loss_mg=0.0403 loss_mg_mv2text=0.0048 loss_mg_text2mv=0.0757 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000016 grad_norm=12.0534 entropy=2.4643 selected_mean=7.51 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=40/99 loss=0.0341 loss_mg=0.0340 loss_mg_mv2text=0.0047 loss_mg_text2mv=0.0633 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000015 grad_norm=12.0687 entropy=2.4588 selected_mean=7.89 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=50/99 loss=0.0459 loss_mg=0.0459 loss_mg_mv2text=0.0101 loss_mg_text2mv=0.0817 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000013 grad_norm=11.7951 entropy=2.4562 selected_mean=6.68 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=60/99 loss=0.0208 loss_mg=0.0207 loss_mg_mv2text=0.0039 loss_mg_text2mv=0.0375 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000012 grad_norm=10.8502 entropy=2.4499 selected_mean=6.58 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=70/99 loss=0.0187 loss_mg=0.0187 loss_mg_mv2text=0.0068 loss_mg_text2mv=0.0305 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000011 grad_norm=10.9033 entropy=2.4460 selected_mean=7.05 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=80/99 loss=0.0360 loss_mg=0.0359 loss_mg_mv2text=0.0049 loss_mg_text2mv=0.0670 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000010 grad_norm=13.6636 entropy=2.4496 selected_mean=7.24 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 step=90/99 loss=0.0434 loss_mg=0.0434 loss_mg_mv2text=0.0041 loss_mg_text2mv=0.0826 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000009 grad_norm=13.5466 entropy=2.4501 selected_mean=7.23 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=27 train={'loss': 0.03604457547624755, 'loss_mg': 0.035946656443391886, 'loss_mg_mv2text': 0.011515769153450825, 'loss_mg_text2mv': 0.06037754363377237, 'loss_me': 9.79190936478863e-05, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4448609649131594, 'amp_skipped_steps': 0, 'seconds': 526.3103938102722} val={'val_acc1': 68.23529411764706, 'val_acc5': 91.50326797385621, 'val_loss_me': 1.7689067623310852}
+[emclip][rank=2] epoch=28 entering DataLoader
+[emclip][rank=1] epoch=28 entering DataLoader
+[emclip][rank=0] epoch=28 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=28 step=0/99 loss=0.0164 loss_mg=0.0164 loss_mg_mv2text=0.0073 loss_mg_text2mv=0.0255 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000009 grad_norm=7.5838 entropy=2.4641 selected_mean=7.81 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=10/99 loss=0.0544 loss_mg=0.0543 loss_mg_mv2text=0.0303 loss_mg_text2mv=0.0783 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000008 grad_norm=9.4234 entropy=2.4538 selected_mean=7.03 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=20/99 loss=0.0250 loss_mg=0.0249 loss_mg_mv2text=0.0060 loss_mg_text2mv=0.0439 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000007 grad_norm=8.6240 entropy=2.4661 selected_mean=6.79 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=30/99 loss=0.0226 loss_mg=0.0225 loss_mg_mv2text=0.0063 loss_mg_text2mv=0.0388 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000006 grad_norm=7.4970 entropy=2.4537 selected_mean=7.78 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=40/99 loss=0.0201 loss_mg=0.0201 loss_mg_mv2text=0.0097 loss_mg_text2mv=0.0305 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000006 grad_norm=10.0993 entropy=2.4549 selected_mean=6.09 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=50/99 loss=0.0145 loss_mg=0.0145 loss_mg_mv2text=0.0037 loss_mg_text2mv=0.0252 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000005 grad_norm=7.0677 entropy=2.4541 selected_mean=6.82 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=60/99 loss=0.0230 loss_mg=0.0229 loss_mg_mv2text=0.0176 loss_mg_text2mv=0.0282 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000004 grad_norm=6.8583 entropy=2.4532 selected_mean=7.22 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=70/99 loss=0.0305 loss_mg=0.0304 loss_mg_mv2text=0.0044 loss_mg_text2mv=0.0564 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000004 grad_norm=8.9290 entropy=2.4471 selected_mean=6.29 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=80/99 loss=0.0201 loss_mg=0.0201 loss_mg_mv2text=0.0062 loss_mg_text2mv=0.0339 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000003 grad_norm=6.0243 entropy=2.4453 selected_mean=6.61 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 step=90/99 loss=0.0637 loss_mg=0.0637 loss_mg_mv2text=0.0094 loss_mg_text2mv=0.1180 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000003 grad_norm=10.4065 entropy=2.4379 selected_mean=7.38 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=28 train={'loss': 0.038420514556381735, 'loss_mg': 0.038338776911461495, 'loss_mg_mv2text': 0.013218209395962783, 'loss_mg_text2mv': 0.06345934441520108, 'loss_me': 8.173760571091761e-05, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.4454801026418154, 'amp_skipped_steps': 0, 'seconds': 463.04873752593994} val={'val_acc1': 68.23529411764706, 'val_acc5': 91.63398692810458, 'val_loss_me': 1.7670952427010658}
+[emclip][rank=2] epoch=29 entering DataLoader
+[emclip][rank=1] epoch=29 entering DataLoader
+[emclip][rank=0] epoch=29 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(12, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(12, 16, 3, 256, 256) MV=(12, 16, 2, 256, 256) R=(12, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(12, 16, 3, 256, 256)
+epoch=29 step=0/99 loss=0.0214 loss_mg=0.0214 loss_mg_mv2text=0.0097 loss_mg_text2mv=0.0331 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000002 grad_norm=11.7984 entropy=2.4951 selected_mean=6.68 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=10/99 loss=0.0261 loss_mg=0.0261 loss_mg_mv2text=0.0030 loss_mg_text2mv=0.0492 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000002 grad_norm=9.3129 entropy=2.4617 selected_mean=7.31 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=20/99 loss=0.0113 loss_mg=0.0113 loss_mg_mv2text=0.0072 loss_mg_text2mv=0.0155 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000001 grad_norm=8.7579 entropy=2.4542 selected_mean=7.38 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=30/99 loss=0.0280 loss_mg=0.0280 loss_mg_mv2text=0.0060 loss_mg_text2mv=0.0500 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000001 grad_norm=9.3700 entropy=2.4569 selected_mean=6.77 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=40/99 loss=0.0473 loss_mg=0.0473 loss_mg_mv2text=0.0038 loss_mg_text2mv=0.0908 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000001 grad_norm=11.8841 entropy=2.4445 selected_mean=7.09 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=50/99 loss=0.0919 loss_mg=0.0918 loss_mg_mv2text=0.0115 loss_mg_text2mv=0.1721 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000001 grad_norm=17.5011 entropy=2.4425 selected_mean=8.07 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=60/99 loss=0.0118 loss_mg=0.0118 loss_mg_mv2text=0.0115 loss_mg_text2mv=0.0120 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000000 grad_norm=10.0717 entropy=2.4414 selected_mean=7.65 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=70/99 loss=0.0319 loss_mg=0.0318 loss_mg_mv2text=0.0121 loss_mg_text2mv=0.0516 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000000 grad_norm=10.3607 entropy=2.4419 selected_mean=7.69 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=80/99 loss=0.0413 loss_mg=0.0412 loss_mg_mv2text=0.0146 loss_mg_text2mv=0.0678 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000000 grad_norm=11.8306 entropy=2.4419 selected_mean=7.27 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 step=90/99 loss=0.0255 loss_mg=0.0254 loss_mg_mv2text=0.0051 loss_mg_text2mv=0.0457 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000000 grad_norm=9.2692 entropy=2.4408 selected_mean=7.82 max_mem=48555MB amp_scale=2048.0 amp_skips=0
+epoch=29 train={'loss': 0.04054807484312993, 'loss_mg': 0.04046610524558058, 'loss_mg_mv2text': 0.014743384051447114, 'loss_mg_text2mv': 0.0661888262445126, 'loss_me': 8.196956461078995e-05, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 2.44446502309857, 'amp_skipped_steps': 0, 'seconds': 468.5222599506378} val={'val_acc1': 68.30065359477125, 'val_acc5': 91.56862745098039, 'val_loss_me': 1.767543790374648}

@@ -1,0 +1,33 @@
+[rank1]:[W729 10:40:07.109800008 ProcessGroupNCCL.cpp:4115] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect.Specify device_ids in barrier() to force use of a particular device,or call init_process_group() with a device_id.
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1251, in <module>
+[rank1]:     main()
+[rank1]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+[rank1]:     return f(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1242, in main
+[rank1]:     return main_worker()
+[rank1]:            ^^^^^^^^^^^^^
+[rank1]:   File "/home/fuh/Efficient-CLIP-codex/main_emclip.py", line 1228, in main_worker
+[rank1]:     train_stats = train_one_epoch(model, train_loader, optimizer, scheduler, scaler, device, epoch, args)
+[rank1]:                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/fuh/Efficient-CLIP-codex/engine_emclip.py", line 192, in train_one_epoch
+[rank1]:     for step, raw_batch in enumerate(loader):
+[rank1]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 701, in __next__
+[rank1]:     data = self._next_data()
+[rank1]:            ^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 1448, in _next_data
+[rank1]:     idx, data = self._get_data()
+[rank1]:                 ^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 1402, in _get_data
+[rank1]:     success, data = self._try_get_data()
+[rank1]:                     ^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 1243, in _try_get_data
+[rank1]:     data = self._data_queue.get(timeout=timeout)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/queue.py", line 180, in get
+[rank1]:     self.not_empty.wait(remaining)
+[rank1]:   File "/home/fuh/.conda/envs/mpeg4_fh/lib/python3.11/threading.py", line 331, in wait
+[rank1]:     gotit = waiter.acquire(True, timeout)
+[rank1]:             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: KeyboardInterrupt

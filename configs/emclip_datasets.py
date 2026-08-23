@@ -10,14 +10,14 @@ DATASETS = {
         NUM_CLASSES=174,
     ),
     "ssv2_mpeg4": dict(
-        TRAIN_ROOT="/mnt/data/sthv2/mpeg4_video/20bn-something-something-v2",
-        VAL_ROOT="/mnt/data/sthv2/mpeg4_video/20bn-something-something-v2",
+        TRAIN_ROOT="/NetMedia_Nas/Videodataset/sthv2/mpeg4_video/20bn-something-something-v2",
+        VAL_ROOT="/NetMedia_Nas/Videodataset/sthv2/mpeg4_video/20bn-something-something-v2",
         TRAIN_LIST="/home/fuh/CMPT/lists/sthv2/train_rgb.txt",
         VAL_LIST="/home/fuh/CMPT/lists/sthv2/val_rgb.txt",
         NUM_CLASSES=174,
         USE_COVIAR=True,
         RETURN_MV_RES=True,
-        COMPRESSED_VIDEO_ROOT="/mnt/data/sthv2/mpeg4_video/20bn-something-something-v2",
+        COMPRESSED_VIDEO_ROOT="/NetMedia_Nas/Videodataset/sthv2/mpeg4_video/20bn-something-something-v2",
         GOP_SIZE=12,
     ),
     "hmdb51_mpeg4": dict(
