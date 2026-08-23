@@ -97,7 +97,7 @@ NPROC_PER_NODE=1 BATCH_SIZE=2 MASTER_PORT=29601 bash scripts/train_emclip_hmdb51
 NPROC_PER_NODE=4 BATCH_SIZE=4 bash scripts/train_emclip_hmdb51.sh
 RESUME=output_dir/emclip/run/latest.pth bash scripts/train_emclip_hmdb51.sh
 K400_CHECKPOINT=/path/to/k400/model_best.pth bash scripts/train_emclip_hmdb51.sh
-K400_CHECKPOINT=/path/to/k400/model_best.pth CLASS_NAMES=/path/to/ssv2_classes.txt bash scripts/train_emclip_ssv2.sh
+K400_CHECKPOINT=/path/to/k400/model_best.pth bash scripts/train_emclip_ssv2.sh
 INIT_CHECKPOINT="" bash scripts/train_emclip_hmdb51.sh  # original CLIP only
 GPU_IDS=0,1 bash scripts/train_emclip_hmdb51.sh
 GPU_IDS=2 bash scripts/train_emclip_ucf101.sh
@@ -105,7 +105,7 @@ CUDA_VISIBLE_DEVICES=0,3 bash scripts/train_emclip_k400.sh
 NUM_WORKERS=8 PIN_MEMORY=1 bash scripts/train_emclip_hmdb51.sh
 COVIAR_DATA_LOADER_DIR=/home/fuh/Efficient-CLIP-codex/pytorch-coviar/data_loader bash scripts/train_emclip_hmdb51.sh
 CLIP_CHECKPOINT=/home/fuh/CLIP-models/ViT-B-16.pt bash scripts/train_emclip_hmdb51.sh
-CLASS_NAMES=/path/to/ssv2_classes.txt bash scripts/train_emclip_ssv2.sh
+LABEL_CSV=/path/to/custom_ssv2_labels.csv bash scripts/train_emclip_ssv2.sh
 python main_emclip.py --dataset hmdb51_mpeg4 --preflight-compressed-inputs --num-workers 0 --no-pin-memory
 torchrun --standalone --nproc_per_node=4 main_emclip.py --dataset k400 --validate-class-names-only
 ```
@@ -167,10 +167,12 @@ must not be used as class text.
 
 HMDB51 and UCF101 semantic class text can still be inferred from class-directory
 names when every label is present in the real lists. SSV2 numeric IDs do not
-contain class semantics, so pass `CLASS_NAMES`/`--class-names` or
-`LABEL_CSV`/`--label-csv`. All class sources must have the exact configured
-count, unique non-numeric names, and contiguous IDs when indexed. Numeric
-placeholders such as `class 0` are rejected.
+contain class semantics, so both SSV2 configurations and launch scripts default
+to the repository-owned, ordered 174-class mapping
+`configs/something_v2_labels.csv`. `CLASS_NAMES`/`--class-names` or
+`LABEL_CSV`/`--label-csv` can override it. All class sources must have the exact
+configured count, unique non-numeric names, and contiguous IDs when indexed.
+Numeric placeholders such as `class 0` are rejected.
 Dataset locations can be overridden with `--train-root`, `--val-root`,
 `--train-list`, `--val-list`, and `--compressed-video-root`.
 
@@ -192,7 +194,7 @@ Fast 1x1 evaluation:
 
 ```bash
 RESUME=/path/to/model_best.pth bash scripts/eval_emclip_hmdb51.sh
-RESUME=/path/to/ssv2/model_best.pth CLASS_NAMES=/path/to/ssv2_classes.txt bash scripts/eval_emclip_ssv2.sh
+RESUME=/path/to/ssv2/model_best.pth bash scripts/eval_emclip_ssv2.sh
 ```
 
 `eval_emclip_ssv2.sh` gives `RESUME` (an SSV2-finetuned checkpoint) priority.

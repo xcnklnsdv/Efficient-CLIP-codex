@@ -7,6 +7,7 @@ set -euo pipefail
 DATASET="ssv2_mpeg4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LABEL_CSV="${LABEL_CSV:-${REPO_ROOT}/configs/something_v2_labels.csv}"
 CLIP_CHECKPOINT="${CLIP_CHECKPOINT:-/home/fuh/CLIP-models/ViT-B-16.pt}"
 if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
@@ -92,8 +93,10 @@ elif [[ -n "${INIT_CHECKPOINT:-}" ]]; then
   CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")
 fi
 if [[ -n "${CLASS_NAMES:-}" ]]; then
+  [[ -f "${CLASS_NAMES}" ]] || { echo "SSV2 class-names file not found: ${CLASS_NAMES}" >&2; exit 1; }
   CMD+=(--class-names "${CLASS_NAMES}")
 elif [[ -n "${LABEL_CSV:-}" ]]; then
+  [[ -f "${LABEL_CSV}" ]] || { echo "SSV2 label CSV not found: ${LABEL_CSV}" >&2; exit 1; }
   CMD+=(--label-csv "${LABEL_CSV}")
 fi
 

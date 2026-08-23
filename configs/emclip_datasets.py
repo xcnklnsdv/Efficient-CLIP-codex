@@ -8,6 +8,7 @@ DATASETS = {
         TRAIN_LIST="/home/fuh/m2clip/configs/ssv2_train.txt",
         VAL_LIST="/home/fuh/m2clip/configs/ssv2_val.txt",
         NUM_CLASSES=174,
+        LABEL_CSV=os.path.join(os.path.dirname(__file__), "something_v2_labels.csv"),
     ),
     "ssv2_mpeg4": dict(
         TRAIN_ROOT="/NetMedia_Nas/Videodataset/sthv2/mpeg4_video/20bn-something-something-v2",
@@ -15,6 +16,7 @@ DATASETS = {
         TRAIN_LIST="/home/fuh/CMPT/lists/sthv2/train_rgb.txt",
         VAL_LIST="/home/fuh/CMPT/lists/sthv2/val_rgb.txt",
         NUM_CLASSES=174,
+        LABEL_CSV=os.path.join(os.path.dirname(__file__), "something_v2_labels.csv"),
         USE_COVIAR=True,
         RETURN_MV_RES=True,
         COMPRESSED_VIDEO_ROOT="/NetMedia_Nas/Videodataset/sthv2/mpeg4_video/20bn-something-something-v2",

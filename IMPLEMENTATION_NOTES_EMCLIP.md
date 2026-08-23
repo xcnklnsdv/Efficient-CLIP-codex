@@ -217,8 +217,11 @@ override, and append the corresponding CLI argument; they fall back to a
 repository-local file only when it exists. Real training without a CLIP or resume
 checkpoint is rejected unless `--allow-random-init` explicitly marks an ablation.
 
-HMDB51/UCF101/K400 class names may be inferred from real list path parents and
-validated by numeric label. SSV2 requires an explicit semantic class-name file.
+HMDB51/UCF101 class names may be inferred from real list path parents and
+validated by numeric label. K400 and SSV2 use the repository-owned, ID-indexed
+semantic mappings `configs/kinetics_400_labels.csv` and
+`configs/something_v2_labels.csv`, respectively. Command-line class-name files
+still take precedence.
 The `freeze_clip` mode leaves original text, visual projections, and logit scale
 frozen while training MGSE projection, GSPL, LMPL, temporal aggregation, and
 other new layers.

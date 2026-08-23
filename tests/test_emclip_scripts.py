@@ -45,6 +45,13 @@ def test_k400_launch_scripts_explicitly_pass_repository_label_csv():
         assert 'CMD+=(--label-csv "${LABEL_CSV}")' in text
 
 
+def test_ssv2_launch_scripts_explicitly_pass_repository_label_csv():
+    for filename in ("train_emclip_ssv2.sh", "eval_emclip_ssv2.sh"):
+        text = (REPO_ROOT / "scripts" / filename).read_text(encoding="utf-8")
+        assert 'LABEL_CSV="${LABEL_CSV:-${REPO_ROOT}/configs/something_v2_labels.csv}"' in text
+        assert 'CMD+=(--label-csv "${LABEL_CSV}")' in text
+
+
 def test_scripts_require_explicit_gpu_ids_and_disable_unused_detection():
     gpu_text = (REPO_ROOT / "scripts" / "_gpu_env.sh").read_text(encoding="utf-8")
     k400_text = (REPO_ROOT / "scripts" / "train_emclip_k400.sh").read_text(encoding="utf-8")
