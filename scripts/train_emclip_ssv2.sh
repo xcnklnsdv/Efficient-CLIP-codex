@@ -27,7 +27,7 @@ RESUME="${RESUME:-}"
 # _gpu_env.sh contract. PyTorch sees these as cuda:0, cuda:1, and cuda:2.
 EMCLIP_SCRIPT_GPU_IDS="0,1,2"
 source "${SCRIPT_DIR}/_gpu_env.sh"
-BATCH_SIZE=${BATCH_SIZE:-4}
+BATCH_SIZE=${BATCH_SIZE:-8}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
 NUM_WORKERS=${NUM_WORKERS:-8}
 PIN_MEMORY=${PIN_MEMORY:-1}
