@@ -4,6 +4,7 @@ import json
 import math
 import os
 import random
+import sys
 import time
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from engine_emclip import (
     is_main_process,
     load_checkpoint,
     load_model_checkpoint,
+    _load_checkpoint_file,
     save_checkpoint,
     train_one_epoch,
 )
@@ -131,6 +133,12 @@ def parse_args():
     parser.add_argument("--scale-lr-by-global-batch", action="store_true")
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=1024)
+    parser.add_argument("--horizontal-flip", default="auto", choices=["auto", "on", "off"],
+                        help="auto disables direction-changing flips for SSV2; on requires label-safe datasets.")
+    parser.add_argument("--residual-channel-order", default=None, choices=["rgb", "bgr"],
+                        help="Default RGB for paper initialization, BGR for historical checkpoints.")
+    parser.add_argument("--duplicate-gop-policy", default=None, choices=["mask", "keep"],
+                        help="mask excludes repeated candidate GOPs; keep reproduces historical sampling.")
     parser.add_argument("--print-freq", type=int, default=10)
     parser.add_argument(
         "--profile-compute",
@@ -183,6 +191,62 @@ def apply_model_variant_defaults(args):
     elif model.endswith("_k8"):
         args.candidate_frames = 8 if is_diamond else 16
         args.selected_frames = 8
+
+
+def resolve_implementation(args, explicit_options=None):
+    """Choose architecture before building the model/optimizer, without migration.
+
+    Old checkpoints lack metadata: their independent gs_r_proj and affine
+    feature_ln keys identify legacy. New checkpoints save model and input
+    settings. Explicit CLI overrides win except incompatible architectures.
+    """
+    if explicit_options is None:
+        explicit_options = {arg.split("=", 1)[0] for arg in sys.argv[1:] if arg.startswith("--")}
+    path = args.resume or args.init_checkpoint
+    checkpoint = _load_checkpoint_file(path, "cpu") if path else None
+    requested = args.emclip_implementation
+    if checkpoint is not None:
+        if not isinstance(checkpoint, dict) or not isinstance(checkpoint.get("model"), dict):
+            raise TypeError("EM-CLIP checkpoint must contain a 'model' state_dict: %s" % path)
+        inferred = "legacy" if any(key.startswith("melsc.gs_r_proj.") for key in checkpoint["model"]) else "paper"
+        stored = checkpoint.get("model_config") or {}
+        implementation = stored.get("implementation", inferred)
+        if implementation != inferred:
+            raise ValueError("Checkpoint architecture metadata disagrees with state_dict: %s" % path)
+        if requested != "auto" and requested != implementation:
+            raise ValueError(
+                "Checkpoint uses %s, requested %s. Use --emclip-implementation auto/legacy for historical evaluation; "
+                "start the paper model from --clip-checkpoint, without --resume/--init-checkpoint. "
+                "No silent parameter migration is performed." % (implementation, requested)
+            )
+        args.emclip_implementation = implementation
+        fields = {
+            "candidate_frames": "candidate_frames", "selected_frames": "selected_frames",
+            "input_size": "input_size", "gop_size": "gop_size", "emclip_variant": "emclip_variant",
+            "mgse_text_mode": "mgse_text_mode", "mgse_train_text_mode": "mgse_train_text_mode",
+            "mgse_class_aggregation": "mgse_class_aggregation", "motion_pooling": "motion_pooling",
+            "classification_temperature": "classification_temperature",
+            "mgse_temperature": "mgse_temperature", "temporal_aggregator_layers": "temporal_aggregator_layers",
+            "temporal_position_encoding": "temporal_position_encoding",
+        }
+        if args.resume and not args.eval:
+            fields.update({"emclip_train_mode": "emclip_train_mode", "lambda_mg": "lambda_mg", "lambda_me": "lambda_me"})
+        for field, source_field in fields.items():
+            flag = "--" + field.replace("_", "-")
+            if flag not in explicit_options and source_field in stored:
+                setattr(args, field, stored[source_field])
+        inputs = checkpoint.get("run_config") or {}
+        for field in ("residual_channel_order", "duplicate_gop_policy", "horizontal_flip", "mv_clamp",
+                      "residual_scale", "residual_clamp", "mv_accumulate", "residual_accumulate"):
+            flag = "--no-residual-accumulate" if field == "residual_accumulate" else "--" + field.replace("_", "-")
+            if flag not in explicit_options and field in inputs:
+                setattr(args, field, inputs[field])
+    else:
+        args.emclip_implementation = "paper" if requested == "auto" else requested
+    if args.residual_channel_order is None:
+        args.residual_channel_order = "rgb" if args.emclip_implementation == "paper" else "bgr"
+    if args.duplicate_gop_policy is None:
+        args.duplicate_gop_policy = "mask" if args.emclip_implementation == "paper" else "keep"
 
 
 def resolve_dataset_config(args):
@@ -589,6 +653,9 @@ def build_datasets(args, class_names=None, cfg=None):
         residual_clamp=args.residual_clamp,
         mv_accumulate=args.mv_accumulate,
         residual_accumulate=args.residual_accumulate,
+        horizontal_flip=(None if args.horizontal_flip == "auto" else args.horizontal_flip == "on"),
+        residual_channel_order=args.residual_channel_order,
+        deduplicate_candidates=args.duplicate_gop_policy == "mask",
     )
     train_dataset = None
     if not args.eval:
@@ -702,6 +769,10 @@ def synthetic_smoke(args):
         temporal_aggregator_layers=1,
         emclip_variant=args.emclip_variant,
         mgse_text_mode=args.mgse_text_mode,
+        mgse_train_text_mode=args.mgse_train_text_mode,
+        implementation=args.emclip_implementation,
+        classification_temperature=args.classification_temperature,
+        temporal_position_encoding=args.temporal_position_encoding,
     )
     model = EMCLIP(config).to(device)
     batch = {
@@ -955,6 +1026,7 @@ def main_worker():
             "--init-checkpoint for cross-dataset transfer and --resume only for "
             "continuing the same training run."
         )
+    resolve_implementation(args)
     if args.micro_batch_size < 0:
         raise ValueError("--micro-batch-size must be >= 0.")
     if args.amp_init_scale <= 0:
@@ -1020,6 +1092,15 @@ def main_worker():
         print(args)
         print("Total params: %d (%.2f M)" % (total, total / 1e6))
         print("Trainable params: %d (%.2f M)" % (trainable, trainable / 1e6))
+        print(
+            "[emclip] implementation=%s MGSE train=%s eval=%s classification=%s "
+            "residual_channels=%s duplicate_gops=%s temporal_position=%s"
+            % (model.config.implementation, model.config.mgse_train_text_mode, model.config.mgse_text_mode,
+               "fixed_tau=%.8g" % model.config.classification_temperature if model.config.implementation == "paper" else "learned_CLIP_scale",
+               args.residual_channel_order, args.duplicate_gop_policy, model.config.temporal_position_encoding), flush=True,
+        )
+        with open(os.path.join(args.output_dir, "run_config.json"), "w", encoding="utf-8") as handle:
+            json.dump(vars(args), handle, ensure_ascii=False, indent=2)
         if (
             args.mgse_text_mode == "ground_truth"
             and args.allow_mgse_label_leakage_for_diagnostic
@@ -1053,6 +1134,10 @@ def main_worker():
                 ),
                 flush=True,
             )
+    elif args.resume:
+        # Profiling/preflight must use the requested trained model too. Full
+        # optimizer state is restored later after its parameters are built.
+        load_checkpoint(args.resume, model, map_location="cpu")
 
     if args.profile_compute:
         if is_main_process():
@@ -1237,9 +1322,9 @@ def main_worker():
             print("epoch=%d train=%s val=%s" % (epoch, train_stats, val_stats))
             if val_stats["val_acc1"] > best_acc1:
                 best_acc1 = val_stats["val_acc1"]
-                save_checkpoint(os.path.join(args.output_dir, "model_best.pth"), model, optimizer, scheduler, scaler, epoch, best_acc1)
+                save_checkpoint(os.path.join(args.output_dir, "model_best.pth"), model, optimizer, scheduler, scaler, epoch, best_acc1, run_config=vars(args))
             latest = os.path.join(args.output_dir, "latest.pth")
-            save_checkpoint(latest, model, optimizer, scheduler, scaler, epoch, best_acc1)
+            save_checkpoint(latest, model, optimizer, scheduler, scaler, epoch, best_acc1, run_config=vars(args))
 
 
 @record

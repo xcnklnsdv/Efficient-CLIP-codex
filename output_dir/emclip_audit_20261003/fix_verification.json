@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-03",
+  "baseline_commit": "5c90b79",
+  "scope": "Paper-aligned code repairs; no complete training or accuracy claim",
+  "unit_tests": {
+    "command": "python -B -m pytest tests -q -p no:cacheprovider",
+    "passed": 109,
+    "seconds": 33.4
+  },
+  "static_checks": {
+    "python_ast_files": 29,
+    "bash_scripts": 11,
+    "git_diff_check": "PASS"
+  },
+  "structural_regressions": {
+    "shared_eq16_attention_input_max_difference": 0.0,
+    "short_video_G8_T16_K8_selected_unique_gops": 8,
+    "ssv2_horizontal_flip_applied": false,
+    "residual_rgb_channels_match_iframe": [
+      30,
+      20,
+      10
+    ],
+    "paper_classification_temperature": 0.01,
+    "unused_trainable_parameters": [],
+    "nonfinite_gradients": [],
+    "cpu_bfloat16_autocast_sensitive_operations_float32": "PASS",
+    "temporal_encoding": "none by default; sinusoidal is an explicit ablation",
+    "short_video_distinct_temporal_views": 1
+  },
+  "ddp": [
+    {
+      "implementation": "paper",
+      "variant": "emclip",
+      "world_size": 2,
+      "backend": "CPU Gloo/FileStore",
+      "optimizer_steps": 2,
+      "rank0_losses": [
+        16.392253875732422,
+        9.49074935913086
+      ],
+      "rank_parameter_max_difference": 0.0
+    },
+    {
+      "implementation": "paper",
+      "variant": "diamond",
+      "world_size": 2,
+      "backend": "CPU Gloo/FileStore",
+      "optimizer_steps": 2,
+      "rank0_losses": [
+        3.6564278602600098,
+        0.9360009431838989
+      ],
+      "rank_parameter_max_difference": 0.0
+    },
+    {
+      "implementation": "legacy",
+      "variant": "emclip",
+      "world_size": 2,
+      "backend": "CPU Gloo/FileStore",
+      "optimizer_steps": 2,
+      "rank0_losses": [
+        8.25972843170166,
+        6.852610111236572
+      ],
+      "rank_parameter_max_difference": 0.0,
+      "matches_pre_repair_audit_losses": true
+    }
+  ],
+  "single_process_smoke": {
+    "full_forward_backward": "PASS",
+    "diamond_forward_backward": "PASS",
+    "real_data": "SKIP: CLIP checkpoint not found: /home/fuh/CLIP-models/ViT-B-16.pt"
+  },
+  "not_verified": [
+    "native CoViAR decoding with real videos",
+    "actual SSV2 GOP distribution and label JSON",
+    "real CLIP/EM-CLIP checkpoint on this machine",
+    "CUDA/NCCL and GPU fp16 AMP",
+    "full training and paper accuracy"
+  ],
+  "changed_files": [
+    "models/emclip.py",
+    "models/emclip_mgse.py",
+    "models/emclip_melsc.py",
+    "dataset_coviar.py",
+    "main_emclip.py",
+    "engine_emclip.py",
+    "amp_compat.py",
+    "scripts/_gpu_env.sh",
+    "scripts/smoke_emclip.sh",
+    "scripts/train_emclip_ssv2.sh",
+    "scripts/train_emclip_hmdb51.sh",
+    "scripts/train_emclip_ucf101.sh",
+    "scripts/train_emclip_k400.sh",
+    "scripts/eval_emclip_ssv2.sh",
+    "scripts/eval_emclip_hmdb51.sh",
+    "scripts/eval_emclip_ucf101.sh",
+    "scripts/eval_emclip_k400.sh",
+    "scripts/audit_emclip_paper.py",
+    "tests/test_emclip_shapes.py",
+    "tests/test_emclip_scripts.py",
+    "tests/test_emclip_paper_protocol.py",
+    "README.md",
+    "IMPLEMENTATION_NOTES_EMCLIP.md",
+    "EMCLIP_PAPER_AUDIT.md"
+  ]
+}

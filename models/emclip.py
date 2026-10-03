@@ -52,6 +52,7 @@ class EMCLIPConfig:
     prompt_templates: List[str] = field(default_factory=lambda: ["a photo of a {}"])
     mgse_temperature: float = 0.01
     mgse_text_mode: str = "class_bank"
+    mgse_train_text_mode: Optional[str] = None
     mgse_class_aggregation: str = "mean"
     motion_pooling: str = "saliency"
     lambda_mg: float = 1.0
@@ -64,8 +65,22 @@ class EMCLIPConfig:
     debug_shapes: bool = False
     clip_checkpoint: Optional[str] = None
     clip_bpe_path: Optional[str] = None
+    implementation: str = "paper"
+    classification_temperature: float = 0.01
+    temporal_position_encoding: str = "none"
 
     def __post_init__(self):
+        if self.implementation not in ("paper", "legacy"):
+            raise ValueError("implementation must be paper or legacy")
+        if self.mgse_temperature <= 0 or self.classification_temperature <= 0:
+            raise ValueError("motion and classification temperatures must be positive")
+        if min(self.candidate_frames, self.selected_frames, self.temporal_aggregator_layers) <= 0:
+            raise ValueError("candidate/selected frames and temporal aggregator layers must be positive")
+        if self.mgse_train_text_mode is None:
+            self.mgse_train_text_mode = (
+                "ground_truth" if self.implementation == "paper" and self.mgse_text_mode == "class_bank"
+                else self.mgse_text_mode
+            )
         if self.width % self.heads != 0:
             raise ValueError("visual width must be divisible by visual heads.")
         if self.text_width % self.text_heads != 0:
@@ -268,6 +283,8 @@ class EMCLIP(nn.Module):
             motion_pooling=config.motion_pooling,
             dropout=config.dropout,
             allow_label_leakage_for_diagnostic=config.allow_mgse_label_leakage_for_diagnostic,
+            train_text_mode=config.mgse_train_text_mode,
+            implementation=config.implementation,
         ) if self.use_mgse else None
         self.melsc = MotionEmbeddedLongTermSpatiotemporalCorrelation(
             width=config.width,
@@ -278,6 +295,8 @@ class EMCLIP(nn.Module):
             patch_size=config.patch_size,
             temporal_aggregator_layers=config.temporal_aggregator_layers,
             dropout=config.dropout,
+            implementation=config.implementation,
+            temporal_position_encoding=config.temporal_position_encoding,
         )
         self.logit_scale = nn.Parameter(torch.ones([]) * torch.log(torch.tensor(1 / 0.07)))
         self.pretrained_audit = None
@@ -447,6 +466,10 @@ class EMCLIP(nn.Module):
 
     def _freeze_parameters_without_loss_path(self):
         self.melsc.freeze_unused_parameters()
+        if self.config.implementation == "paper":
+            # Retain the CLIP key for checkpoint loading, but Eq. (25) uses a
+            # fixed tau. A trainable, unused logit_scale would break DDP.
+            self.logit_scale.requires_grad = False
         if self.use_mgse and self.config.motion_pooling == "mean":
             self._freeze_module(self.mgse.feature_ln)
         if self.use_mgse and float(self.config.lambda_mg) == 0.0:
@@ -535,7 +558,12 @@ class EMCLIP(nn.Module):
         with autocast_disabled(video_features.device):
             class_text_features = F.normalize(class_text_features.float(), dim=-1)
             video_features_fp32 = F.normalize(video_features.float(), dim=-1)
-            logit_scale = self.logit_scale.float().exp().clamp(max=100.0)
+            if self.config.implementation == "paper":
+                logit_scale = video_features_fp32.new_tensor(
+                    1.0 / self.config.classification_temperature
+                )
+            else:
+                logit_scale = self.logit_scale.float().exp().clamp(max=100.0)
             logits = logit_scale * (video_features_fp32 @ class_text_features.t())
             loss_me = None
             loss_mg = logits.new_zeros(())
@@ -578,6 +606,7 @@ class EMCLIP(nn.Module):
             "mgse_saliency_entropy": entropy,
             "motion_frame_features": motion_frame_features,
             "melsc_debug": melsc_out["debug"],
+            "classification_logit_scale": logit_scale.detach(),
             **mgse_out,
         }
 
@@ -593,6 +622,7 @@ def build_emclip_config_from_args(args, class_names):
         gop_size=args.gop_size,
         mgse_temperature=args.mgse_temperature,
         mgse_text_mode=args.mgse_text_mode,
+        mgse_train_text_mode=getattr(args, "mgse_train_text_mode", None),
         mgse_class_aggregation=args.mgse_class_aggregation,
         motion_pooling=args.motion_pooling,
         lambda_mg=args.lambda_mg,
@@ -604,6 +634,10 @@ def build_emclip_config_from_args(args, class_names):
         debug_shapes=args.debug_shapes,
         clip_checkpoint=args.clip_checkpoint,
         clip_bpe_path=args.clip_bpe_path,
+        implementation=("paper" if getattr(args, "emclip_implementation", "paper") == "auto"
+                        else getattr(args, "emclip_implementation", "paper")),
+        classification_temperature=getattr(args, "classification_temperature", 0.01),
+        temporal_position_encoding=getattr(args, "temporal_position_encoding", "none"),
     )
 
 
@@ -616,6 +650,13 @@ def add_emclip_args(parser: argparse.ArgumentParser):
     parser.add_argument("--input-size", type=int, default=256)
     parser.add_argument("--mgse-temperature", type=float, default=0.01)
     parser.add_argument("--mgse-text-mode", default="class_bank", choices=["class_bank", "ground_truth", "predicted_class"])
+    parser.add_argument("--mgse-train-text-mode", default=None, choices=["class_bank", "ground_truth", "predicted_class"],
+                        help="Training-only selection; paper defaults to category-conditioned ground_truth, eval uses --mgse-text-mode.")
+    parser.add_argument("--emclip-implementation", default="auto", choices=["auto", "paper", "legacy"],
+                        help="auto uses paper for new runs and restores a checkpoint's implementation for resume/eval.")
+    parser.add_argument("--classification-temperature", type=float, default=0.01)
+    parser.add_argument("--temporal-position-encoding", default="none", choices=["none", "sinusoidal"],
+                        help="Optional order-sensitive ablation; the paper does not specify temporal encoding.")
     parser.add_argument("--mgse-class-aggregation", default="mean", choices=["mean", "max", "logsumexp"])
     parser.add_argument("--motion-pooling", default="saliency", choices=["saliency", "mean"])
     parser.add_argument("--lambda-mg", type=float, default=1.0)

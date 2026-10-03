@@ -6,13 +6,19 @@ import torch
 
 
 def autocast_disabled(device):
-    """Disable CUDA autocast for numerically sensitive float32 operations."""
+    """Disable device autocast for numerically sensitive float32 operations."""
     device = torch.device(device)
-    if device.type != "cuda":
+    if device.type not in ("cuda", "cpu"):
         return nullcontext()
     if hasattr(torch, "amp") and hasattr(torch.amp, "autocast"):
         try:
-            return torch.amp.autocast("cuda", enabled=False)
+            return torch.amp.autocast(device.type, enabled=False)
         except TypeError:
-            return torch.amp.autocast(device_type="cuda", enabled=False)
-    return torch.cuda.amp.autocast(enabled=False)
+            return torch.amp.autocast(device_type=device.type, enabled=False)
+    if device.type == "cuda":
+        return torch.cuda.amp.autocast(enabled=False)
+    if hasattr(torch, "autocast"):
+        return torch.autocast(device_type="cpu", enabled=False)
+    if hasattr(torch, "cpu") and hasattr(torch.cpu, "amp"):
+        return torch.cpu.amp.autocast(enabled=False)
+    return nullcontext()

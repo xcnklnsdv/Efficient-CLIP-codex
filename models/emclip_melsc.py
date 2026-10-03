@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -18,12 +20,20 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
         patch_size=16,
         temporal_aggregator_layers=1,
         dropout=0.0,
+        implementation="paper",
+        temporal_position_encoding="none",
     ):
         super().__init__()
         self.width = width
         self.layers = layers
         self.heads = heads
         self.output_dim = output_dim
+        if implementation not in ("paper", "legacy"):
+            raise ValueError("implementation must be paper or legacy")
+        if temporal_position_encoding not in ("none", "sinusoidal"):
+            raise ValueError("temporal_position_encoding must be none or sinusoidal")
+        self.implementation = implementation
+        self.temporal_position_encoding = temporal_position_encoding
         self.i_encoder = PatchTokenEncoder(
             in_channels=3,
             input_resolution=input_resolution,
@@ -46,11 +56,17 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
         )
 
         self.gs_i_proj = nn.ModuleList([nn.Linear(width, width) for _ in range(layers)])
-        self.gs_r_proj = nn.ModuleList([nn.Linear(width, width) for _ in range(layers)])
+        if implementation == "legacy":
+            self.gs_r_proj = nn.ModuleList([nn.Linear(width, width) for _ in range(layers)])
         self.lm_r_proj = nn.ModuleList([nn.Linear(width, width) for _ in range(layers)])
         self.gs_i_ln = nn.ModuleList([LayerNorm(width) for _ in range(layers)])
-        self.gs_r_ln = nn.ModuleList([LayerNorm(width) for _ in range(layers)])
+        if implementation == "legacy":
+            self.gs_r_ln = nn.ModuleList([LayerNorm(width) for _ in range(layers)])
         self.lm_ln = nn.ModuleList([LayerNorm(width) for _ in range(layers)])
+        # Eq. (13) explicitly takes K_R/V_R from Eq. (16). The two attention
+        # modules have independent internal projections, but share a_R/LN(a_R).
+        # Only the historical architecture owns a second Residual FC/LN.
+        # Its module registration order matches old optimizer parameter IDs.
         self.gs_attn = nn.ModuleList([
             nn.MultiheadAttention(width, heads, dropout=dropout, batch_first=True)
             for _ in range(layers)
@@ -99,18 +115,34 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
         assert cls_i.shape == cls_r.shape and cls_i.ndim == 3
 
         a_i = self.gs_i_proj[layer_idx](cls_i)
-        a_r = self.gs_r_proj[layer_idx](cls_r)
         q_i = self.gs_i_ln[layer_idx](a_i)
-        kv_r = self.gs_r_ln[layer_idx](a_r)
+        a_lm = self.lm_r_proj[layer_idx](cls_r)
+        q_lm = self.lm_ln[layer_idx](a_lm)
+        if self.implementation == "legacy":
+            a_r = self.gs_r_proj[layer_idx](cls_r)
+            kv_r = self.gs_r_ln[layer_idx](a_r)
+        else:
+            kv_r = q_lm  # [B,K,D], shared Q_R=K_R=V_R in Eq. (16).
         gs_hat = self.gs_attn[layer_idx](q_i, kv_r, kv_r, need_weights=False)[0]
         gs = a_i + self.dropout(gs_hat)
 
-        a_lm = self.lm_r_proj[layer_idx](cls_r)
-        q_lm = self.lm_ln[layer_idx](a_lm)
         lm_hat = self.lm_attn[layer_idx](q_lm, q_lm, q_lm, need_weights=False)[0]
         lm = a_lm + self.dropout(lm_hat)
         assert gs.shape == lm.shape == cls_i.shape
         return gs, lm
+
+    def _temporal_positions(self, count, reference):
+        """Optional order-sensitive ablation; not specified by the paper."""
+        positions = torch.arange(count, device=reference.device, dtype=torch.float32)[:, None]
+        frequencies = torch.exp(
+            torch.arange(0, self.width, 2, device=reference.device, dtype=torch.float32)
+            * (-math.log(10000.0) / self.width)
+        )
+        angles = positions * frequencies[None, :]
+        encoding = torch.zeros(count, self.width, device=reference.device, dtype=torch.float32)
+        encoding[:, 0::2] = angles.sin()
+        encoding[:, 1::2] = angles[:, :self.width // 2].cos()
+        return encoding.to(reference.dtype)[None, :, None, :]  # [1,K,1,D].
 
     def forward(self, i_selected, r_selected):
         assert i_selected.ndim == 5, "I_selected must be [B, K, 3, H, W]."
@@ -119,6 +151,10 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
         B, K = i_selected.shape[:2]
         z_i = self._initial_tokens(self.i_encoder, i_selected, channels=3)
         z_r = self._initial_tokens(self.r_encoder, r_selected, channels=3)
+        if self.temporal_position_encoding == "sinusoidal":
+            positions = self._temporal_positions(K, z_i)
+            z_i = z_i + positions
+            z_r = z_r + positions
         N = z_i.size(2)
         last_gs = None
         last_lm = None

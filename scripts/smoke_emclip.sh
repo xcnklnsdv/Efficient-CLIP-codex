@@ -55,7 +55,8 @@ SSV2_VAL_LIST=${SSV2_VAL_LIST:-/home/fuh/CMPT/lists/sthv2/val_rgb.txt}
 if [[ -n "${SSV2_CLASS_NAMES:-}" ]]; then
   run_real_smoke ssv2_mpeg4 "${SSV2_ROOT}" "${SSV2_VAL_LIST}" --class-names "${SSV2_CLASS_NAMES}"
 else
-  echo "SKIP ssv2_mpeg4: set SSV2_CLASS_NAMES to the 174-class semantic text file"
+  run_real_smoke ssv2_mpeg4 "${SSV2_ROOT}" "${SSV2_VAL_LIST}" \
+    --label-csv "${SSV2_LABEL_CSV:-${REPO_ROOT}/configs/something_v2_labels.csv}"
 fi
 run_real_smoke hmdb51_mpeg4 \
   "${HMDB51_ROOT:-/mnt/data/hmdb51/mpeg4_videos}" \

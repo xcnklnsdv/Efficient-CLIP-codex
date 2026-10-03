@@ -13,7 +13,7 @@ if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
 fi
 source "${SCRIPT_DIR}/_gpu_env.sh"
-BATCH_SIZE=${BATCH_SIZE:-16}
+BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-1}
 NUM_WORKERS=${NUM_WORKERS:-8}
 PIN_MEMORY=${PIN_MEMORY:-1}
@@ -26,10 +26,18 @@ if [[ -z "${COVIAR_DATA_LOADER_DIR:-}" ]]; then
 fi
 MASTER_PORT=${MASTER_PORT:-29502}
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip_eval}
-TEMPORAL_VIEWS=${TEMPORAL_VIEWS:-1}
-SPATIAL_CROPS=${SPATIAL_CROPS:-1}
+TEMPORAL_VIEWS=${TEMPORAL_VIEWS:-4}
+SPATIAL_CROPS=${SPATIAL_CROPS:-3}
+IMPLEMENTATION=${IMPLEMENTATION:-auto}
+MGSE_EVAL_TEXT_MODE=${MGSE_EVAL_TEXT_MODE:-class_bank}
+INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT:-}}"
+RESUME="${RESUME:-}"
 VARIANT=${VARIANT:-emclip}
-T=${T:-16}
+if [[ "${VARIANT}" == "diamond" || "${VARIANT}" == "emclip_diamond" ]]; then
+  T=${T:-${K:-8}}
+else
+  T=${T:-$((2 * ${K:-8}))}
+fi
 K=${K:-8}
 STAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_DIR="${OUTPUT_ROOT}/${DATASET}_${VARIANT}_T${T}_K${K}_eval_${TEMPORAL_VIEWS}x${SPATIAL_CROPS}_${STAMP}"
@@ -42,9 +50,20 @@ CMD=(torchrun --nproc_per_node="${NPROC_PER_NODE}" --master_port="${MASTER_PORT}
   --coviar-data-loader-dir "${COVIAR_DATA_LOADER_DIR}"
   --test-num-temporal-views "${TEMPORAL_VIEWS}" --test-num-spatial-crops "${SPATIAL_CROPS}"
   --amp --output-dir "${OUTPUT_DIR}")
+CMD+=(--emclip-implementation "${IMPLEMENTATION}")
+CMD+=(--mgse-text-mode "${MGSE_EVAL_TEXT_MODE}")
+if [[ -z "${RESUME}" && -z "${INIT_CHECKPOINT}" ]]; then
+  echo "Evaluation requires RESUME=/path/to/target/model_best.pth (or an explicit INIT_CHECKPOINT transfer ablation)." >&2
+  exit 1
+fi
+if [[ -z "${RESUME}" && -n "${INIT_CHECKPOINT}" ]]; then
+  [[ -f "${INIT_CHECKPOINT}" ]] || { echo "Initialization checkpoint not found: ${INIT_CHECKPOINT}" >&2; exit 1; }
+  CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")
+fi
+
 if [[ "${PIN_MEMORY}" == "0" || "${PIN_MEMORY}" == "false" || "${PIN_MEMORY}" == "False" ]]; then CMD+=(--no-pin-memory); fi
 if [[ -n "${RESUME:-}" ]]; then CMD+=(--resume "${RESUME}"); fi
-if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
+if [[ -z "${RESUME:-}" && -z "${INIT_CHECKPOINT:-}" && -n "${CLIP_CHECKPOINT:-}" ]]; then
   [[ -f "${CLIP_CHECKPOINT}" ]] || { echo "CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2; exit 1; }
   CMD+=(--clip-checkpoint "${CLIP_CHECKPOINT}")
 fi
@@ -54,6 +73,7 @@ elif [[ -n "${LABEL_CSV:-}" ]]; then
   [[ -f "${LABEL_CSV}" ]] || { echo "K400 label CSV not found: ${LABEL_CSV}" >&2; exit 1; }
   CMD+=(--label-csv "${LABEL_CSV}")
 fi
+CMD+=("$@")
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"; printf '\n' >> "${OUTPUT_DIR}/command.txt"
 if [[ "${EMCLIP_PRINT_CMD_ONLY:-0}" == "1" ]]; then printf '%q ' "${CMD[@]}"; printf '\n'; exit 0; fi
 "${CMD[@]}" 2>&1 | tee "${OUTPUT_DIR}/eval_${STAMP}.log"

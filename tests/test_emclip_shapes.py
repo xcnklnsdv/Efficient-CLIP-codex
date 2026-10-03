@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from models.emclip import EMCLIP, EMCLIPConfig
@@ -94,7 +95,8 @@ def test_emclip_diamond_uses_i_and_residual_without_mgse_loss():
     assert residual_block_calls == [True]
 
 
-def test_emclip_full_class_bank_saliency_backward_has_no_unused_trainable_parameters():
+@pytest.mark.parametrize("implementation", ["paper", "legacy"])
+def test_emclip_full_protocol_backward_has_no_unused_trainable_parameters(implementation):
     torch.manual_seed(0)
     config = EMCLIPConfig(
         num_classes=5,
@@ -118,6 +120,7 @@ def test_emclip_full_class_bank_saliency_backward_has_no_unused_trainable_parame
         motion_pooling="saliency",
         lambda_mg=1.0,
         lambda_me=1.0,
+        implementation=implementation,
     )
     model = EMCLIP(config)
 
@@ -149,15 +152,18 @@ def test_emclip_full_class_bank_saliency_backward_has_no_unused_trainable_parame
     assert nonfinite == []
     params = dict(model.named_parameters())
     expected_grad_names = [
-        "logit_scale",
         "text_encoder.token_embedding.weight",
         "mgse.motion_encoder.conv1.weight",
-        "mgse.feature_ln.weight",
         "melsc.i_encoder.conv1.weight",
         "melsc.r_encoder.conv1.weight",
         "melsc.r_encoder.blocks.0.attn.in_proj_weight",
         "melsc.temporal_blocks.0.attn.in_proj_weight",
     ]
+    if implementation == "legacy":
+        expected_grad_names.extend(["logit_scale", "mgse.feature_ln.weight"])
+    else:
+        assert not model.logit_scale.requires_grad
+        assert "mgse.feature_ln.weight" not in params
     for name in expected_grad_names:
         assert params[name].requires_grad
         assert params[name].grad is not None, name

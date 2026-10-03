@@ -13,21 +13,15 @@ if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
 fi
 
-K400_CHECKPOINT="${K400_CHECKPOINT:-/home/fuh/Efficient-CLIP-codex/output_dir/emclip/k400_emclip_T16_K8_20260721_001418/model_best.pth}"
 
-# K400 is a transfer-learning source: load model weights only and reset all
-# SSV2 optimizer/scheduler/scaler/epoch state. An explicitly empty value
-# disables K400 initialization and leaves the original CLIP initialization.
-INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"
+# Default: original CLIP. Set INIT_CHECKPOINT/K400_CHECKPOINT explicitly for a transfer ablation.
+INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT:-}}"
 
 # RESUME is only for continuing an SSV2 latest.pth/model_best.pth run.
 RESUME="${RESUME:-}"
 
-# Keep the SSV2 launcher aligned with train_emclip_hmdb51.sh and the current
-# _gpu_env.sh contract. PyTorch sees these as cuda:0, cuda:1, and cuda:2.
-EMCLIP_SCRIPT_GPU_IDS="0,1,2"
 source "${SCRIPT_DIR}/_gpu_env.sh"
-BATCH_SIZE=${BATCH_SIZE:-8}
+BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
 NUM_WORKERS=${NUM_WORKERS:-8}
 PIN_MEMORY=${PIN_MEMORY:-1}
@@ -41,8 +35,15 @@ if [[ -z "${COVIAR_DATA_LOADER_DIR:-}" ]]; then
 fi
 MASTER_PORT=${MASTER_PORT:-29501}
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip}
+IMPLEMENTATION=${IMPLEMENTATION:-auto}
+MGSE_TRAIN_TEXT_MODE=${MGSE_TRAIN_TEXT_MODE:-}
+MGSE_EVAL_TEXT_MODE=${MGSE_EVAL_TEXT_MODE:-class_bank}
 VARIANT=${VARIANT:-emclip}
-T=${T:-16}
+if [[ "${VARIANT}" == "diamond" || "${VARIANT}" == "emclip_diamond" ]]; then
+  T=${T:-${K:-8}}
+else
+  T=${T:-$((2 * ${K:-8}))}
+fi
 K=${K:-8}
 STAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_DIR="${OUTPUT_ROOT}/${DATASET}_${VARIANT}_T${T}_K${K}_${STAMP}"
@@ -57,7 +58,7 @@ CMD=(torchrun
   --emclip-variant "${VARIANT}"
   --candidate-frames "${T}"
   --selected-frames "${K}"
-  --mgse-text-mode class_bank
+  --mgse-text-mode "${MGSE_EVAL_TEXT_MODE}"
   --epochs 30
   --lr 8e-6
   --input-size 256
@@ -67,6 +68,11 @@ CMD=(torchrun
   --coviar-data-loader-dir "${COVIAR_DATA_LOADER_DIR}"
   --amp
   --output-dir "${OUTPUT_DIR}")
+CMD+=(--emclip-implementation "${IMPLEMENTATION}")
+if [[ -n "${MGSE_TRAIN_TEXT_MODE}" ]]; then
+  CMD+=(--mgse-train-text-mode "${MGSE_TRAIN_TEXT_MODE}")
+fi
+
 if [[ "${PIN_MEMORY}" == "0" || "${PIN_MEMORY}" == "false" || "${PIN_MEMORY}" == "False" ]]; then
   CMD+=(--no-pin-memory)
 fi
@@ -74,7 +80,7 @@ if [[ "${PROFILE_COMPUTE}" == "1" || "${PROFILE_COMPUTE}" == "true" || "${PROFIL
   CMD+=(--profile-compute)
 fi
 
-if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
+if [[ -z "${RESUME:-}" && -z "${INIT_CHECKPOINT:-}" && -n "${CLIP_CHECKPOINT:-}" ]]; then
   [[ -f "${CLIP_CHECKPOINT}" ]] || { echo "CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2; exit 1; }
   CMD+=(--clip-checkpoint "${CLIP_CHECKPOINT}")
 fi
@@ -100,6 +106,7 @@ elif [[ -n "${LABEL_CSV:-}" ]]; then
   CMD+=(--label-csv "${LABEL_CSV}")
 fi
 
+CMD+=("$@")
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"
 printf '\n' >> "${OUTPUT_DIR}/command.txt"
 if [[ "${EMCLIP_PRINT_CMD_ONLY:-0}" == "1" ]]; then

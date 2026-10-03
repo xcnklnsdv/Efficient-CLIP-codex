@@ -12,13 +12,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # =========================================================
-# 在这里指定本脚本使用的物理显卡
 # =========================================================
-EMCLIP_SCRIPT_GPU_IDS="0,1,2"
 
-# 自动设置：
-# CUDA_VISIBLE_DEVICES=3,4,5,6,7
-# NPROC_PER_NODE=5
 source "${SCRIPT_DIR}/_gpu_env.sh"
 
 # =========================================================
@@ -27,11 +22,9 @@ source "${SCRIPT_DIR}/_gpu_env.sh"
 
 CLIP_CHECKPOINT="${CLIP_CHECKPOINT:-/home/fuh/CLIP-models/ViT-B-16.pt}"
 
-K400_CHECKPOINT="${K400_CHECKPOINT:-/home/fuh/Efficient-CLIP-codex/output_dir/emclip/k400_emclip_T16_K8_20260721_001418/model_best.pth}"
 
-# K400 is a transfer-learning source: load model weights only and reset all
-# target-dataset training state. An explicitly empty value disables it.
-INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"
+# Default: original CLIP. Set INIT_CHECKPOINT/K400_CHECKPOINT explicitly for a transfer ablation.
+INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT:-}}"
 
 # RESUME is only for continuing an HMDB51 latest.pth/model_best.pth run.
 RESUME="${RESUME:-}"
@@ -40,7 +33,7 @@ RESUME="${RESUME:-}"
 # Data and training parameters
 # =========================================================
 
-BATCH_SIZE=${BATCH_SIZE:-12}
+BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
 NUM_WORKERS=${NUM_WORKERS:-8}
 PIN_MEMORY=${PIN_MEMORY:-1}
@@ -59,8 +52,15 @@ fi
 
 MASTER_PORT=${MASTER_PORT:-29501}
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip}
+IMPLEMENTATION=${IMPLEMENTATION:-auto}
+MGSE_TRAIN_TEXT_MODE=${MGSE_TRAIN_TEXT_MODE:-}
+MGSE_EVAL_TEXT_MODE=${MGSE_EVAL_TEXT_MODE:-class_bank}
 VARIANT=${VARIANT:-emclip}
-T=${T:-16}
+if [[ "${VARIANT}" == "diamond" || "${VARIANT}" == "emclip_diamond" ]]; then
+  T=${T:-${K:-8}}
+else
+  T=${T:-$((2 * ${K:-8}))}
+fi
 K=${K:-8}
 
 STAMP="$(date +"%Y%m%d_%H%M%S")"
@@ -84,7 +84,7 @@ CMD=(
 
   --candidate-frames "${T}"
   --selected-frames "${K}"
-  --mgse-text-mode class_bank
+  --mgse-text-mode "${MGSE_EVAL_TEXT_MODE}"
 
   --epochs 30
   --lr 8e-6
@@ -100,6 +100,11 @@ CMD=(
   --output-dir "${OUTPUT_DIR}"
 )
 
+CMD+=(--emclip-implementation "${IMPLEMENTATION}")
+if [[ -n "${MGSE_TRAIN_TEXT_MODE}" ]]; then
+  CMD+=(--mgse-train-text-mode "${MGSE_TRAIN_TEXT_MODE}")
+fi
+
 if [[ "${PIN_MEMORY}" == "0" ||
       "${PIN_MEMORY}" == "false" ||
       "${PIN_MEMORY}" == "False" ]]; then
@@ -113,7 +118,7 @@ if [[ "${PROFILE_COMPUTE}" == "1" ||
 fi
 
 # 原始 CLIP 权重
-if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
+if [[ -z "${RESUME:-}" && -z "${INIT_CHECKPOINT:-}" && -n "${CLIP_CHECKPOINT:-}" ]]; then
   [[ -f "${CLIP_CHECKPOINT}" ]] || {
     echo "Original CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2
     exit 1
@@ -149,6 +154,7 @@ fi
 # Save and run command
 # =========================================================
 
+CMD+=("$@")
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"
 printf '\n' >> "${OUTPUT_DIR}/command.txt"
 

@@ -13,15 +13,11 @@ if [[ ! -f "${CLIP_CHECKPOINT}" && -f "${REPO_ROOT}/clip_vit_b_16.pth" ]]; then
   CLIP_CHECKPOINT="${REPO_ROOT}/clip_vit_b_16.pth"
 fi
 
-K400_CHECKPOINT="${K400_CHECKPOINT:-/home/fuh/Efficient-CLIP-codex/output_dir/emclip/k400_emclip_T16_K8_20260721_001418/model_best.pth}"
 
-# A target SSV2 checkpoint passed through RESUME takes priority. Without one,
-# evaluate the K400 EM-CLIP transfer weights through the model-only loader.
-# Set INIT_CHECKPOINT="" to explicitly evaluate from the original CLIP weights.
-INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT}}"
+# Evaluate a target SSV2 checkpoint. Transfer evaluation must be requested explicitly.
+INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT:-}}"
 RESUME="${RESUME:-}"
 
-EMCLIP_SCRIPT_GPU_IDS="0,1,2"
 source "${SCRIPT_DIR}/_gpu_env.sh"
 BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-1}
@@ -36,10 +32,16 @@ if [[ -z "${COVIAR_DATA_LOADER_DIR:-}" ]]; then
 fi
 MASTER_PORT=${MASTER_PORT:-29501}
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip_eval}
-TEMPORAL_VIEWS=${TEMPORAL_VIEWS:-1}
-SPATIAL_CROPS=${SPATIAL_CROPS:-1}
+TEMPORAL_VIEWS=${TEMPORAL_VIEWS:-4}
+SPATIAL_CROPS=${SPATIAL_CROPS:-3}
+IMPLEMENTATION=${IMPLEMENTATION:-auto}
+MGSE_EVAL_TEXT_MODE=${MGSE_EVAL_TEXT_MODE:-class_bank}
 VARIANT=${VARIANT:-emclip}
-T=${T:-16}
+if [[ "${VARIANT}" == "diamond" || "${VARIANT}" == "emclip_diamond" ]]; then
+  T=${T:-${K:-8}}
+else
+  T=${T:-$((2 * ${K:-8}))}
+fi
 K=${K:-8}
 STAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_DIR="${OUTPUT_ROOT}/${DATASET}_${VARIANT}_T${T}_K${K}_eval_${TEMPORAL_VIEWS}x${SPATIAL_CROPS}_${STAMP}"
@@ -52,8 +54,15 @@ CMD=(torchrun --nproc_per_node="${NPROC_PER_NODE}" --master_port="${MASTER_PORT}
   --coviar-data-loader-dir "${COVIAR_DATA_LOADER_DIR}"
   --test-num-temporal-views "${TEMPORAL_VIEWS}" --test-num-spatial-crops "${SPATIAL_CROPS}"
   --amp --output-dir "${OUTPUT_DIR}")
+CMD+=(--emclip-implementation "${IMPLEMENTATION}")
+CMD+=(--mgse-text-mode "${MGSE_EVAL_TEXT_MODE}")
+if [[ -z "${RESUME}" && -z "${INIT_CHECKPOINT}" ]]; then
+  echo "Evaluation requires RESUME=/path/to/target/model_best.pth (or an explicit INIT_CHECKPOINT transfer ablation)." >&2
+  exit 1
+fi
+
 if [[ "${PIN_MEMORY}" == "0" || "${PIN_MEMORY}" == "false" || "${PIN_MEMORY}" == "False" ]]; then CMD+=(--no-pin-memory); fi
-if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
+if [[ -z "${RESUME:-}" && -z "${INIT_CHECKPOINT:-}" && -n "${CLIP_CHECKPOINT:-}" ]]; then
   [[ -f "${CLIP_CHECKPOINT}" ]] || { echo "CLIP checkpoint not found: ${CLIP_CHECKPOINT}" >&2; exit 1; }
   CMD+=(--clip-checkpoint "${CLIP_CHECKPOINT}")
 fi
@@ -71,6 +80,7 @@ elif [[ -n "${LABEL_CSV:-}" ]]; then
   [[ -f "${LABEL_CSV}" ]] || { echo "SSV2 label CSV not found: ${LABEL_CSV}" >&2; exit 1; }
   CMD+=(--label-csv "${LABEL_CSV}")
 fi
+CMD+=("$@")
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"; printf '\n' >> "${OUTPUT_DIR}/command.txt"
 if [[ "${EMCLIP_PRINT_CMD_ONLY:-0}" == "1" ]]; then printf '%q ' "${CMD[@]}"; printf '\n'; exit 0; fi
 "${CMD[@]}" 2>&1 | tee "${OUTPUT_DIR}/eval_${STAMP}.log"

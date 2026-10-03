@@ -381,6 +381,7 @@ def sample_gop_indices(
     temporal_view=0,
     num_temporal_views=1,
     gop_count=None,
+    deduplicate_candidates=True,
 ):
     """Sample one GOP from each of T non-overlapping temporal segments."""
     if num_frames <= 0:
@@ -421,14 +422,20 @@ def sample_gop_indices(
                 offset = min(end - start - 1, int(math.floor((end - start) * fraction)))
                 indices.append(start + offset)
     else:
-        # Repeated indices are intentional: every position still references a
-        # real GOP and therefore remains valid for attention/top-k masking.
+        # Preserve fixed [T,...] tensors, but exclude duplicate observations
+        # from saliency normalization/top-k. Repetition is only needed when
+        # the number of distinct GOPs is below K, not merely below T.
         indices = (
             np.round(np.linspace(0, gop_count - 1, candidate_frames))
             .astype(np.int64)
             .tolist()
         )
     valid_mask = torch.ones(candidate_frames, dtype=torch.bool)
+    if deduplicate_candidates:
+        seen = set()
+        for slot, index in enumerate(indices):
+            valid_mask[slot] = index not in seen
+            seen.add(index)
     return indices, valid_mask, gop_count
 
 
@@ -462,6 +469,9 @@ class CoviarDataSet(torch.utils.data.Dataset):
         residual_clamp=1.0,
         mv_accumulate=False,
         residual_accumulate=True,
+        horizontal_flip=None,
+        residual_channel_order="rgb",
+        deduplicate_candidates=True,
     ):
         if num_classes <= 0:
             raise ValueError("num_classes must be positive, got %d" % num_classes)
@@ -478,6 +488,18 @@ class CoviarDataSet(torch.utils.data.Dataset):
             raise ValueError("normalization scales/clamps must be positive")
 
         self.dataset_name = str(dataset_name)
+        # SSV2 direction labels change under mirroring. Disable flipping by
+        # default instead of silently keeping the original class supervision.
+        self.horizontal_flip = (
+            not self.dataset_name.lower().startswith("ssv2")
+            if horizontal_flip is None else bool(horizontal_flip)
+        )
+        if self.dataset_name.lower().startswith("ssv2") and self.horizontal_flip:
+            raise ValueError("SSV2 horizontal flipping requires a validated label permutation; use --horizontal-flip off")
+        if residual_channel_order not in ("rgb", "bgr"):
+            raise ValueError("residual_channel_order must be rgb or bgr")
+        self.residual_channel_order = residual_channel_order
+        self.deduplicate_candidates = bool(deduplicate_candidates)
         self.list_path = str(list_path)
         self.data_root = str(data_root)
         self.compressed_video_root = str(compressed_video_root or data_root)
@@ -588,6 +610,10 @@ class CoviarDataSet(torch.utils.data.Dataset):
         arr = np.asarray(arr)
         if arr.ndim != 3 or arr.shape[2] != 3:
             raise RuntimeError("Residual must be [H,W,3], got %s" % (arr.shape,))
+        # Native CoViAR produces BGR residuals; the pretrained residual stem
+        # uses RGB CLIP weights. BGR is retained only for legacy checkpoints.
+        if self.residual_channel_order == "rgb":
+            arr = arr[..., ::-1].copy()
         tensor = torch.as_tensor(arr).float().permute(2, 0, 1)
         if tuple(tensor.shape[-2:]) != tuple(ref_hw):
             raise RuntimeError(
@@ -648,7 +674,7 @@ class CoviarDataSet(torch.utils.data.Dataset):
         i_frames, motion_vectors, residuals = crop_modalities(
             i_frames, motion_vectors, residuals, top, left, target, target
         )
-        if self.random_sample and random.random() < 0.5:
+        if self.random_sample and self.horizontal_flip and random.random() < 0.5:
             i_frames, motion_vectors, residuals = horizontal_flip_modalities(
                 i_frames, motion_vectors, residuals
             )
@@ -693,6 +719,7 @@ class CoviarDataSet(torch.utils.data.Dataset):
             temporal_view=temporal_view,
             num_temporal_views=self.num_temporal_views,
             gop_count=gop_count,
+            deduplicate_candidates=self.deduplicate_candidates,
         )
 
         i_list, mv_list, residual_list, p_positions = [], [], [], []
@@ -749,6 +776,8 @@ class CoviarDataSet(torch.utils.data.Dataset):
                 "num_frames": num_frames,
                 "last_p_positions": p_positions,
                 "raw_line": item.raw_line,
+                "unique_candidate_gops": len(set(gop_indices)),
+                "residual_channel_order": self.residual_channel_order,
             },
         }
 

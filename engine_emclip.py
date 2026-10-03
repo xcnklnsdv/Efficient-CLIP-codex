@@ -2,6 +2,7 @@ import math
 import os
 import time
 from contextlib import nullcontext
+from dataclasses import asdict, is_dataclass
 
 import torch
 import torch.distributed as dist
@@ -32,7 +33,7 @@ def reduce_max(value, device):
 
 def move_batch_to_device(batch, device):
     moved = {}
-    for key in ("i_frames", "motion_vectors", "residuals", "valid_mask", "label"):
+    for key in ("i_frames", "motion_vectors", "residuals", "valid_mask", "label", "candidate_gop_indices"):
         value = batch.get(key)
         if value is not None:
             moved[key] = value.to(device, non_blocking=True)
@@ -187,6 +188,8 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
         "acc1": 0.0,
         "acc5": 0.0,
         "entropy": 0.0,
+        "selected_unique_gops": 0.0,
+        "valid_candidates": 0.0,
         "count": 0,
     }
     for step, raw_batch in enumerate(loader):
@@ -270,6 +273,14 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
             totals["acc1"] += (pred[:, :1] == labels[:, None]).any(dim=1).float().sum().item()
             totals["acc5"] += (pred[:, :max_k] == labels[:, None]).any(dim=1).float().sum().item()
             totals["entropy"] += micro_out["mgse_saliency_entropy"].detach().item() * micro_bs
+            gop_ids = batch.get("candidate_gop_indices")
+            selected = micro_out["selected_indices"]
+            if gop_ids is None:
+                gop_ids = torch.arange(batch["valid_mask"].size(1), device=device).expand(micro_bs, -1)
+            selected_gops = torch.gather(gop_ids, 1, selected).sort(dim=1).values
+            unique_counts = 1 + (selected_gops[:, 1:] != selected_gops[:, :-1]).sum(dim=1)
+            totals["selected_unique_gops"] += unique_counts.sum().item()
+            totals["valid_candidates"] += batch["valid_mask"].sum().item()
             totals["count"] += micro_bs
 
         if out is None:
@@ -340,7 +351,8 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
                 "epoch=%d step=%d/%d loss=%.4f loss_mg=%.4f "
                 "loss_mg_mv2text=%.4f loss_mg_text2mv=%.4f loss_me=%.4f "
                 "acc1=%.2f acc5=%.2f lr=%.8f grad_norm=%.4f entropy=%.4f "
-                "selected_mean=%.2f max_mem=%.0fMB amp_scale=%.1f amp_skips=%d"
+                "selected_mean=%.2f unique_gops=%.2f valid_candidates=%.2f "
+                "classification_scale=%.4f max_mem=%.0fMB amp_scale=%.1f amp_skips=%d"
                 % (
                     epoch,
                     step,
@@ -356,6 +368,9 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
                     float(grad_norm),
                     float(totals["entropy"] / max(1, totals["count"])),
                     float(out["selected_indices"].float().mean().detach()),
+                    totals["selected_unique_gops"] / max(1, totals["count"]),
+                    totals["valid_candidates"] / max(1, totals["count"]),
+                    float(out["classification_logit_scale"]),
                     mem,
                     step_result["scale_after"],
                     amp_skipped_steps,
@@ -375,6 +390,8 @@ def train_one_epoch(model, loader, optimizer, scheduler, scaler, device, epoch, 
         "acc1": 100.0 * reduce_sum(totals["acc1"], device_for_reduce) / max(1.0, count),
         "acc5": 100.0 * reduce_sum(totals["acc5"], device_for_reduce) / max(1.0, count),
         "mgse_saliency_entropy": reduce_sum(totals["entropy"], device_for_reduce) / max(1.0, count),
+        "selected_unique_gops": reduce_sum(totals["selected_unique_gops"], device_for_reduce) / max(1.0, count),
+        "valid_candidates": reduce_sum(totals["valid_candidates"], device_for_reduce) / max(1.0, count),
         "amp_skipped_steps": amp_skipped_steps,
         "seconds": elapsed_seconds,
         "global_videos_per_second": count / max(elapsed_seconds, 1e-12),
@@ -448,11 +465,19 @@ def evaluate(model, loader, device, args):
     }
 
 
-def save_checkpoint(path, model, optimizer, scheduler, scaler, epoch, best_acc1):
+def save_checkpoint(path, model, optimizer, scheduler, scaler, epoch, best_acc1, run_config=None):
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    module = model.module if hasattr(model, "module") else model
+    config = getattr(module, "config", None)
     torch.save(
         {
-            "model": model.module.state_dict() if hasattr(model, "module") else model.state_dict(),
+            "model": module.state_dict(),
+            "format_version": 2,
+            "model_config": asdict(config) if is_dataclass(config) else None,
+            "run_config": run_config,
+            "optimizer_parameter_names": [
+                name for name, parameter in module.named_parameters() if parameter.requires_grad
+            ],
             "optimizer": optimizer.state_dict() if optimizer is not None else None,
             "scheduler": scheduler.state_dict() if scheduler is not None else None,
             "scaler": scaler.state_dict() if scaler is not None else None,
@@ -494,8 +519,16 @@ def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, ma
             % type(ckpt)
         )
     module = model.module if hasattr(model, "module") else model
+    saved_config = ckpt.get("model_config") or {}
+    if hasattr(module, "config") and saved_config.get("class_names") is not None:
+        if saved_config["class_names"] != module.config.class_names:
+            raise ValueError("Resume class text/label order differs from the checkpoint; use --init-checkpoint for cross-dataset transfer")
     module.load_state_dict(ckpt["model"], strict=True)
     if optimizer is not None and ckpt.get("optimizer") is not None:
+        expected_names = ckpt.get("optimizer_parameter_names")
+        current_names = [name for name, parameter in module.named_parameters() if parameter.requires_grad]
+        if expected_names is not None and expected_names != current_names:
+            raise RuntimeError("Resume optimizer parameter order/train mode differs from the checkpoint; use --init-checkpoint for a new run")
         optimizer.load_state_dict(ckpt["optimizer"])
     if scheduler is not None and ckpt.get("scheduler") is not None:
         scheduler.load_state_dict(ckpt["scheduler"])

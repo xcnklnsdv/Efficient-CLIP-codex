@@ -13,14 +13,9 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # =========================================================
 # GPU configuration
-# 固定使用物理 GPU 0、1、2
 # =========================================================
 
-EMCLIP_SCRIPT_GPU_IDS="0,1,2"
 
-# 自动设置：
-# CUDA_VISIBLE_DEVICES=0,1,2
-# NPROC_PER_NODE=3
 source "${SCRIPT_DIR}/_gpu_env.sh"
 
 # =========================================================
@@ -41,6 +36,7 @@ fi
 # 例如：
 # RESUME=/path/to/latest.pth bash scripts/train_k400.sh
 RESUME="${RESUME:-}"
+INIT_CHECKPOINT="${INIT_CHECKPOINT-${K400_CHECKPOINT:-}}"
 
 # =========================================================
 # K400 label configuration
@@ -53,8 +49,7 @@ LABEL_CSV="${LABEL_CSV:-${REPO_ROOT}/configs/kinetics_400_labels.csv}"
 # =========================================================
 
 # 注意：这里的 BATCH_SIZE 是每个 GPU 的 batch size
-# 默认 3 张 GPU，因此全局 batch size = 16 × 3 = 48
-BATCH_SIZE=${BATCH_SIZE:-16}
+BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
 
 NUM_WORKERS=${NUM_WORKERS:-8}
@@ -78,9 +73,16 @@ fi
 MASTER_PORT=${MASTER_PORT:-29501}
 
 OUTPUT_ROOT=${OUTPUT_ROOT:-output_dir/emclip}
+IMPLEMENTATION=${IMPLEMENTATION:-auto}
+MGSE_TRAIN_TEXT_MODE=${MGSE_TRAIN_TEXT_MODE:-}
+MGSE_EVAL_TEXT_MODE=${MGSE_EVAL_TEXT_MODE:-class_bank}
 VARIANT=${VARIANT:-emclip}
 
-T=${T:-16}
+if [[ "${VARIANT}" == "diamond" || "${VARIANT}" == "emclip_diamond" ]]; then
+  T=${T:-${K:-8}}
+else
+  T=${T:-$((2 * ${K:-8}))}
+fi
 K=${K:-8}
 
 STAMP="$(date +"%Y%m%d_%H%M%S")"
@@ -112,7 +114,7 @@ CMD=(
 
   --candidate-frames "${T}"
   --selected-frames "${K}"
-  --mgse-text-mode class_bank
+  --mgse-text-mode "${MGSE_EVAL_TEXT_MODE}"
 
   --epochs 30
   --lr 8e-6
@@ -133,6 +135,11 @@ CMD=(
 # =========================================================
 
 # 是否关闭 pin memory
+CMD+=(--emclip-implementation "${IMPLEMENTATION}")
+if [[ -n "${MGSE_TRAIN_TEXT_MODE}" ]]; then
+  CMD+=(--mgse-train-text-mode "${MGSE_TRAIN_TEXT_MODE}")
+fi
+
 if [[ "${PIN_MEMORY}" == "0" ||
       "${PIN_MEMORY}" == "false" ||
       "${PIN_MEMORY}" == "False" ]]; then
@@ -164,7 +171,7 @@ fi
 # Original CLIP checkpoint
 # =========================================================
 
-if [[ -n "${CLIP_CHECKPOINT:-}" ]]; then
+if [[ -z "${RESUME:-}" && -z "${INIT_CHECKPOINT:-}" && -n "${CLIP_CHECKPOINT:-}" ]]; then
   [[ -f "${CLIP_CHECKPOINT}" ]] || {
     echo "[emclip] Original CLIP checkpoint not found:" >&2
     echo "[emclip] ${CLIP_CHECKPOINT}" >&2
@@ -186,6 +193,11 @@ if [[ -n "${RESUME:-}" ]]; then
   }
 
   CMD+=(--resume "${RESUME}")
+fi
+
+if [[ -z "${RESUME}" && -n "${INIT_CHECKPOINT}" ]]; then
+  [[ -f "${INIT_CHECKPOINT}" ]] || { echo "Initialization checkpoint not found: ${INIT_CHECKPOINT}" >&2; exit 1; }
+  CMD+=(--init-checkpoint "${INIT_CHECKPOINT}")
 fi
 
 # =========================================================
@@ -215,6 +227,7 @@ fi
 # Save command
 # =========================================================
 
+CMD+=("$@")
 printf '%q ' "${CMD[@]}" > "${OUTPUT_DIR}/command.txt"
 printf '\n' >> "${OUTPUT_DIR}/command.txt"
 
@@ -232,7 +245,7 @@ fi
 echo
 echo "============================================================"
 echo "[emclip] Starting K400 training"
-echo "[emclip] physical GPUs       : ${CUDA_VISIBLE_DEVICES}"
+echo "[emclip] physical GPUs       : ${CUDA_VISIBLE_DEVICES-<caller default>}"
 echo "[emclip] process count       : ${NPROC_PER_NODE}"
 echo "[emclip] CLIP checkpoint     : ${CLIP_CHECKPOINT}"
 echo "[emclip] resume checkpoint   : ${RESUME}"

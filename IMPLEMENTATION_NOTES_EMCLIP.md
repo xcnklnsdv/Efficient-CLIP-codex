@@ -18,13 +18,27 @@ I/MV/Residual output directly.
 
 ## Formula Mapping
 
-Formulas 1-5, motion encoding and temporal candidate features, map to `MotionGuidedSaliencyExtraction._encode_motion`.
-Formulas 6-11, action correlation and temporal softmax, map to `_ground_truth_saliency`, `_class_bank_saliency`, `_predicted_class_saliency`.
-Formulas 12-14, top-k and selected I/R gather, map to `select_topk_indices` and `gather_temporal`.
-Formulas 15-18, bidirectional motion-text KL, map to `motion_text_kl_loss`.
-Formulas 19-22, independent I/R embedding and per-layer prompts, map to `_initial_tokens` and `_layer_prompts`.
-Formulas 23-27, GSPL/LMPL/SAG per-layer execution, map to `MotionEmbeddedLongTermSpatiotemporalCorrelation.forward`.
-Formulas 28-30, temporal aggregation, video-text logits, and CE, map to MELSC final pooling and `EMCLIP.forward`.
+| Equations | Paper operation | Code |
+| --- | --- | --- |
+| 1 | MV patch/CLS/position embedding | `PatchTokenEncoder.embed_patches` |
+| 2-4 | MV Transformer and CLS projection | `MGSE._encode_motion` |
+| 5-6 | Non-affine standardization and cosine | `_prepare_features`, `_normalize_token_features` |
+| 7 | Temporal softmax, valid category-word average | `_ground_truth_saliency`; class bank is an inference assumption |
+| 8 | Top-k and I/R retrieval | `select_topk_indices`, `gather_temporal` |
+| 9-10 | Independent I/R embedding | `MELSC._initial_tokens` |
+| 11-14 | I query and Residual-guided GSPL | `MELSC._layer_prompts`, `gs_attn` |
+| 15-18 | Shared Residual FC/LN, LMPL | `lm_r_proj`, `lm_ln`, `lm_attn` |
+| 19-22 | Fresh two-token SAG; I/R Transformer blocks | `MELSC.forward` |
+| 23 | Temporal MHSA/FFN/average pooling | `temporal_blocks`, final pooling/projection |
+| 24 | Bidirectional, multi-positive KL | `motion_text_kl_loss` |
+| 25 | Video/text cosine divided by fixed tau | `EMCLIP.forward`, `classification_temperature` |
+| 26 | L_MG + L_ME | `EMCLIP.forward` |
+| 27-28 | GSPL multi-head attention details | `gs_attn` |
+| 29-30 | Batch-wise alignment distributions | `motion_text_kl_loss` |
+
+The paper omits temporal aggregation implementation details; the existing
+pre-norm residual Transformer and final CLIP projection are retained as recorded
+engineering choices. No temporal position encoding is silently assumed.
 
 ## Key Tensor Shapes
 
@@ -53,7 +67,11 @@ GOP bounds; the list-file frame count is not trusted for native decoder indices.
 Run `--preflight-compressed-inputs` with one process to synchronously decode the
 first sample before starting DDP.
 
-MV uses the last valid P-frame without accumulation. Residual uses `accumulate=True` to obtain cumulative residual relative to the GOP I-frame. If a GOP has no valid P-frame, MV/R fall back to explicit zeros for that GOP only.
+MV uses the last valid P-frame without accumulation. Residual uses `accumulate=True`
+to obtain the difference from the GOP I-frame after cumulative motion compensation.
+The native C implementation follows accumulated reference coordinates: this is
+neither a pixel-wise sum of P-frame residuals nor an unwarped P_last minus I.
+The paper does not specify the MV accumulate boolean; `False` is a documented assumption. If a GOP has no valid P-frame, MV/R fall back to explicit zeros for that GOP only.
 
 The choices are configurable as diagnostic ablations with `--mv-accumulate`
 and `--no-residual-accumulate`, while paper reproduction defaults remain direct
@@ -63,7 +81,16 @@ silently replaced by another sample or by zeros.
 
 ## Sampling
 
-Videos are split into `T` non-overlapping GOP segments. Training randomly picks one GOP per segment. Evaluation picks deterministic per-view offsets. If GOP count is smaller than `T`, indices are repeated uniformly and `valid_mask` remains true because each repeated item maps to an actual GOP.
+Videos are split into `T` non-overlapping GOP segments. Training randomly picks one GOP per segment. Evaluation picks deterministic per-view offsets. If GOP count is smaller than `T`, tensor slots repeat uniformly, but only the
+first occurrence of each GOP has a true `valid_mask` in the paper implementation.
+ACG softmax and top-k exclude the other occurrences. If there are fewer than K
+distinct GOPs, all valid GOPs are kept before the best is repeated to fill K.
+`--duplicate-gop-policy keep` restores the historical behavior.
+
+If GOP<T, all distinct available GOPs already fit in each view; the temporal views
+can therefore coincide. There is no fabricated extra information. Three crops
+can also coincide on square inputs. Report unique GOP counts and recognize this
+limit when interpreting 4x3 evaluation.
 
 The named presets use `T=16,K=8` and `T=32,K=16` for full EM-CLIP. Because
 Diamond has no MGSE candidate-selection stage, `emclip_diamond_b16_k8` and
@@ -72,7 +99,11 @@ Diamond has no MGSE candidate-selection stage, `emclip_diamond_b16_k8` and
 
 ## Transforms and Normalization
 
-Resize, crop, and flip parameters are shared across I/MV/R. Horizontal flip negates MV x. Resize scales MV x and y by width and height ratios. I uses CLIP mean/std. MV is clamped to `[-20,20] / 20`. Residual is divided by 255 and clamped to `[-1,1]`; CLIP mean/std is not applied to residual because residual is not RGB appearance. These scales are centralized in `CoviarDataSet` and exposed as `--mv-clamp`, `--residual-scale`, and `--residual-clamp`.
+Resize, crop, and flip parameters are shared across I/MV/R. Horizontal flip negates MV x. SSV2 flips are disabled by default because direction
+labels change under mirroring; `--horizontal-flip on` is rejected for SSV2 until a
+validated label permutation is implemented. Resize scales MV x and y by width and height ratios. I uses CLIP mean/std. MV is clamped to `[-20,20] / 20`. Native BGR residuals are reordered to RGB before entering the RGB CLIP-initialized
+stem (`--residual-channel-order rgb`). Legacy checkpoints use BGR automatically.
+Residual is divided by 255 and clamped to `[-1,1]`; CLIP mean/std is not applied to residual because residual is not RGB appearance. These scales are centralized in `CoviarDataSet` and exposed as `--mv-clamp`, `--residual-scale`, and `--residual-clamp`.
 
 ## Position Embedding and Patch Init
 
@@ -110,7 +141,9 @@ OpenAI CLIP keys are mapped as follows:
   scaling.
 - `token_embedding`, text `transformer.resblocks`, `positional_embedding`,
   `ln_final`, and `text_projection` initialize `text_encoder`; `logit_scale` is
-  copied to the top-level CLIP logit-scale parameter.
+  copied to the top-level CLIP key for compatibility. In the paper implementation
+  it is frozen and ignored in favor of the fixed classification tau=0.01. The
+  legacy implementation still learns the clamped CLIP scale.
 - `visual.proj` initializes the I, residual, and MV visual projections.
 
 CLIP ViT-B/16 does not use the visual width for its text transformer: visual
@@ -134,11 +167,11 @@ to be finite. Under `torchrun`, all ranks participate and the process group is
 destroyed in `finally` even if the original error propagates.
 
 `--init-checkpoint` strictly loads only `checkpoint["model"]` from an EM-CLIP
-training checkpoint. It is the cross-dataset transfer path used by the SSV2,
-HMDB51, and UCF101 scripts for K400 weights; target optimizer, scheduler, scaler,
-epoch, and best accuracy remain fresh. The SSV2 evaluation launcher also accepts
-this path for a direct pre-fine-tuning transfer evaluation, while `RESUME` takes
-priority for an SSV2-finetuned checkpoint.
+training checkpoint. It is an optional cross-dataset transfer path; all four training launchers now
+default to original CLIP without a hard-coded K400 model. Set INIT_CHECKPOINT
+explicitly for an ablation. Target optimizer, scheduler, scaler, epoch, and best
+accuracy remain fresh. Evaluation requires a target RESUME checkpoint or an
+explicit INIT_CHECKPOINT transfer ablation; it never silently evaluates K400 on SSV2.
 
 `--resume` restores the complete model/optimizer/scheduler/scaler/epoch/best
 state and is reserved for the same run. It is mutually exclusive with
@@ -168,6 +201,10 @@ reduction, yielding aggregate throughput limited by the slowest rank.
 
 - `ground_truth`: uses true labels and is blocked in eval unless `--allow-mgse-label-leakage-for-diagnostic` is set.
 - `class_bank`: default for validation/test; it never reads labels for selected indices.
+- `--mgse-train-text-mode ground_truth`: paper category-conditioned training,
+  independent of validation mode. This is the new paper model's default;
+  validation remains `--mgse-text-mode class_bank`. Legacy defaults use class
+  bank for both stages. A shared model can therefore train and validate normally.
 - `predicted_class`: predicts a class from motion features first, then uses that class text.
 
 Evaluation normally passes no labels into model selection. For the explicitly
@@ -248,3 +285,72 @@ Smoke:
 ```bash
 bash scripts/smoke_emclip.sh
 ```
+
+## 2026-10-03 修复
+
+默认 `--emclip-implementation auto`：新训练选择 `paper`；resume/init 从 checkpoint
+识别结构。修复前的 checkpoint 没有配置元数据，以 `melsc.gs_r_proj.*` 识别为
+`legacy`，保留独立 R FC/LN、ACG 仿射 LN、可学习分类尺度和历史 BGR/重复候选
+输入处理。Legacy 的 module 注册顺序也保持一致，避免旧 optimizer 状态错配。
+SSV2 标签不安全的训练翻转在所有实现中禁用；旧验证本来就不翻转。
+
+新结构与旧结构的参数不能逐项等价迁移。显式要求 paper 而传入 legacy 权重会
+提前报错，不会丢弃一半 R FC 参数或平均参数后冒称严格恢复。复现修复后的模型
+应从原始 CLIP 重新开始；旧 SSV2 权重仍可用 auto/legacy 补做 4x3 评估。
+新 checkpoint 保存 `model_config`、`run_config` 和 optimizer 参数名；自动恢复
+输入/结构设置，显式 CLI 覆盖可用于消融。恢复训练会检查类别文本顺序和 optimizer
+参数顺序。模型权重在 profile/preflight 前加载，避免检查的是另一个模型。
+
+### 实际修改文件
+
+- `models/emclip_melsc.py`：逐层共用 Eq.16 R 特征；可选正弦时间位置编码。
+- `models/emclip_mgse.py`：Eq.5 无仿射标准化；训练/验证文本策略分离。
+- `models/emclip.py`：固定分类温度，冻结兼容 logit_scale；paper/legacy 配置。
+- `dataset_coviar.py`：SSV2 禁止 flip；R 转 RGB；重复候选 mask。
+- `main_emclip.py`：参数、checkpoint 结构识别、输入恢复、配置 JSON。
+- `engine_emclip.py`：checkpoint 配置/optimizer 顺序检查；unique GOP、有效候选、分类尺度日志。
+- `amp_compat.py`：CUDA 与 CPU autocast 中的敏感计算均明确关闭混合精度。
+- `scripts/_gpu_env.sh`：尊重外部 CUDA_VISIBLE_DEVICES/NPROC_PER_NODE，默认 4 进程。
+- `scripts/train_emclip_{ssv2,hmdb51,ucf101,k400}.sh`：每卡 batch 4、原始 CLIP 起点；可选 transfer；diamond T=K，full T=2K。
+- `scripts/eval_emclip_{ssv2,hmdb51,ucf101,k400}.sh`：明确目标 checkpoint、默认 4x3。
+- `scripts/smoke_emclip.sh`：真实 SSV2 smoke 使用仓库类别 CSV。
+- `tests/test_emclip_paper_protocol.py`：新增公式、采样、标签、温度、自动恢复等回归测试。
+- `tests/test_emclip_shapes.py`、`tests/test_emclip_scripts.py`：paper/legacy 梯度和真实 shell 命令验证。
+- `scripts/audit_emclip_paper.py`：可对照 paper/legacy，并运行双进程 CPU DDP。
+- `README.md`、本文件、`EMCLIP_PAPER_AUDIT.md`：同步运行协议；历史审计保留为修复前记录。
+
+### 严格设置与补充假设
+
+论文明确的 B/16、12 层/12 heads/768 width、256 输入、GOP=12、T16/K8
+或 T32/K16、30 epochs、LR8e-6 cosine、tau0.01、零 dropout/stochastic depth
+均保持。L_ME 也固定 tau0.01，L_MG 与 L_ME 默认等权相加。
+
+GSPL 与 LMPL 共享的是输入 R FC/LN 特征，不是两个 attention 的内部 W_Q/K/V。
+I/R/MV 编码器仍然独立。每层 SAG 生成两个新 prompt，层后丢弃 prompt 输出。
+
+论文未完整说明 optimizer/batch/warmup/冻结、未知类别推理、short GOP 补齐、
+预处理细节或时间聚合的完整 block。AdamW/batch4/WD0.2/full、class_bank 推理、
+重复 mask、RGB R、signed R/255、pre-norm temporal block 仍是明确记录的工程
+选择。训练 ground_truth 只用于已知训练标签的类别条件选帧；正式验证不能喂真实
+类别。推理假设可能影响精度，不能声称整个协议等同于作者私有实现。
+
+`--temporal-position-encoding none` 是默认；跨 GOP 排列不敏感性仍是论文细节
+缺口。`sinusoidal` 是额外消融，在进入 MELSC 层前给 I/R token 加 [1,K,1,D]
+位置值，使先后顺序可区分；它不引入可训练参数，不代表论文规定使用这种编码。
+
+### 已执行验证
+
+测试和结构/CPU DDP 结果记录在 `output_dir/emclip_audit_20261003/fix_verification.json`。
+真实数据/CoViAR 扩展、CUDA/NCCL、GPU fp16 AMP 及正式训练精度因本机条件未验证；
+CPU bfloat16 的混合精度测试不能替代这些检查。没有进行完整训练或下载模型。
+
+### 运行顺序
+
+先执行 synthetic smoke 和服务器真实 preflight，再从原始 CLIP 启动新训练。
+训练中关注 `selected_unique_gops`、`valid_candidates`、`classification_scale=100`
+以及 train/val 曲线。正式 4x3 评估应指定目标数据集 `model_best.pth`。参考 README
+的四数据集命令、单卡 smoke、4 卡 SSV2 训练、旧模型 4x3 命令。
+
+由于论文未公开源码，并且没有完整披露优化器、batch size、参数冻结策略、MGSE
+测试阶段类别文本来源等细节，本实现属于基于论文公式和描述的工程复现，不能
+保证与作者私有实现逐行一致，也不承诺修复后达到论文精度。

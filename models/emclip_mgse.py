@@ -75,11 +75,20 @@ class MotionGuidedSaliencyExtraction(nn.Module):
         motion_pooling="saliency",
         dropout=0.0,
         allow_label_leakage_for_diagnostic=False,
+        train_text_mode=None,
+        implementation="paper",
     ):
         super().__init__()
         self.selected_frames = selected_frames
         self.temperature = temperature
         self.text_mode = text_mode
+        self.train_text_mode = train_text_mode or text_mode
+        self.implementation = implementation
+        if temperature <= 0:
+            raise ValueError("MGSE temperature must be positive")
+        for mode in (self.text_mode, self.train_text_mode):
+            if mode not in ("ground_truth", "class_bank", "predicted_class"):
+                raise ValueError("Unsupported MGSE text mode: %s" % mode)
         self.class_aggregation = class_aggregation
         self.motion_pooling = motion_pooling
         self.allow_label_leakage_for_diagnostic = allow_label_leakage_for_diagnostic
@@ -93,7 +102,9 @@ class MotionGuidedSaliencyExtraction(nn.Module):
             output_dim=output_dim,
             dropout=dropout,
         )
-        self.feature_ln = LayerNorm(output_dim)
+        # Eq. (5) has no learned scale/bias. Keep the old affine LN only when
+        # loading the historical implementation and its checkpoints.
+        self.feature_ln = LayerNorm(output_dim, elementwise_affine=(implementation == "legacy"))
 
     @property
     def output_dim(self):
@@ -236,7 +247,8 @@ class MotionGuidedSaliencyExtraction(nn.Module):
             token_norm = self._normalize_token_features(class_token_features.float())
             class_text_norm = F.normalize(class_text_features.float(), dim=-1)
 
-            if self.text_mode == "ground_truth":
+            text_mode = self.train_text_mode if training_mode else self.text_mode
+            if text_mode == "ground_truth":
                 if (not training_mode) and (not self.allow_label_leakage_for_diagnostic):
                     raise RuntimeError(
                         "mgse_text_mode='ground_truth' would cause validation label leakage; "
@@ -245,11 +257,11 @@ class MotionGuidedSaliencyExtraction(nn.Module):
                 saliency = self._ground_truth_saliency(
                     motion_norm, token_norm, class_token_mask, labels, valid_mask
                 )
-            elif self.text_mode == "class_bank":
+            elif text_mode == "class_bank":
                 saliency = self._class_bank_saliency(
                     motion_norm, token_norm, class_token_mask, valid_mask
                 )
-            elif self.text_mode == "predicted_class":
+            elif text_mode == "predicted_class":
                 saliency = self._predicted_class_saliency(
                     motion_norm,
                     class_text_norm,
@@ -258,7 +270,7 @@ class MotionGuidedSaliencyExtraction(nn.Module):
                     valid_mask,
                 )
             else:
-                raise ValueError("Unsupported mgse_text_mode: %s" % self.text_mode)
+                raise ValueError("Unsupported mgse_text_mode: %s" % text_mode)
 
             saliency = self._normalize_saliency(saliency, valid_mask)
             selected_indices = select_topk_indices(saliency, valid_mask, self.selected_frames)
