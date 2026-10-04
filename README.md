@@ -9,6 +9,8 @@
 新训练使用 `paper` 实现：MGSE → top-k 选择对应 I/R → MELSC → 视频/文本分类。
 GSPL/LMPL 逐层共享论文 Eq.16 的 Residual 属性特征；SAG 每层加入两个新 prompt。
 L_MG 为同类 multi-positive 双向 KL，L_ME 为 cosine/tau 的分类 CE，总损失默认等权。
+时间聚合直接使用末层原始 I-frame CLS；新训练默认 `--melsc-norm-order post_pool`，
+移除了聚合前额外的 CLIP `ln_post`。历史 checkpoint 自动恢复原归一化顺序。
 
 - ViT-B/16：12 层、768 width、12 heads；CLIP 图文空间通常为 512。
 - T=16、K=8；K=16 时 full T=32。Diamond 不创建 MGSE，直接采样 T=K。
@@ -23,6 +25,8 @@ AdamW、每 GPU batch4、WD0.2、betas=(0.9,0.98)、eps=1e-6、warmup0、full �
 class_bank 推理、输入归一化等是工程假设，不是论文完整披露的设置。
 详细公式、假设、修复记录见 [IMPLEMENTATION_NOTES_EMCLIP.md](IMPLEMENTATION_NOTES_EMCLIP.md)。
 修复前的 SSV2 训练审计保留在 [EMCLIP_PAPER_AUDIT.md](EMCLIP_PAPER_AUDIT.md)。
+以论文正文、算法、图示和附录为依据的最新代码检查见
+[EMCLIP_SOURCE_CODE_AUDIT_20261003.md](EMCLIP_SOURCE_CODE_AUDIT_20261003.md)。
 
 ## 环境与数据
 
@@ -110,6 +114,23 @@ bash scripts/train_emclip_ssv2.sh --temporal-position-encoding sinusoidal
 scaler/epoch 全部重新开始。`RESUME` 优先，用于同一训练的完整状态恢复。
 AMP 使用 GradScaler/梯度裁剪，敏感相关性和损失始终 float32；DDP 默认 unused=False。
 新增日志包含 selected_unique_gops、valid_candidates 和有效分类尺度。LR 默认不随 world size 放大。
+
+论文的预训练信息需按数据集区分：第 8 页 Table 4 的 **CLIP-400M** 是图文
+预训练，覆盖该表的 K400/SSV2；第 7 页 Table 2 明确给 **Breakfast** 写了
+**Kinetics-400**。HMDB51 的 Table 3/5/6 未交代是否先在 K400 训练，因此当前
+原始 CLIP 默认是可复核的基线，不能说它已经完整还原 HMDB51 的作者协议。
+K400→HMDB51 可作为独立迁移对照：
+
+```bash
+RESUME="" INIT_CHECKPOINT=/path/to/compatible_k400/model_best.pth \
+BATCH_SIZE=16 MICRO_BATCH_SIZE=16 bash scripts/train_emclip_hmdb51.sh
+```
+
+源模型应与目标的变体、实现及归一化结构一致。旧 legacy K400 权重在 auto
+模式下会恢复旧结构；它不能作为新 paper 结构的相同条件初始化。使用
+`--init-checkpoint` 加载训练后模型，`--clip-checkpoint` 加载原始 CLIP；迁移
+时不用 `--resume`。两组采用相同 split、batch 和验证视图，不能承诺达到 78.9%。
+最新完整日志及预训练核对见 [后续核查](EMCLIP_FOLLOWUP_AUDIT_20261004.md)。
 
 ## 正式评估与旧 checkpoint
 

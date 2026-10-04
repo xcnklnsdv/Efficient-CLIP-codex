@@ -228,7 +228,13 @@ def resolve_implementation(args, explicit_options=None):
             "classification_temperature": "classification_temperature",
             "mgse_temperature": "mgse_temperature", "temporal_aggregator_layers": "temporal_aggregator_layers",
             "temporal_position_encoding": "temporal_position_encoding",
+            "melsc_norm_order": "melsc_norm_order",
         }
+        if "--melsc-norm-order" not in explicit_options:
+            # Both historical paper and legacy checkpoints used the extra
+            # pre-temporal LN. Do not change a trained model's computation
+            # when the new option is absent from its saved metadata.
+            args.melsc_norm_order = stored.get("melsc_norm_order", "pre_and_post")
         if args.resume and not args.eval:
             fields.update({"emclip_train_mode": "emclip_train_mode", "lambda_mg": "lambda_mg", "lambda_me": "lambda_me"})
         for field, source_field in fields.items():
@@ -773,6 +779,7 @@ def synthetic_smoke(args):
         implementation=args.emclip_implementation,
         classification_temperature=args.classification_temperature,
         temporal_position_encoding=args.temporal_position_encoding,
+        melsc_norm_order=args.melsc_norm_order,
     )
     model = EMCLIP(config).to(device)
     batch = {
@@ -1094,10 +1101,11 @@ def main_worker():
         print("Trainable params: %d (%.2f M)" % (trainable, trainable / 1e6))
         print(
             "[emclip] implementation=%s MGSE train=%s eval=%s classification=%s "
-            "residual_channels=%s duplicate_gops=%s temporal_position=%s"
+            "residual_channels=%s duplicate_gops=%s temporal_position=%s melsc_norm_order=%s"
             % (model.config.implementation, model.config.mgse_train_text_mode, model.config.mgse_text_mode,
                "fixed_tau=%.8g" % model.config.classification_temperature if model.config.implementation == "paper" else "learned_CLIP_scale",
-               args.residual_channel_order, args.duplicate_gop_policy, model.config.temporal_position_encoding), flush=True,
+               args.residual_channel_order, args.duplicate_gop_policy, model.config.temporal_position_encoding,
+               model.config.melsc_norm_order), flush=True,
         )
         with open(os.path.join(args.output_dir, "run_config.json"), "w", encoding="utf-8") as handle:
             json.dump(vars(args), handle, ensure_ascii=False, indent=2)

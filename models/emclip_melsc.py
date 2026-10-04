@@ -22,6 +22,7 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
         dropout=0.0,
         implementation="paper",
         temporal_position_encoding="none",
+        norm_order=None,
     ):
         super().__init__()
         self.width = width
@@ -34,6 +35,9 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
             raise ValueError("temporal_position_encoding must be none or sinusoidal")
         self.implementation = implementation
         self.temporal_position_encoding = temporal_position_encoding
+        self.norm_order = norm_order or ("post_pool" if implementation == "paper" else "pre_and_post")
+        if self.norm_order not in ("post_pool", "pre_and_post"):
+            raise ValueError("norm_order must be post_pool or pre_and_post")
         self.i_encoder = PatchTokenEncoder(
             in_channels=3,
             input_resolution=input_resolution,
@@ -93,6 +97,9 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
         """
         if self.r_encoder.proj is not None:
             self.r_encoder.proj.requires_grad = False
+        if self.norm_order == "post_pool":
+            for parameter in self.i_encoder.ln_post.parameters():
+                parameter.requires_grad = False
         for parameter in self.r_encoder.ln_post.parameters():
             parameter.requires_grad = False
         if len(self.r_encoder.blocks) > 0:
@@ -186,7 +193,9 @@ class MotionEmbeddedLongTermSpatiotemporalCorrelation(nn.Module):
             z_r = r_flat.reshape(B, K, N, self.width)
             assert z_r.shape == (B, K, N, self.width)
 
-        z_i = self.i_encoder.ln_post(z_i.reshape(B * K, N, self.width)).reshape(B, K, N, self.width)
+        if self.norm_order == "pre_and_post":
+            # Historical checkpoints were trained with this additional LN.
+            z_i = self.i_encoder.ln_post(z_i.reshape(B * K, N, self.width)).reshape(B, K, N, self.width)
         frame_cls = z_i[:, :, 0, :]
         assert frame_cls.shape == (B, K, self.width)
         residual_frame_cls = z_r[:, :, 0, :]

@@ -305,3 +305,23 @@ def test_coviar_decode_failure_is_contextual_and_never_silently_zero_filled(
 
     with pytest.raises(RuntimeError, match=r"dataset=unit.*gop=0.*returned None"):
         dataset.preflight(0)
+
+
+@pytest.mark.parametrize("num_frames,num_gops", [(24, 4), (28, 2)])
+def test_incompatible_gop_counts_fail_before_reading_the_wrong_last_p(
+    tmp_path, monkeypatch, num_frames, num_gops
+):
+    dataset, calls = _make_fake_dataset(tmp_path, monkeypatch, num_frames, num_gops)
+    with pytest.raises(RuntimeError, match=r"dataset=unit.*GOP_SIZE=12.*raw_line=.*path="):
+        dataset.preflight(0)
+    assert calls == []
+
+
+def test_final_iframe_only_gop_has_an_explicit_zero_motion_fallback(tmp_path, monkeypatch):
+    dataset, calls = _make_fake_dataset(tmp_path, monkeypatch, num_frames=13, num_gops=2)
+    sample = dataset.preflight(0)
+    assert sample["metadata"]["last_p_positions"] == [11, 0]
+    assert torch.count_nonzero(sample["motion_vectors"][1]) == 0
+    assert torch.count_nonzero(sample["residuals"][1]) == 0
+    assert not any(gop == 1 and representation in (1, 2)
+                   for gop, position, representation, accumulate in calls)

@@ -90,6 +90,9 @@ def test_serialized_nn_module_is_supported(tmp_path):
 def test_clip_weights_are_mapped_to_independent_branches(tmp_path):
     torch.manual_seed(7)
     reference = EMCLIP(_tiny_config())
+    with torch.no_grad():
+        reference.melsc.i_encoder.ln_post.weight.copy_(torch.linspace(0.5, 1.5, 32))
+        reference.melsc.i_encoder.ln_post.bias.copy_(torch.linspace(-0.2, 0.2, 32))
     source = _openai_clip_state(reference, source_grid=3)
     path = tmp_path / "clip_state.pth"
     torch.save({"model": source}, path)
@@ -129,6 +132,8 @@ def test_clip_weights_are_mapped_to_independent_branches(tmp_path):
     )
     assert torch.equal(loaded.text_encoder.text_projection, source["text_projection"])
     assert torch.equal(loaded.logit_scale, source["logit_scale"])
+    assert torch.equal(loaded.melsc.final_ln.weight, source["visual.ln_post.weight"])
+    assert torch.equal(loaded.melsc.final_ln.bias, source["visual.ln_post.bias"])
 
 
 def test_low_coverage_checkpoint_fails_clearly(tmp_path):

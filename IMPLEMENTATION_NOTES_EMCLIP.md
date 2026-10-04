@@ -40,6 +40,14 @@ The paper omits temporal aggregation implementation details; the existing
 pre-norm residual Transformer and final CLIP projection are retained as recorded
 engineering choices. No temporal position encoding is silently assumed.
 
+New paper runs feed the raw last-layer I CLS into Eq. (23)'s temporal aggregation
+(`--melsc-norm-order post_pool`). They no longer apply `i_encoder.ln_post` before
+that aggregation. Final LN/projection after pooling bridge to CLIP's text space;
+the final LN is initialized from CLIP visual `ln_post`. These head/initialization
+details are engineering choices, since Eq. (23) does not expand them. Historical
+checkpoints automatically restore `pre_and_post` so evaluation/resume preserves
+their original extra LN and optimizer parameter order.
+
 ## Key Tensor Shapes
 
 - Dataset output: I `[T,3,H,W]`, MV `[T,2,H,W]`, R `[T,3,H,W]`
@@ -173,6 +181,17 @@ explicitly for an ablation. Target optimizer, scheduler, scaler, epoch, and best
 accuracy remain fresh. Evaluation requires a target RESUME checkpoint or an
 explicit INIT_CHECKPOINT transfer ablation; it never silently evaluates K400 on SSV2.
 
+Pre-training is not uniformly specified across datasets in the source paper.
+Table 4 (p.8) labels the K400/SSV2 runs CLIP-400M; this denotes CLIP's
+image-text pretraining. Table 2 (p.7) explicitly labels Breakfast's EM-CLIP
+L/14 run Kinetics-400. HMDB51 Tables 3/5/6 do not state whether K400 transfer
+was used, and Sec.4.2 / Appendix C do not resolve this. Original-CLIP-only
+initialization is a documented baseline, not a verified reproduction of the
+complete HMDB51 training protocol. Optional K400 transfer should be reported
+separately, using a compatible implementation/variant and fresh target training
+state. A historical legacy source restores legacy in auto mode; it is not a
+like-for-like initialization for the repaired paper architecture.
+
 `--resume` restores the complete model/optimizer/scheduler/scaler/epoch/best
 state and is reserved for the same run. It is mutually exclusive with
 `--init-checkpoint`. After resume, the restored scheduler step is checked
@@ -207,6 +226,10 @@ reduction, yielding aggregate throughput limited by the slowest rank.
   bank for both stages. A shared model can therefore train and validate normally.
 - `predicted_class`: predicts a class from motion features first, then uses that class text.
 
+Class prediction uses the mean of valid projected motion features in the EOT
+alignment space used by `L_MG`. The non-affine standardization in Eq. (5) is
+restricted to the subsequent word-correlation calculation.
+
 Evaluation normally passes no labels into model selection. For the explicitly
 leaky diagnostic only, `engine_emclip.evaluate` passes labels through the separate
 `mgse_labels` argument; classification loss remains disabled for individual
@@ -226,7 +249,12 @@ therefore cannot reuse features from an older text-encoder state.
 
 ## Losses and DDP
 
-`L_MG` constructs multi-positive targets where samples with identical labels are positives. It uses `F.kl_div(..., reduction="batchmean")`. Feature all-gather preserves gradients when `torch.distributed.nn.functional.all_gather` is available and falls back safely otherwise. Label all-gather is no-grad.
+`L_MG` constructs multi-positive targets where samples with identical labels are positives. It uses `F.kl_div(..., reduction="batchmean")`, i.e. KL(target || prediction).
+The paper's main text calls p binary ground truth while Appendix B calls p a
+predicted softmax distribution; its p/q naming is inconsistent. Normalized
+multi-positive targets and target-to-prediction KL are recorded engineering
+choices. Direct prediction-to-binary-target KL would be infinite on zero target
+entries. Feature all-gather preserves gradients when `torch.distributed.nn.functional.all_gather` is available and falls back safely otherwise. Label all-gather is no-grad.
 
 The gradient-preserving fallback is a custom autograd all-gather with an
 all-reduce in backward; it does not detach remote features. Training forbids
@@ -245,6 +273,14 @@ The paper does not publish source code or fully specify optimizer, batch size,
 freezing, and MGSE inference details. These choices are engineering assumptions;
 this implementation does not claim line-by-line identity with the private code or
 guaranteed reproduction of the reported accuracy.
+
+The original PDF, rather than AGENTS.md, is the source for published facts.
+Algorithm 1 does not specify how an unknown-label test video obtains the label
+description, Eq. (23) omits the exact temporal-block/head internals, and the
+motion-video pooling used by `L_MG` is not fully defined. Class-bank inference,
+saliency-weighted motion pooling, the temporal block, and head initialization
+must not be presented as fully specified author settings. See
+`EMCLIP_SOURCE_CODE_AUDIT_20261003.md` for the latest audit and repair scope.
 
 ## Known Differences
 

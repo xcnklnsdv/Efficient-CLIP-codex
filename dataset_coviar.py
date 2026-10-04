@@ -711,6 +711,20 @@ class CoviarDataSet(torch.utils.data.Dataset):
                 "dataset=%s CoViAR reported no GOPs for raw_line=%r path=%s"
                 % (self.dataset_name, item.raw_line, path)
             )
+        # Last-P positions below assume fixed-size GOPs, except the final GOP.
+        # Native I-frame counts can disagree when scene cuts or another GOP
+        # size were used. In that case gop_idx * gop_size is not a frame start;
+        # proceeding could even silently zero real P-frame motion in later GOPs.
+        expected_gops = (num_frames + self.gop_size - 1) // self.gop_size
+        if gop_count != expected_gops:
+            raise RuntimeError(
+                "dataset=%s GOP metadata is incompatible with fixed GOP_SIZE=%d: "
+                "CoViAR num_frames=%d num_gops=%d expected_num_gops=%d "
+                "raw_line=%r path=%s. Check the video's encoding/GOP boundaries "
+                "before training; last P-frame positions cannot be inferred safely."
+                % (self.dataset_name, self.gop_size, num_frames, gop_count,
+                   expected_gops, item.raw_line, path)
+            )
         gop_indices, valid_mask, gop_count = sample_gop_indices(
             num_frames,
             self.candidate_frames,

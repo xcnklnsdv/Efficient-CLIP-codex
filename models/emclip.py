@@ -68,10 +68,15 @@ class EMCLIPConfig:
     implementation: str = "paper"
     classification_temperature: float = 0.01
     temporal_position_encoding: str = "none"
+    melsc_norm_order: Optional[str] = None
 
     def __post_init__(self):
         if self.implementation not in ("paper", "legacy"):
             raise ValueError("implementation must be paper or legacy")
+        if self.melsc_norm_order is None:
+            self.melsc_norm_order = "post_pool" if self.implementation == "paper" else "pre_and_post"
+        if self.melsc_norm_order not in ("post_pool", "pre_and_post"):
+            raise ValueError("melsc_norm_order must be post_pool or pre_and_post")
         if self.mgse_temperature <= 0 or self.classification_temperature <= 0:
             raise ValueError("motion and classification temperatures must be positive")
         if min(self.candidate_frames, self.selected_frames, self.temporal_aggregator_layers) <= 0:
@@ -185,9 +190,13 @@ class PromptTextEncoder(nn.Module):
 
     def encode_class_prompts(self, training_mode=True):
         device = self.text_projection.device
+        # Eval-mode forwards can still require gradients. Reusing a no_grad
+        # bank would remove their text gradients; reusing a graph would make
+        # its second backward invalid. Cache only actual inference forwards.
+        can_cache = not training_mode and not torch.is_grad_enabled()
         if training_mode:
             self.clear_cache()
-        if (not training_mode) and self._eval_cache is not None and self._eval_cache[0].device == device:
+        if can_cache and self._eval_cache is not None and self._eval_cache[0].device == device:
             return self._eval_cache
         tokens, label_masks, eot_positions, class_ids, _ = self._tokenize_templates(device)
         token_features = self._encode_tokens(tokens)
@@ -218,12 +227,22 @@ class PromptTextEncoder(nn.Module):
         class_token_features = class_token_features / class_token_counts.clamp_min(1.0).unsqueeze(-1)
         class_token_features = F.normalize(class_token_features.float(), dim=-1)
         result = (class_features, class_token_features, class_token_mask)
-        if not training_mode:
+        if can_cache:
             self._eval_cache = result
         return result
 
     def clear_cache(self):
         self._eval_cache = None
+
+    def _load_from_state_dict(self, *args, **kwargs):
+        # Called recursively by both CLIP branch loading and full checkpoint
+        # loading, so a previously cached bank cannot outlive its weights.
+        self.clear_cache()
+        return super()._load_from_state_dict(*args, **kwargs)
+
+    def _apply(self, fn):
+        self.clear_cache()
+        return super()._apply(fn)
 
     def train(self, mode=True):
         if mode:
@@ -297,6 +316,7 @@ class EMCLIP(nn.Module):
             dropout=config.dropout,
             implementation=config.implementation,
             temporal_position_encoding=config.temporal_position_encoding,
+            norm_order=config.melsc_norm_order,
         )
         self.logit_scale = nn.Parameter(torch.ones([]) * torch.log(torch.tensor(1 / 0.07)))
         self.pretrained_audit = None
@@ -376,6 +396,11 @@ class EMCLIP(nn.Module):
             minimum_coverage=0.99,
             required_keys=text_required,
         )
+        if self.config.melsc_norm_order == "post_pool":
+            # Eq. (23) consumes raw last-layer CLS tokens. The single output
+            # normalization therefore uses the pretrained CLIP post-LN here,
+            # after temporal aggregation, rather than before it as well.
+            self.melsc.final_ln.load_state_dict(self.melsc.i_encoder.ln_post.state_dict())
         if "logit_scale" not in source:
             raise RuntimeError("CLIP checkpoint is missing required text parameter 'logit_scale'")
         if tuple(source["logit_scale"].shape) != tuple(self.logit_scale.shape):
@@ -638,6 +663,7 @@ def build_emclip_config_from_args(args, class_names):
                         else getattr(args, "emclip_implementation", "paper")),
         classification_temperature=getattr(args, "classification_temperature", 0.01),
         temporal_position_encoding=getattr(args, "temporal_position_encoding", "none"),
+        melsc_norm_order=getattr(args, "melsc_norm_order", None),
     )
 
 
@@ -657,6 +683,8 @@ def add_emclip_args(parser: argparse.ArgumentParser):
     parser.add_argument("--classification-temperature", type=float, default=0.01)
     parser.add_argument("--temporal-position-encoding", default="none", choices=["none", "sinusoidal"],
                         help="Optional order-sensitive ablation; the paper does not specify temporal encoding.")
+    parser.add_argument("--melsc-norm-order", default=None, choices=["post_pool", "pre_and_post"],
+                        help="New paper runs use final LN after temporal pooling; old checkpoints retain their previous extra pre-temporal LN.")
     parser.add_argument("--mgse-class-aggregation", default="mean", choices=["mean", "max", "logsumexp"])
     parser.add_argument("--motion-pooling", default="saliency", choices=["saliency", "mean"])
     parser.add_argument("--lambda-mg", type=float, default=1.0)

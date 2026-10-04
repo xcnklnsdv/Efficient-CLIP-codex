@@ -175,9 +175,14 @@ class MotionGuidedSaliencyExtraction(nn.Module):
             raise ValueError("Unsupported mgse_class_aggregation: %s" % self.class_aggregation)
         return saliency
 
-    def _predicted_class_saliency(self, motion, class_text_features, token_features, token_mask, valid_mask):
+    def _predicted_class_saliency(self, motion, class_text_features, token_features, token_mask, valid_mask,
+                                 motion_frame_features):
         weights = valid_mask.float()
-        video_motion = (motion * weights[:, :, None]).sum(dim=1) / weights.sum(dim=1, keepdim=True).clamp_min(1.0)
+        # L_MG aligns projected motion features (Eq. 4) with EOT text. The
+        # non-affine standardization in Eq. 5 is only for word correlation;
+        # applying it to class prediction changes the trained cosine space.
+        video_motion = (motion_frame_features.float() * weights[:, :, None]).sum(dim=1)
+        video_motion = video_motion / weights.sum(dim=1, keepdim=True).clamp_min(1.0)
         pred = (F.normalize(video_motion, dim=-1) @ F.normalize(class_text_features.float(), dim=-1).t()).argmax(dim=1)
         return self._ground_truth_saliency(motion, token_features, token_mask, pred, valid_mask)
 
@@ -268,6 +273,7 @@ class MotionGuidedSaliencyExtraction(nn.Module):
                     token_norm,
                     class_token_mask,
                     valid_mask,
+                    motion_frame_features,
                 )
             else:
                 raise ValueError("Unsupported mgse_text_mode: %s" % text_mode)

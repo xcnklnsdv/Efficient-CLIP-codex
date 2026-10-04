@@ -32,9 +32,6 @@ RESUME="${RESUME:-}"
 # =========================================================
 # Data and training parameters
 # =========================================================
-export CUDA_VISIBLE_DEVICES=0,1,2,4
-export NPROC_PER_NODE=4
-
 BATCH_SIZE=${BATCH_SIZE:-4}
 MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE:-${BATCH_SIZE}}
 NUM_WORKERS=${NUM_WORKERS:-8}
