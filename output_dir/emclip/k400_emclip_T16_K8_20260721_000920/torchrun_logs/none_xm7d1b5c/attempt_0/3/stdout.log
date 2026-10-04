@@ -1,3 +1,0 @@
-[emclip][rank=3] epoch=0 entering DataLoader
-[emclip][rank=3] first batch loaded CPU shapes I=(4, 16, 3, 256, 256) MV=(4, 16, 2, 256, 256) R=(4, 16, 3, 256, 256)
-[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(4, 16, 3, 256, 256)

@@ -1,0 +1,609 @@
+W1003 21:37:53.489000 2678192 site-packages/torch/distributed/run.py:793] 
+W1003 21:37:53.489000 2678192 site-packages/torch/distributed/run.py:793] *****************************************
+W1003 21:37:53.489000 2678192 site-packages/torch/distributed/run.py:793] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1003 21:37:53.489000 2678192 site-packages/torch/distributed/run.py:793] *****************************************
+[emclip] initialized world_size=4 device=cuda:0 batch_size=16 micro_batch_size=16
+[emclip] class names source=inferred from dataset lists ['/home/fuh/CMPT/lists/hmdb51/train_rgb_split_1.txt', '/home/fuh/CMPT/lists/hmdb51/val_rgb_split_1.txt']
+[emclip] class names loaded=51
+[emclip] class names first5=['brush hair', 'cartwheel', 'catch', 'chew', 'clap']
+[emclip] class names last5=['talk', 'throw', 'turn', 'walk', 'wave']
+[emclip][pretrained] checkpoint_type=torchscript
+[emclip][pretrained] checkpoint_path=/home/fuh/CLIP-models/ViT-B-16.pt
+[emclip][pretrained] first_source_keys=['positional_embedding', 'text_projection', 'logit_scale', 'input_resolution', 'context_length', 'vocab_size', 'visual.class_embedding', 'visual.positional_embedding', 'visual.proj', 'visual.conv1.weight', 'visual.ln_pre.weight', 'visual.ln_pre.bias', 'visual.transformer.resblocks.0.attn.in_proj_weight', 'visual.transformer.resblocks.0.attn.in_proj_bias', 'visual.transformer.resblocks.0.attn.out_proj.weight', 'visual.transformer.resblocks.0.attn.out_proj.bias', 'visual.transformer.resblocks.0.ln_1.weight', 'visual.transformer.resblocks.0.ln_1.bias', 'visual.transformer.resblocks.0.mlp.c_fc.weight', 'visual.transformer.resblocks.0.mlp.c_fc.bias']
+[emclip][pretrained] I_encoder_position_grid=14->16
+[emclip][pretrained] I_encoder source=152 loaded=152 numel=86238720/86238720 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] R_encoder_position_grid=14->16
+[emclip][pretrained] R_encoder source=152 loaded=152 numel=86238720/86238720 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] MV_encoder_position_grid=14->16
+[emclip][pretrained] MV_encoder source=151 loaded=151 numel=85648896/85648896 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] Text_encoder source=149 loaded=149 numel=63428096/63428096 coverage=100.00% missing=[] unexpected=[] shape_mismatch=[]
+[emclip][pretrained] logit_scale=4.60517025
+[emclip] model moved to device
+Namespace(model='emclip_b16', emclip_variant='emclip', candidate_frames=16, selected_frames=8, gop_size=12, input_size=256, mgse_temperature=0.01, mgse_text_mode='class_bank', mgse_train_text_mode=None, emclip_implementation='paper', classification_temperature=0.01, temporal_position_encoding='none', mgse_class_aggregation='mean', motion_pooling='saliency', lambda_mg=1.0, lambda_me=1.0, emclip_train_mode='full', temporal_aggregator_layers=1, allow_mgse_label_leakage_for_diagnostic=False, debug_shapes=False, clip_checkpoint='/home/fuh/CLIP-models/ViT-B-16.pt', clip_bpe_path=None, allow_random_init=False, pretrained_audit_only=False, dataset='hmdb51_mpeg4', label_csv=None, class_names=None, train_root=None, val_root=None, train_list=None, val_list=None, compressed_video_root=None, epochs=30, lr=8e-06, weight_decay=0.2, warmup_epochs=0, batch_size=16, micro_batch_size=16, num_workers=8, pin_memory=True, amp=True, amp_init_scale=1024.0, amp_growth_interval=2000, max_consecutive_amp_overflows=8, init_checkpoint=None, resume=None, output_dir='output_dir/emclip/hmdb51_mpeg4_emclip_T16_K8_20261003_213752', eval=False, test_num_temporal_views=1, test_num_spatial_crops=1, verify_compressed_inputs=False, preflight_compressed_inputs=False, preflight_only=False, coviar_data_loader_dir='/home/fuh/m2clip/Coviar/data_loader', mv_clamp=20.0, residual_scale=255.0, residual_clamp=1.0, mv_accumulate=False, residual_accumulate=True, scale_lr_by_global_batch=False, grad_clip_norm=1.0, seed=1024, horizontal_flip='auto', residual_channel_order='rgb', duplicate_gop_policy='mask', print_freq=10, profile_compute=True, synthetic_smoke=False, validate_class_names_only=False, find_unused_parameters=False, debug_unused_parameters=False)
+Total params: 399944961 (399.94 M)
+Trainable params: 392462336 (392.46 M)
+[emclip] implementation=paper MGSE train=ground_truth eval=class_bank classification=fixed_tau=0.01 residual_channels=rgb duplicate_gops=mask temporal_position=none
+[rank2]:[W1003 21:38:02.570867230 ProcessGroupNCCL.cpp:4115] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect.Specify device_ids in barrier() to force use of a particular device,or call init_process_group() with a device_id.
+[rank1]:[W1003 21:38:02.862118831 ProcessGroupNCCL.cpp:4115] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect.Specify device_ids in barrier() to force use of a particular device,or call init_process_group() with a device_id.
+[rank3]:[W1003 21:38:03.130101545 ProcessGroupNCCL.cpp:4115] [PG ID 0 PG GUID 0 Rank 3]  using GPU 3 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect.Specify device_ids in barrier() to force use of a particular device,or call init_process_group() with a device_id.
+[emclip][compute] cached_text_forward batch=1 precision=amp_fp16 T=16 K=8 input=256x256 flops=1417857720788 gflops_per_video=1417.858 latency_ms=123.162 videos_per_second=8.119 peak_allocated_memory_mb=2299.9
+[emclip][compute] FLOPs include only operators supported by torch.profiler formulas; class-text encoding is cached and excluded
+[rank0]:[W1003 21:38:04.861830321 ProcessGroupNCCL.cpp:4115] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect.Specify device_ids in barrier() to force use of a particular device,or call init_process_group() with a device_id.
+[emclip] datasets ready train=3570 val=1530
+[emclip][rank=1] epoch=0 entering DataLoader
+[emclip][rank=2] epoch=0 entering DataLoader
+[emclip][rank=3] epoch=0 entering DataLoader
+[emclip] DDP wrapper ready
+[emclip] AMP GradScaler init_scale=1024.0 growth_interval=2000
+All params before optimizer: 399944961 (399.94 M)
+Requires-grad params before optimizer: 392462336 (392.46 M)
+Optimizer params: 392462336 (392.46 M)
+[emclip] optimizer and scheduler ready
+[emclip][rank=0] epoch=0 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+epoch=0 step=0/55 loss=9.2610 loss_mg=3.6212 loss_mg_mv2text=3.9726 loss_mg_text2mv=3.2698 loss_me=5.6397 acc1=0.00 acc5=18.75 lr=0.00000800 grad_norm=246.8411 entropy=1.7637 selected_mean=7.22 unique_gops=6.12 valid_candidates=7.69 classification_scale=100.0000 max_mem=58562MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=10/55 loss=4.6794 loss_mg=3.4062 loss_mg_mv2text=3.3684 loss_mg_text2mv=3.4441 loss_me=1.2732 acc1=48.86 acc5=71.02 lr=0.00000800 grad_norm=61.6985 entropy=1.8042 selected_mean=7.18 unique_gops=6.40 valid_candidates=7.56 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=20/55 loss=4.3538 loss_mg=3.1860 loss_mg_mv2text=3.2191 loss_mg_text2mv=3.1529 loss_me=1.1678 acc1=52.38 acc5=76.79 lr=0.00000800 grad_norm=52.3436 entropy=1.7075 selected_mean=6.96 unique_gops=6.52 valid_candidates=7.72 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=30/55 loss=3.8302 loss_mg=2.8305 loss_mg_mv2text=2.7595 loss_mg_text2mv=2.9016 loss_me=0.9997 acc1=58.47 acc5=82.46 lr=0.00000799 grad_norm=61.6271 entropy=1.6309 selected_mean=6.45 unique_gops=6.54 valid_candidates=7.83 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=40/55 loss=3.5121 loss_mg=2.7382 loss_mg_mv2text=2.8553 loss_mg_text2mv=2.6212 loss_me=0.7739 acc1=63.11 acc5=86.13 lr=0.00000799 grad_norm=62.2839 entropy=1.5453 selected_mean=6.95 unique_gops=6.56 valid_candidates=7.82 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=0 step=50/55 loss=3.3423 loss_mg=2.7325 loss_mg_mv2text=2.9181 loss_mg_text2mv=2.5469 loss_me=0.6098 acc1=65.69 acc5=87.87 lr=0.00000798 grad_norm=69.7038 entropy=1.4837 selected_mean=7.06 unique_gops=6.50 valid_candidates=7.74 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=0 train={'loss': 4.258482597090981, 'loss_mg': 3.022137752446261, 'loss_mg_mv2text': 3.0444811149076982, 'loss_mg_text2mv': 2.999794404073195, 'loss_me': 1.236344851417975, 'acc1': 64.6875, 'acc5': 88.66477272727273, 'mgse_saliency_entropy': 1.4678325961936605, 'selected_unique_gops': 6.508806818181818, 'valid_candidates': 7.763352272727273, 'amp_skipped_steps': 0, 'seconds': 158.7726411819458, 'global_videos_per_second': 22.170066415700987, 'global_candidate_gops_per_second': 354.7210626512158} val={'val_acc1': 70.65359477124183, 'val_acc5': 94.05228758169935, 'val_loss_me': 0.9703892920020164, 'val_seconds': 24.097779750823975, 'val_global_videos_per_second': 63.49132641349188}
+[emclip][rank=2] epoch=1 entering DataLoader
+[emclip][rank=3] epoch=1 entering DataLoader
+[emclip][rank=1] epoch=1 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=1 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=1 step=0/55 loss=3.5395 loss_mg=3.1575 loss_mg_mv2text=3.3652 loss_mg_text2mv=2.9498 loss_me=0.3820 acc1=87.50 acc5=100.00 lr=0.00000798 grad_norm=46.6728 entropy=1.1149 selected_mean=6.34 unique_gops=6.75 valid_candidates=7.94 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=10/55 loss=3.2785 loss_mg=2.4533 loss_mg_mv2text=2.4115 loss_mg_text2mv=2.4951 loss_me=0.8251 acc1=81.25 acc5=96.02 lr=0.00000797 grad_norm=76.1706 entropy=1.1414 selected_mean=6.82 unique_gops=6.65 valid_candidates=7.98 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=20/55 loss=3.3831 loss_mg=2.2274 loss_mg_mv2text=2.2703 loss_mg_text2mv=2.1846 loss_me=1.1556 acc1=81.55 acc5=95.24 lr=0.00000796 grad_norm=66.0359 entropy=1.1660 selected_mean=6.48 unique_gops=6.57 valid_candidates=7.91 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=30/55 loss=3.3977 loss_mg=2.9537 loss_mg_mv2text=3.0884 loss_mg_text2mv=2.8191 loss_me=0.4440 acc1=81.85 acc5=95.77 lr=0.00000795 grad_norm=82.2133 entropy=1.1485 selected_mean=7.05 unique_gops=6.54 valid_candidates=7.97 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=40/55 loss=2.5647 loss_mg=2.2319 loss_mg_mv2text=2.2885 loss_mg_text2mv=2.1752 loss_me=0.3329 acc1=82.93 acc5=96.65 lr=0.00000793 grad_norm=50.8178 entropy=1.1325 selected_mean=6.80 unique_gops=6.57 valid_candidates=7.96 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=1 step=50/55 loss=2.4873 loss_mg=2.1555 loss_mg_mv2text=2.0832 loss_mg_text2mv=2.2278 loss_me=0.3317 acc1=83.09 acc5=96.81 lr=0.00000792 grad_norm=73.0750 entropy=1.1032 selected_mean=7.19 unique_gops=6.56 valid_candidates=7.99 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=1 train={'loss': 3.0632388125766408, 'loss_mg': 2.5346986375071787, 'loss_mg_mv2text': 2.5720478735186836, 'loss_mg_text2mv': 2.497349387407303, 'loss_me': 0.5285401799123396, 'acc1': 83.86363636363636, 'acc5': 97.35795454545455, 'mgse_saliency_entropy': 1.0606233870441264, 'selected_unique_gops': 6.509090909090909, 'valid_candidates': 7.763920454545454, 'amp_skipped_steps': 0, 'seconds': 163.03590989112854, 'global_videos_per_second': 21.59033554233893, 'global_candidate_gops_per_second': 345.4453686774229} val={'val_acc1': 70.06535947712419, 'val_acc5': 94.50980392156863, 'val_loss_me': 1.0054607151356203, 'val_seconds': 24.0233736038208, 'val_global_videos_per_second': 63.68797427171765}
+[emclip][rank=1] epoch=2 entering DataLoader
+[emclip][rank=2] epoch=2 entering DataLoader
+[emclip][rank=3] epoch=2 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=2 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=2 step=0/55 loss=1.9396 loss_mg=1.7818 loss_mg_mv2text=1.7722 loss_mg_text2mv=1.7914 loss_me=0.1578 acc1=87.50 acc5=100.00 lr=0.00000791 grad_norm=64.7691 entropy=0.7914 selected_mean=6.49 unique_gops=6.88 valid_candidates=8.69 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=10/55 loss=2.3546 loss_mg=2.0550 loss_mg_mv2text=1.9676 loss_mg_text2mv=2.1425 loss_me=0.2995 acc1=87.50 acc5=98.30 lr=0.00000789 grad_norm=58.8308 entropy=0.8987 selected_mean=6.60 unique_gops=6.38 valid_candidates=7.47 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=20/55 loss=2.7815 loss_mg=2.4459 loss_mg_mv2text=2.5174 loss_mg_text2mv=2.3744 loss_me=0.3356 acc1=87.50 acc5=98.81 lr=0.00000788 grad_norm=58.0883 entropy=0.9129 selected_mean=6.96 unique_gops=6.46 valid_candidates=7.63 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=30/55 loss=2.6023 loss_mg=2.4330 loss_mg_mv2text=2.5887 loss_mg_text2mv=2.2773 loss_me=0.1693 acc1=88.31 acc5=98.79 lr=0.00000786 grad_norm=56.8812 entropy=0.9199 selected_mean=6.96 unique_gops=6.49 valid_candidates=7.70 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=40/55 loss=2.4192 loss_mg=2.1795 loss_mg_mv2text=2.1259 loss_mg_text2mv=2.2331 loss_me=0.2397 acc1=89.02 acc5=98.63 lr=0.00000784 grad_norm=71.1853 entropy=0.9052 selected_mean=6.91 unique_gops=6.49 valid_candidates=7.67 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=2 step=50/55 loss=1.9030 loss_mg=1.8369 loss_mg_mv2text=1.8711 loss_mg_text2mv=1.8027 loss_me=0.0661 acc1=88.60 acc5=98.65 lr=0.00000781 grad_norm=53.9197 entropy=0.9233 selected_mean=6.64 unique_gops=6.48 valid_candidates=7.62 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=2 train={'loss': 2.586047876964916, 'loss_mg': 2.238232471184297, 'loss_mg_mv2text': 2.2421141852032056, 'loss_mg_text2mv': 2.234350754997947, 'loss_me': 0.3478154061743143, 'acc1': 89.14772727272727, 'acc5': 98.83522727272727, 'mgse_saliency_entropy': 0.9371172140945088, 'selected_unique_gops': 6.5122159090909095, 'valid_candidates': 7.751988636363636, 'amp_skipped_steps': 0, 'seconds': 175.86392498016357, 'global_videos_per_second': 20.01547503501378, 'global_candidate_gops_per_second': 320.24760056022046} val={'val_acc1': 68.36601307189542, 'val_acc5': 94.50980392156863, 'val_loss_me': 1.1248373221012526, 'val_seconds': 24.078208446502686, 'val_global_videos_per_second': 63.54293357827582}
+[emclip][rank=3] epoch=3 entering DataLoader
+[emclip][rank=2] epoch=3 entering DataLoader
+[emclip][rank=1] epoch=3 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=3 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=3 step=0/55 loss=2.1065 loss_mg=1.9387 loss_mg_mv2text=2.0312 loss_mg_text2mv=1.8462 loss_me=0.1678 acc1=93.75 acc5=100.00 lr=0.00000780 grad_norm=49.2876 entropy=1.0151 selected_mean=6.62 unique_gops=6.38 valid_candidates=7.38 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=10/55 loss=2.2850 loss_mg=1.8507 loss_mg_mv2text=1.7405 loss_mg_text2mv=1.9609 loss_me=0.4343 acc1=93.18 acc5=100.00 lr=0.00000778 grad_norm=73.9577 entropy=0.9280 selected_mean=6.26 unique_gops=6.43 valid_candidates=7.49 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=20/55 loss=3.1012 loss_mg=2.7396 loss_mg_mv2text=2.7179 loss_mg_text2mv=2.7613 loss_me=0.3616 acc1=93.15 acc5=99.40 lr=0.00000775 grad_norm=77.1600 entropy=0.8852 selected_mean=6.00 unique_gops=6.48 valid_candidates=7.59 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=30/55 loss=2.0829 loss_mg=1.8843 loss_mg_mv2text=1.8432 loss_mg_text2mv=1.9254 loss_me=0.1986 acc1=93.35 acc5=99.19 lr=0.00000772 grad_norm=64.6581 entropy=0.8820 selected_mean=5.95 unique_gops=6.45 valid_candidates=7.56 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=40/55 loss=1.7527 loss_mg=1.7376 loss_mg_mv2text=1.7646 loss_mg_text2mv=1.7106 loss_me=0.0151 acc1=94.05 acc5=99.24 lr=0.00000770 grad_norm=62.2944 entropy=0.8963 selected_mean=6.76 unique_gops=6.47 valid_candidates=7.73 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=3 step=50/55 loss=1.9873 loss_mg=1.7647 loss_mg_mv2text=1.7863 loss_mg_text2mv=1.7432 loss_me=0.2226 acc1=93.01 acc5=99.26 lr=0.00000767 grad_norm=61.0261 entropy=0.8989 selected_mean=7.21 unique_gops=6.47 valid_candidates=7.71 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=3 train={'loss': 2.296951361136003, 'loss_mg': 2.0830973007462243, 'loss_mg_mv2text': 2.0895246960900047, 'loss_mg_text2mv': 2.0766699140722102, 'loss_me': 0.21385405580513178, 'acc1': 93.4375, 'acc5': 99.63068181818181, 'mgse_saliency_entropy': 0.9307261926206676, 'selected_unique_gops': 6.507954545454545, 'valid_candidates': 7.754261363636363, 'amp_skipped_steps': 0, 'seconds': 175.39552330970764, 'global_videos_per_second': 20.06892726551806, 'global_candidate_gops_per_second': 321.10283624828895} val={'val_acc1': 68.16993464052288, 'val_acc5': 93.92156862745098, 'val_loss_me': 1.2595696256748625, 'val_seconds': 24.866376876831055, 'val_global_videos_per_second': 61.52886717588355}
+[emclip][rank=1] epoch=4 entering DataLoader
+[emclip][rank=2] epoch=4 entering DataLoader
+[emclip][rank=3] epoch=4 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=4 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=4 step=0/55 loss=2.4358 loss_mg=2.1525 loss_mg_mv2text=2.1285 loss_mg_text2mv=2.1764 loss_me=0.2834 acc1=93.75 acc5=100.00 lr=0.00000765 grad_norm=51.8151 entropy=1.1506 selected_mean=7.35 unique_gops=6.44 valid_candidates=8.81 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=10/55 loss=3.2717 loss_mg=2.7539 loss_mg_mv2text=2.8530 loss_mg_text2mv=2.6548 loss_me=0.5178 acc1=92.61 acc5=100.00 lr=0.00000762 grad_norm=67.9664 entropy=0.9406 selected_mean=6.94 unique_gops=6.28 valid_candidates=7.65 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=20/55 loss=2.4142 loss_mg=2.2627 loss_mg_mv2text=2.1912 loss_mg_text2mv=2.3343 loss_me=0.1514 acc1=94.05 acc5=99.70 lr=0.00000759 grad_norm=76.2474 entropy=0.9340 selected_mean=7.48 unique_gops=6.40 valid_candidates=7.72 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=30/55 loss=2.8049 loss_mg=2.3402 loss_mg_mv2text=2.3652 loss_mg_text2mv=2.3152 loss_me=0.4647 acc1=93.75 acc5=99.60 lr=0.00000755 grad_norm=70.1604 entropy=0.9086 selected_mean=6.78 unique_gops=6.38 valid_candidates=7.54 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=40/55 loss=2.3496 loss_mg=2.1590 loss_mg_mv2text=2.5302 loss_mg_text2mv=1.7877 loss_me=0.1907 acc1=94.36 acc5=99.54 lr=0.00000752 grad_norm=87.5369 entropy=0.9124 selected_mean=6.09 unique_gops=6.45 valid_candidates=7.66 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=4 step=50/55 loss=2.4286 loss_mg=2.3139 loss_mg_mv2text=2.3136 loss_mg_text2mv=2.3142 loss_me=0.1148 acc1=94.73 acc5=99.51 lr=0.00000748 grad_norm=55.9913 entropy=0.9171 selected_mean=6.42 unique_gops=6.42 valid_candidates=7.65 classification_scale=100.0000 max_mem=61878MB amp_scale=1024.0 amp_skips=0
+epoch=4 train={'loss': 2.141968272490935, 'loss_mg': 2.003792535716837, 'loss_mg_mv2text': 2.010814419659701, 'loss_mg_text2mv': 1.9967706468972293, 'loss_me': 0.13817574107828973, 'acc1': 95.68181818181819, 'acc5': 99.77272727272727, 'mgse_saliency_entropy': 0.9287225487557325, 'selected_unique_gops': 6.507954545454545, 'valid_candidates': 7.759375, 'amp_skipped_steps': 0, 'seconds': 169.8895378112793, 'global_videos_per_second': 20.719345319016462, 'global_candidate_gops_per_second': 331.5095251042634} val={'val_acc1': 68.62745098039215, 'val_acc5': 93.0718954248366, 'val_loss_me': 1.3391359697147789, 'val_seconds': 24.146843671798706, 'val_global_videos_per_second': 63.36231852061474}
+[emclip][rank=1] epoch=5 entering DataLoader
+[emclip][rank=3] epoch=5 entering DataLoader
+[emclip][rank=2] epoch=5 entering DataLoader
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=5 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+[emclip][amp] skipped optimizer step epoch=5 step=0 scale=1024.0->512.0 consecutive=1 bad=['text_encoder.positional_embedding', 'text_encoder.text_projection', 'text_encoder.token_embedding.weight', 'text_encoder.blocks.0.ln_1.weight', 'text_encoder.blocks.0.ln_1.bias']
+epoch=5 step=10/55 loss=1.5823 loss_mg=1.4847 loss_mg_mv2text=1.2990 loss_mg_text2mv=1.6703 loss_me=0.0976 acc1=98.30 acc5=100.00 lr=0.00000743 grad_norm=50.8794 entropy=0.8703 selected_mean=6.62 unique_gops=6.53 valid_candidates=7.63 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=1
+epoch=5 step=20/55 loss=1.6397 loss_mg=1.6298 loss_mg_mv2text=1.5541 loss_mg_text2mv=1.7055 loss_me=0.0099 acc1=97.32 acc5=100.00 lr=0.00000739 grad_norm=53.0871 entropy=0.9039 selected_mean=7.08 unique_gops=6.53 valid_candidates=7.82 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=1
+epoch=5 step=30/55 loss=1.6726 loss_mg=1.6329 loss_mg_mv2text=1.5846 loss_mg_text2mv=1.6812 loss_me=0.0397 acc1=96.57 acc5=99.80 lr=0.00000734 grad_norm=62.1934 entropy=0.9006 selected_mean=6.69 unique_gops=6.52 valid_candidates=7.80 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=1
+epoch=5 step=40/55 loss=1.7354 loss_mg=1.5938 loss_mg_mv2text=1.5515 loss_mg_text2mv=1.6362 loss_me=0.1416 acc1=96.34 acc5=99.85 lr=0.00000730 grad_norm=46.8482 entropy=0.8853 selected_mean=7.06 unique_gops=6.53 valid_candidates=7.75 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=1
+epoch=5 step=50/55 loss=2.0248 loss_mg=2.0009 loss_mg_mv2text=2.1763 loss_mg_text2mv=1.8255 loss_me=0.0239 acc1=96.20 acc5=99.75 lr=0.00000726 grad_norm=74.2444 entropy=0.8855 selected_mean=6.40 unique_gops=6.51 valid_candidates=7.80 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=1
+epoch=5 train={'loss': 1.9493735513903878, 'loss_mg': 1.850493615323847, 'loss_mg_mv2text': 1.8516290767626329, 'loss_mg_text2mv': 1.8493581549687819, 'loss_me': 0.09887993221001869, 'acc1': 96.73295454545455, 'acc5': 99.85795454545455, 'mgse_saliency_entropy': 0.9088298960165544, 'selected_unique_gops': 6.510511363636364, 'valid_candidates': 7.757670454545455, 'amp_skipped_steps': 1, 'seconds': 174.15726613998413, 'global_videos_per_second': 20.21161722400198, 'global_candidate_gops_per_second': 323.3858755840317} val={'val_acc1': 67.7124183006536, 'val_acc5': 91.96078431372548, 'val_loss_me': 1.4469486165907404, 'val_seconds': 24.463039875030518, 'val_global_videos_per_second': 62.543330993041245}
+[emclip][rank=2] epoch=6 entering DataLoader[emclip][rank=1] epoch=6 entering DataLoader
+
+[emclip][rank=3] epoch=6 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=6 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=6 step=0/55 loss=1.5010 loss_mg=1.4933 loss_mg_mv2text=1.3898 loss_mg_text2mv=1.5968 loss_me=0.0077 acc1=100.00 acc5=100.00 lr=0.00000724 grad_norm=61.9823 entropy=0.8741 selected_mean=6.78 unique_gops=7.00 valid_candidates=8.50 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=6 step=10/55 loss=1.9847 loss_mg=1.9714 loss_mg_mv2text=2.0330 loss_mg_text2mv=1.9098 loss_me=0.0133 acc1=97.16 acc5=100.00 lr=0.00000719 grad_norm=71.6678 entropy=0.9212 selected_mean=6.32 unique_gops=6.51 valid_candidates=8.05 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=6 step=20/55 loss=1.6277 loss_mg=1.6218 loss_mg_mv2text=1.5696 loss_mg_text2mv=1.6740 loss_me=0.0060 acc1=97.62 acc5=99.70 lr=0.00000714 grad_norm=58.0381 entropy=0.8707 selected_mean=6.99 unique_gops=6.47 valid_candidates=7.78 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=6 step=30/55 loss=2.2927 loss_mg=2.2792 loss_mg_mv2text=2.3534 loss_mg_text2mv=2.2050 loss_me=0.0134 acc1=97.38 acc5=99.80 lr=0.00000710 grad_norm=54.4654 entropy=0.8807 selected_mean=6.73 unique_gops=6.52 valid_candidates=7.89 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=6 step=40/55 loss=1.1876 loss_mg=1.1751 loss_mg_mv2text=0.9676 loss_mg_text2mv=1.3826 loss_me=0.0125 acc1=97.56 acc5=99.85 lr=0.00000705 grad_norm=41.3175 entropy=0.8805 selected_mean=7.12 unique_gops=6.51 valid_candidates=7.84 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=6 step=50/55 loss=1.3786 loss_mg=1.2899 loss_mg_mv2text=1.2284 loss_mg_text2mv=1.3513 loss_me=0.0887 acc1=97.92 acc5=99.88 lr=0.00000700 grad_norm=46.4930 entropy=0.8870 selected_mean=6.95 unique_gops=6.52 valid_candidates=7.82 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=6 train={'loss': 1.7941072710535744, 'loss_mg': 1.7088139737194235, 'loss_mg_mv2text': 1.7053848643194545, 'loss_mg_text2mv': 1.712243087725206, 'loss_me': 0.08529329093659974, 'acc1': 97.58522727272727, 'acc5': 99.91477272727273, 'mgse_saliency_entropy': 0.8869817251508886, 'selected_unique_gops': 6.510511363636364, 'valid_candidates': 7.757386363636364, 'amp_skipped_steps': 0, 'seconds': 172.09380173683167, 'global_videos_per_second': 20.453961528392725, 'global_candidate_gops_per_second': 327.2633844542836} val={'val_acc1': 67.12418300653594, 'val_acc5': 92.94117647058823, 'val_loss_me': 1.4823992785855404, 'val_seconds': 24.587369680404663, 'val_global_videos_per_second': 62.22707104857013}
+[emclip][rank=3] epoch=7 entering DataLoader
+[emclip][rank=2] epoch=7 entering DataLoader
+[emclip][rank=1] epoch=7 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=7 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=7 step=0/55 loss=1.3976 loss_mg=1.3526 loss_mg_mv2text=1.4309 loss_mg_text2mv=1.2743 loss_me=0.0450 acc1=100.00 acc5=100.00 lr=0.00000697 grad_norm=67.3110 entropy=0.6794 selected_mean=6.45 unique_gops=6.31 valid_candidates=6.88 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=7 step=10/55 loss=2.4267 loss_mg=2.4178 loss_mg_mv2text=2.4053 loss_mg_text2mv=2.4304 loss_me=0.0088 acc1=99.43 acc5=100.00 lr=0.00000692 grad_norm=53.4101 entropy=0.9003 selected_mean=6.11 unique_gops=6.36 valid_candidates=7.41 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=7 step=20/55 loss=1.7007 loss_mg=1.4128 loss_mg_mv2text=1.3734 loss_mg_text2mv=1.4523 loss_me=0.2878 acc1=98.21 acc5=100.00 lr=0.00000687 grad_norm=50.7680 entropy=0.8908 selected_mean=6.26 unique_gops=6.37 valid_candidates=7.56 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=7 step=30/55 loss=2.2513 loss_mg=2.2510 loss_mg_mv2text=2.2824 loss_mg_text2mv=2.2196 loss_me=0.0003 acc1=97.98 acc5=100.00 lr=0.00000681 grad_norm=67.5578 entropy=0.9015 selected_mean=6.02 unique_gops=6.45 valid_candidates=7.60 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=7 step=40/55 loss=1.9825 loss_mg=1.9658 loss_mg_mv2text=2.1201 loss_mg_text2mv=1.8116 loss_me=0.0166 acc1=98.17 acc5=100.00 lr=0.00000676 grad_norm=68.5938 entropy=0.8893 selected_mean=6.59 unique_gops=6.47 valid_candidates=7.68 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=7 step=50/55 loss=0.8714 loss_mg=0.8603 loss_mg_mv2text=0.8807 loss_mg_text2mv=0.8399 loss_me=0.0111 acc1=98.04 acc5=100.00 lr=0.00000670 grad_norm=52.6363 entropy=0.8830 selected_mean=6.48 unique_gops=6.51 valid_candidates=7.80 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=7 train={'loss': 1.7459392124956303, 'loss_mg': 1.6747831106185913, 'loss_mg_mv2text': 1.674549901485443, 'loss_mg_text2mv': 1.6750163181261584, 'loss_me': 0.07115609978513517, 'acc1': 98.01136363636364, 'acc5': 99.91477272727273, 'mgse_saliency_entropy': 0.8872242147272283, 'selected_unique_gops': 6.515056818181818, 'valid_candidates': 7.765056818181818, 'amp_skipped_steps': 0, 'seconds': 169.26337051391602, 'global_videos_per_second': 20.79599377770043, 'global_candidate_gops_per_second': 332.7359004432069} val={'val_acc1': 68.62745098039215, 'val_acc5': 93.52941176470588, 'val_loss_me': 1.3870449116977017, 'val_seconds': 24.925212860107422, 'val_global_videos_per_second': 61.38362823969103}
+[emclip][rank=2] epoch=8 entering DataLoader
+[emclip][rank=3] epoch=8 entering DataLoader
+[emclip][rank=1] epoch=8 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=8 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=8 step=0/55 loss=1.8153 loss_mg=1.8109 loss_mg_mv2text=1.9379 loss_mg_text2mv=1.6840 loss_me=0.0044 acc1=100.00 acc5=100.00 lr=0.00000668 grad_norm=60.1329 entropy=1.0730 selected_mean=6.70 unique_gops=6.88 valid_candidates=8.12 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=8 step=10/55 loss=2.0919 loss_mg=2.0905 loss_mg_mv2text=2.1994 loss_mg_text2mv=1.9816 loss_me=0.0014 acc1=99.43 acc5=100.00 lr=0.00000662 grad_norm=45.1992 entropy=0.8846 selected_mean=7.07 unique_gops=6.64 valid_candidates=8.07 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=8 step=20/55 loss=1.7867 loss_mg=1.7586 loss_mg_mv2text=1.7125 loss_mg_text2mv=1.8047 loss_me=0.0281 acc1=99.70 acc5=100.00 lr=0.00000656 grad_norm=46.5187 entropy=0.8799 selected_mean=6.94 unique_gops=6.64 valid_candidates=7.87 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=8 step=30/55 loss=1.6024 loss_mg=1.5970 loss_mg_mv2text=1.5696 loss_mg_text2mv=1.6245 loss_me=0.0054 acc1=99.60 acc5=100.00 lr=0.00000650 grad_norm=58.9157 entropy=0.8745 selected_mean=6.73 unique_gops=6.61 valid_candidates=7.95 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=8 step=40/55 loss=1.8777 loss_mg=1.8403 loss_mg_mv2text=1.8778 loss_mg_text2mv=1.8029 loss_me=0.0374 acc1=99.70 acc5=100.00 lr=0.00000644 grad_norm=58.8980 entropy=0.8604 selected_mean=6.59 unique_gops=6.57 valid_candidates=7.74 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=8 step=50/55 loss=1.7890 loss_mg=1.7157 loss_mg_mv2text=1.8432 loss_mg_text2mv=1.5882 loss_me=0.0733 acc1=99.51 acc5=100.00 lr=0.00000638 grad_norm=49.5822 entropy=0.8621 selected_mean=7.00 unique_gops=6.55 valid_candidates=7.71 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=8 train={'loss': 1.5796746169978921, 'loss_mg': 1.5498129923235286, 'loss_mg_mv2text': 1.541642020236362, 'loss_mg_text2mv': 1.5579839665781368, 'loss_me': 0.029861625693526798, 'acc1': 99.23295454545455, 'acc5': 100.0, 'mgse_saliency_entropy': 0.872855710441416, 'selected_unique_gops': 6.5125, 'valid_candidates': 7.759659090909091, 'amp_skipped_steps': 0, 'seconds': 170.7064666748047, 'global_videos_per_second': 20.620191305966102, 'global_candidate_gops_per_second': 329.92306089545764} val={'val_acc1': 68.82352941176471, 'val_acc5': 93.66013071895425, 'val_loss_me': 1.549870368211037, 'val_seconds': 24.335757970809937, 'val_global_videos_per_second': 62.87044775162509}
+[emclip][rank=1] epoch=9 entering DataLoader
+[emclip][rank=2] epoch=9 entering DataLoader
+[emclip][rank=3] epoch=9 entering DataLoader
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=9 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=9 step=0/55 loss=1.6361 loss_mg=1.5352 loss_mg_mv2text=1.5198 loss_mg_text2mv=1.5506 loss_me=0.1009 acc1=93.75 acc5=100.00 lr=0.00000635 grad_norm=52.7679 entropy=0.8318 selected_mean=7.10 unique_gops=6.19 valid_candidates=7.69 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=9 step=10/55 loss=1.2857 loss_mg=1.2800 loss_mg_mv2text=1.1843 loss_mg_text2mv=1.3757 loss_me=0.0057 acc1=98.30 acc5=100.00 lr=0.00000629 grad_norm=47.6389 entropy=0.8923 selected_mean=7.17 unique_gops=6.59 valid_candidates=7.95 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=9 step=20/55 loss=1.5409 loss_mg=1.5317 loss_mg_mv2text=1.2728 loss_mg_text2mv=1.7906 loss_me=0.0092 acc1=98.51 acc5=100.00 lr=0.00000623 grad_norm=62.3628 entropy=0.8534 selected_mean=6.95 unique_gops=6.61 valid_candidates=8.01 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=9 step=30/55 loss=1.2831 loss_mg=1.2528 loss_mg_mv2text=1.1143 loss_mg_text2mv=1.3914 loss_me=0.0303 acc1=98.39 acc5=100.00 lr=0.00000616 grad_norm=50.6352 entropy=0.8578 selected_mean=6.60 unique_gops=6.51 valid_candidates=7.88 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=9 step=40/55 loss=1.2556 loss_mg=1.2521 loss_mg_mv2text=1.0394 loss_mg_text2mv=1.4649 loss_me=0.0035 acc1=98.32 acc5=100.00 lr=0.00000610 grad_norm=55.5504 entropy=0.8679 selected_mean=6.56 unique_gops=6.54 valid_candidates=7.85 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=9 step=50/55 loss=1.4038 loss_mg=1.3626 loss_mg_mv2text=1.3196 loss_mg_text2mv=1.4056 loss_me=0.0412 acc1=98.53 acc5=100.00 lr=0.00000603 grad_norm=63.8725 entropy=0.8662 selected_mean=7.16 unique_gops=6.55 valid_candidates=7.86 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=9 train={'loss': 1.4575449358333241, 'loss_mg': 1.4157839040864597, 'loss_mg_mv2text': 1.3932804958386855, 'loss_mg_text2mv': 1.4382873166691172, 'loss_me': 0.041761030864224516, 'acc1': 98.86363636363636, 'acc5': 99.9715909090909, 'mgse_saliency_entropy': 0.855760460821065, 'selected_unique_gops': 6.507954545454545, 'valid_candidates': 7.751420454545454, 'amp_skipped_steps': 0, 'seconds': 172.5999825000763, 'global_videos_per_second': 20.393976575278298, 'global_candidate_gops_per_second': 326.30362520445277} val={'val_acc1': 67.3202614379085, 'val_acc5': 92.48366013071896, 'val_loss_me': 1.5427946015449814, 'val_seconds': 23.944731950759888, 'val_global_videos_per_second': 63.897144605598534}
+[emclip][rank=1] epoch=10 entering DataLoader
+[emclip][rank=3] epoch=10 entering DataLoader
+[emclip][rank=2] epoch=10 entering DataLoader
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=10 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=10 step=0/55 loss=1.7163 loss_mg=1.5878 loss_mg_mv2text=1.6205 loss_mg_text2mv=1.5551 loss_me=0.1285 acc1=93.75 acc5=100.00 lr=0.00000600 grad_norm=57.1371 entropy=0.9429 selected_mean=6.49 unique_gops=6.38 valid_candidates=8.06 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=10 step=10/55 loss=1.1090 loss_mg=1.0932 loss_mg_mv2text=1.1990 loss_mg_text2mv=0.9873 loss_me=0.0158 acc1=98.30 acc5=100.00 lr=0.00000593 grad_norm=52.3324 entropy=0.8318 selected_mean=6.70 unique_gops=6.29 valid_candidates=7.47 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=10 step=20/55 loss=1.1072 loss_mg=1.1018 loss_mg_mv2text=1.0873 loss_mg_text2mv=1.1164 loss_me=0.0053 acc1=98.21 acc5=100.00 lr=0.00000587 grad_norm=51.5311 entropy=0.8355 selected_mean=7.44 unique_gops=6.35 valid_candidates=7.52 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=10 step=30/55 loss=1.2860 loss_mg=1.2813 loss_mg_mv2text=1.1173 loss_mg_text2mv=1.4452 loss_me=0.0047 acc1=98.79 acc5=100.00 lr=0.00000580 grad_norm=47.1533 entropy=0.8507 selected_mean=6.14 unique_gops=6.39 valid_candidates=7.58 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=10 step=40/55 loss=1.2146 loss_mg=1.2080 loss_mg_mv2text=1.3096 loss_mg_text2mv=1.1063 loss_me=0.0067 acc1=98.63 acc5=100.00 lr=0.00000573 grad_norm=38.8707 entropy=0.8620 selected_mean=6.51 unique_gops=6.41 valid_candidates=7.57 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=10 step=50/55 loss=1.4112 loss_mg=1.4070 loss_mg_mv2text=1.4284 loss_mg_text2mv=1.3855 loss_me=0.0042 acc1=98.90 acc5=100.00 lr=0.00000566 grad_norm=48.4384 entropy=0.8711 selected_mean=6.27 unique_gops=6.43 valid_candidates=7.61 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=10 train={'loss': 1.3754192425446077, 'loss_mg': 1.3453281936320391, 'loss_mg_mv2text': 1.3221572147174314, 'loss_mg_text2mv': 1.368499171462926, 'loss_me': 0.030091046955732798, 'acc1': 99.0909090909091, 'acc5': 100.0, 'mgse_saliency_entropy': 0.8617974446578459, 'selected_unique_gops': 6.509943181818182, 'valid_candidates': 7.754261363636363, 'amp_skipped_steps': 0, 'seconds': 172.00640392303467, 'global_videos_per_second': 20.464354347963962, 'global_candidate_gops_per_second': 327.4296695674234} val={'val_acc1': 68.49673202614379, 'val_acc5': 93.52941176470588, 'val_loss_me': 1.5433780366355505, 'val_seconds': 23.499732971191406, 'val_global_videos_per_second': 65.10712278627355}
+[emclip][rank=1] epoch=11 entering DataLoader
+[emclip][rank=2] epoch=11 entering DataLoader
+[emclip][rank=3] epoch=11 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=11 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=11 step=0/55 loss=1.0308 loss_mg=1.0206 loss_mg_mv2text=0.8550 loss_mg_text2mv=1.1863 loss_me=0.0102 acc1=100.00 acc5=100.00 lr=0.00000563 grad_norm=47.9211 entropy=0.6513 selected_mean=6.09 unique_gops=6.00 valid_candidates=7.50 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=11 step=10/55 loss=1.8271 loss_mg=1.8236 loss_mg_mv2text=2.0768 loss_mg_text2mv=1.5704 loss_me=0.0035 acc1=98.30 acc5=100.00 lr=0.00000556 grad_norm=56.4992 entropy=0.8369 selected_mean=6.60 unique_gops=6.31 valid_candidates=7.48 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=11 step=20/55 loss=1.1328 loss_mg=1.0873 loss_mg_mv2text=1.0323 loss_mg_text2mv=1.1422 loss_me=0.0455 acc1=99.11 acc5=100.00 lr=0.00000549 grad_norm=53.4931 entropy=0.8131 selected_mean=6.68 unique_gops=6.40 valid_candidates=7.55 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=11 step=30/55 loss=1.4592 loss_mg=1.4513 loss_mg_mv2text=1.5500 loss_mg_text2mv=1.3526 loss_me=0.0079 acc1=99.40 acc5=100.00 lr=0.00000542 grad_norm=51.8476 entropy=0.8312 selected_mean=6.98 unique_gops=6.43 valid_candidates=7.67 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=11 step=40/55 loss=1.1216 loss_mg=1.0854 loss_mg_mv2text=0.9651 loss_mg_text2mv=1.2058 loss_me=0.0361 acc1=99.54 acc5=100.00 lr=0.00000534 grad_norm=47.4739 entropy=0.8411 selected_mean=6.45 unique_gops=6.47 valid_candidates=7.71 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=11 step=50/55 loss=1.6806 loss_mg=1.6771 loss_mg_mv2text=1.7814 loss_mg_text2mv=1.5728 loss_me=0.0035 acc1=99.63 acc5=100.00 lr=0.00000527 grad_norm=62.1739 entropy=0.8519 selected_mean=7.35 unique_gops=6.48 valid_candidates=7.75 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=11 train={'loss': 1.2733977843414654, 'loss_mg': 1.2524983284148303, 'loss_mg_mv2text': 1.2207398997111754, 'loss_mg_text2mv': 1.2842567619952288, 'loss_me': 0.02089945599033275, 'acc1': 99.4034090909091, 'acc5': 100.0, 'mgse_saliency_entropy': 0.8532656498930671, 'selected_unique_gops': 6.5125, 'valid_candidates': 7.767897727272727, 'amp_skipped_steps': 0, 'seconds': 178.31975412368774, 'global_videos_per_second': 19.73982084765789, 'global_candidate_gops_per_second': 315.8371335625262} val={'val_acc1': 67.97385620915033, 'val_acc5': 93.52941176470588, 'val_loss_me': 1.603114741578549, 'val_seconds': 24.544358015060425, 'val_global_videos_per_second': 62.336118103443226}
+[emclip][rank=2] epoch=12 entering DataLoader
+[emclip][rank=3] epoch=12 entering DataLoader
+[emclip][rank=1] epoch=12 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=12 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=12 step=0/55 loss=0.9632 loss_mg=0.9557 loss_mg_mv2text=0.9497 loss_mg_text2mv=0.9617 loss_me=0.0076 acc1=100.00 acc5=100.00 lr=0.00000524 grad_norm=47.9321 entropy=0.7972 selected_mean=6.59 unique_gops=6.00 valid_candidates=6.94 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=12 step=10/55 loss=0.8892 loss_mg=0.8876 loss_mg_mv2text=0.8371 loss_mg_text2mv=0.9382 loss_me=0.0015 acc1=100.00 acc5=100.00 lr=0.00000516 grad_norm=50.5171 entropy=0.8446 selected_mean=6.78 unique_gops=6.41 valid_candidates=7.57 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=12 step=20/55 loss=0.7846 loss_mg=0.7824 loss_mg_mv2text=0.7347 loss_mg_text2mv=0.8301 loss_me=0.0022 acc1=99.70 acc5=100.00 lr=0.00000509 grad_norm=58.8707 entropy=0.7995 selected_mean=7.29 unique_gops=6.38 valid_candidates=7.56 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=12 step=30/55 loss=1.6202 loss_mg=1.6161 loss_mg_mv2text=1.6430 loss_mg_text2mv=1.5892 loss_me=0.0041 acc1=99.60 acc5=100.00 lr=0.00000502 grad_norm=52.6469 entropy=0.8280 selected_mean=7.12 unique_gops=6.40 valid_candidates=7.62 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=12 step=40/55 loss=1.2442 loss_mg=1.1602 loss_mg_mv2text=1.2247 loss_mg_text2mv=1.0957 loss_me=0.0840 acc1=99.54 acc5=100.00 lr=0.00000494 grad_norm=62.4559 entropy=0.8466 selected_mean=6.45 unique_gops=6.39 valid_candidates=7.61 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=12 step=50/55 loss=1.0437 loss_mg=1.0399 loss_mg_mv2text=0.9214 loss_mg_text2mv=1.1583 loss_me=0.0038 acc1=99.51 acc5=100.00 lr=0.00000487 grad_norm=53.6140 entropy=0.8468 selected_mean=5.96 unique_gops=6.39 valid_candidates=7.57 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=12 train={'loss': 1.1527086033062501, 'loss_mg': 1.1361703718250449, 'loss_mg_mv2text': 1.0988393849947236, 'loss_mg_text2mv': 1.173501350662925, 'loss_me': 0.016538234665263604, 'acc1': 99.7159090909091, 'acc5': 100.0, 'mgse_saliency_entropy': 0.8368322800506245, 'selected_unique_gops': 6.5107954545454545, 'valid_candidates': 7.757670454545455, 'amp_skipped_steps': 0, 'seconds': 172.29369497299194, 'global_videos_per_second': 20.43023106882571, 'global_candidate_gops_per_second': 326.88369710121134} val={'val_acc1': 68.88888888888889, 'val_acc5': 92.87581699346406, 'val_loss_me': 1.6048320579036288, 'val_seconds': 23.86892056465149, 'val_global_videos_per_second': 64.10009182676835}
+[emclip][rank=1] epoch=13 entering DataLoader
+[emclip][rank=2] epoch=13 entering DataLoader
+[emclip][rank=3] epoch=13 entering DataLoader
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=13 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=13 step=0/55 loss=0.6675 loss_mg=0.6642 loss_mg_mv2text=0.5924 loss_mg_text2mv=0.7361 loss_me=0.0033 acc1=100.00 acc5=100.00 lr=0.00000483 grad_norm=62.0409 entropy=0.7799 selected_mean=7.10 unique_gops=6.38 valid_candidates=7.69 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=13 step=10/55 loss=0.5788 loss_mg=0.5786 loss_mg_mv2text=0.5590 loss_mg_text2mv=0.5981 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000476 grad_norm=47.9625 entropy=0.8581 selected_mean=6.41 unique_gops=6.79 valid_candidates=8.15 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=13 step=20/55 loss=0.8529 loss_mg=0.8522 loss_mg_mv2text=0.7103 loss_mg_text2mv=0.9942 loss_me=0.0007 acc1=99.70 acc5=100.00 lr=0.00000468 grad_norm=58.5973 entropy=0.8537 selected_mean=6.36 unique_gops=6.58 valid_candidates=7.78 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=13 step=30/55 loss=1.1185 loss_mg=0.8714 loss_mg_mv2text=0.7452 loss_mg_text2mv=0.9976 loss_me=0.2471 acc1=99.40 acc5=100.00 lr=0.00000461 grad_norm=63.9083 entropy=0.8512 selected_mean=6.94 unique_gops=6.61 valid_candidates=7.80 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=13 step=40/55 loss=0.9747 loss_mg=0.9560 loss_mg_mv2text=0.8659 loss_mg_text2mv=1.0462 loss_me=0.0187 acc1=99.39 acc5=100.00 lr=0.00000453 grad_norm=52.3682 entropy=0.8612 selected_mean=6.68 unique_gops=6.62 valid_candidates=7.91 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=13 step=50/55 loss=0.9369 loss_mg=0.9353 loss_mg_mv2text=0.7576 loss_mg_text2mv=1.1130 loss_me=0.0015 acc1=99.39 acc5=100.00 lr=0.00000446 grad_norm=56.7155 entropy=0.8405 selected_mean=6.44 unique_gops=6.57 valid_candidates=7.84 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=13 train={'loss': 1.0691976051438938, 'loss_mg': 1.0518645778298379, 'loss_mg_mv2text': 1.0074079505421898, 'loss_mg_text2mv': 1.0963212083686482, 'loss_me': 0.017333027247051096, 'acc1': 99.4034090909091, 'acc5': 100.0, 'mgse_saliency_entropy': 0.8262518240646882, 'selected_unique_gops': 6.509659090909091, 'valid_candidates': 7.751988636363636, 'amp_skipped_steps': 0, 'seconds': 170.42826318740845, 'global_videos_per_second': 20.653851269547317, 'global_candidate_gops_per_second': 330.4616203127571} val={'val_acc1': 69.41176470588235, 'val_acc5': 93.0718954248366, 'val_loss_me': 1.6967517287226916, 'val_seconds': 24.04127550125122, 'val_global_videos_per_second': 63.6405501829706}
+[emclip][rank=2] epoch=14 entering DataLoader
+[emclip][rank=1] epoch=14 entering DataLoader
+[emclip][rank=3] epoch=14 entering DataLoader
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=14 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=14 step=0/55 loss=0.6490 loss_mg=0.6479 loss_mg_mv2text=0.5131 loss_mg_text2mv=0.7827 loss_me=0.0011 acc1=100.00 acc5=100.00 lr=0.00000442 grad_norm=46.0490 entropy=0.5445 selected_mean=6.52 unique_gops=6.12 valid_candidates=6.38 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=14 step=10/55 loss=0.5709 loss_mg=0.5694 loss_mg_mv2text=0.4520 loss_mg_text2mv=0.6868 loss_me=0.0015 acc1=100.00 acc5=100.00 lr=0.00000434 grad_norm=45.1108 entropy=0.7503 selected_mean=6.37 unique_gops=6.55 valid_candidates=7.89 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=14 step=20/55 loss=1.2001 loss_mg=1.1981 loss_mg_mv2text=1.2308 loss_mg_text2mv=1.1654 loss_me=0.0019 acc1=99.70 acc5=100.00 lr=0.00000427 grad_norm=57.0531 entropy=0.7509 selected_mean=6.59 unique_gops=6.53 valid_candidates=7.72 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=14 step=30/55 loss=1.1534 loss_mg=1.1531 loss_mg_mv2text=1.1426 loss_mg_text2mv=1.1636 loss_me=0.0003 acc1=99.80 acc5=100.00 lr=0.00000419 grad_norm=50.2002 entropy=0.7801 selected_mean=6.42 unique_gops=6.51 valid_candidates=7.75 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=14 step=40/55 loss=0.9530 loss_mg=0.9423 loss_mg_mv2text=1.0179 loss_mg_text2mv=0.8668 loss_me=0.0107 acc1=99.85 acc5=100.00 lr=0.00000411 grad_norm=39.7754 entropy=0.7999 selected_mean=6.15 unique_gops=6.53 valid_candidates=7.83 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=14 step=50/55 loss=1.0388 loss_mg=0.9663 loss_mg_mv2text=0.8301 loss_mg_text2mv=1.1025 loss_me=0.0725 acc1=99.75 acc5=100.00 lr=0.00000404 grad_norm=58.2050 entropy=0.8020 selected_mean=6.23 unique_gops=6.51 valid_candidates=7.79 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=14 train={'loss': 0.9763047814369201, 'loss_mg': 0.9622062070803209, 'loss_mg_mv2text': 0.909589918364178, 'loss_mg_text2mv': 1.014822497422045, 'loss_me': 0.014098573145946086, 'acc1': 99.60227272727273, 'acc5': 100.0, 'mgse_saliency_entropy': 0.8134747361594981, 'selected_unique_gops': 6.507954545454545, 'valid_candidates': 7.7548295454545455, 'amp_skipped_steps': 0, 'seconds': 169.28200793266296, 'global_videos_per_second': 20.793704203935167, 'global_candidate_gops_per_second': 332.6992672629627} val={'val_acc1': 68.69281045751634, 'val_acc5': 93.00653594771242, 'val_loss_me': 1.6711693540552564, 'val_seconds': 25.291608810424805, 'val_global_videos_per_second': 60.494372321991555}
+[emclip][rank=2] epoch=15 entering DataLoader
+[emclip][rank=3] epoch=15 entering DataLoader
+[emclip][rank=1] epoch=15 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=15 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=15 step=0/55 loss=1.0332 loss_mg=1.0323 loss_mg_mv2text=0.8959 loss_mg_text2mv=1.1688 loss_me=0.0009 acc1=100.00 acc5=100.00 lr=0.00000400 grad_norm=53.0866 entropy=0.8170 selected_mean=6.78 unique_gops=6.88 valid_candidates=8.31 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=15 step=10/55 loss=0.5696 loss_mg=0.5668 loss_mg_mv2text=0.3859 loss_mg_text2mv=0.7477 loss_me=0.0028 acc1=100.00 acc5=100.00 lr=0.00000392 grad_norm=48.2455 entropy=0.8022 selected_mean=6.24 unique_gops=6.45 valid_candidates=7.26 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=15 step=20/55 loss=0.9835 loss_mg=0.9825 loss_mg_mv2text=1.0273 loss_mg_text2mv=0.9377 loss_me=0.0010 acc1=99.70 acc5=100.00 lr=0.00000385 grad_norm=64.6372 entropy=0.8021 selected_mean=6.66 unique_gops=6.49 valid_candidates=7.57 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=15 step=30/55 loss=0.9652 loss_mg=0.8786 loss_mg_mv2text=0.7925 loss_mg_text2mv=0.9647 loss_me=0.0866 acc1=99.40 acc5=100.00 lr=0.00000377 grad_norm=54.7683 entropy=0.8086 selected_mean=6.68 unique_gops=6.47 valid_candidates=7.52 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=15 step=40/55 loss=0.7485 loss_mg=0.7462 loss_mg_mv2text=0.7037 loss_mg_text2mv=0.7888 loss_me=0.0022 acc1=99.39 acc5=100.00 lr=0.00000370 grad_norm=39.2376 entropy=0.8010 selected_mean=6.65 unique_gops=6.44 valid_candidates=7.44 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=15 step=50/55 loss=0.6912 loss_mg=0.6861 loss_mg_mv2text=0.7113 loss_mg_text2mv=0.6610 loss_me=0.0051 acc1=99.51 acc5=100.00 lr=0.00000362 grad_norm=72.9238 entropy=0.8110 selected_mean=6.91 unique_gops=6.44 valid_candidates=7.54 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=15 train={'loss': 0.9037830072370443, 'loss_mg': 0.8943916721777483, 'loss_mg_mv2text': 0.8374921656467698, 'loss_mg_text2mv': 0.9512911849401214, 'loss_me': 0.009391336311149313, 'acc1': 99.7159090909091, 'acc5': 100.0, 'mgse_saliency_entropy': 0.8100606553933837, 'selected_unique_gops': 6.506818181818182, 'valid_candidates': 7.753693181818182, 'amp_skipped_steps': 0, 'seconds': 174.57224559783936, 'global_videos_per_second': 20.16357175188658, 'global_candidate_gops_per_second': 322.61714803018526} val={'val_acc1': 68.03921568627452, 'val_acc5': 93.39869281045752, 'val_loss_me': 1.85684037513376, 'val_seconds': 24.422950267791748, 'val_global_videos_per_second': 62.6459941663034}
+[emclip][rank=1] epoch=16 entering DataLoader
+[emclip][rank=3] epoch=16 entering DataLoader
+[emclip][rank=2] epoch=16 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=16 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=16 step=0/55 loss=1.1499 loss_mg=1.1492 loss_mg_mv2text=1.1992 loss_mg_text2mv=1.0992 loss_me=0.0006 acc1=100.00 acc5=100.00 lr=0.00000358 grad_norm=52.5723 entropy=0.9310 selected_mean=7.02 unique_gops=6.62 valid_candidates=8.12 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=16 step=10/55 loss=0.5176 loss_mg=0.5175 loss_mg_mv2text=0.4170 loss_mg_text2mv=0.6179 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000351 grad_norm=57.3132 entropy=0.7880 selected_mean=6.60 unique_gops=6.27 valid_candidates=7.23 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=16 step=20/55 loss=0.5580 loss_mg=0.5554 loss_mg_mv2text=0.6151 loss_mg_text2mv=0.4956 loss_me=0.0026 acc1=100.00 acc5=100.00 lr=0.00000343 grad_norm=43.4495 entropy=0.7895 selected_mean=6.15 unique_gops=6.36 valid_candidates=7.25 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=16 step=30/55 loss=0.8332 loss_mg=0.8319 loss_mg_mv2text=0.8377 loss_mg_text2mv=0.8261 loss_me=0.0013 acc1=100.00 acc5=100.00 lr=0.00000336 grad_norm=48.1458 entropy=0.7990 selected_mean=5.89 unique_gops=6.39 valid_candidates=7.40 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=16 step=40/55 loss=0.8131 loss_mg=0.8128 loss_mg_mv2text=0.7574 loss_mg_text2mv=0.8681 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000328 grad_norm=51.8296 entropy=0.8020 selected_mean=6.85 unique_gops=6.38 valid_candidates=7.44 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=16 step=50/55 loss=1.0041 loss_mg=1.0034 loss_mg_mv2text=0.8589 loss_mg_text2mv=1.1480 loss_me=0.0006 acc1=100.00 acc5=100.00 lr=0.00000321 grad_norm=42.7320 entropy=0.8104 selected_mean=7.18 unique_gops=6.43 valid_candidates=7.53 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=16 train={'loss': 0.8387604246085341, 'loss_mg': 0.8342000007629394, 'loss_mg_mv2text': 0.7717942050912163, 'loss_mg_text2mv': 0.8966057920997793, 'loss_me': 0.004560421043970564, 'acc1': 99.88636363636364, 'acc5': 100.0, 'mgse_saliency_entropy': 0.8168107351118868, 'selected_unique_gops': 6.517329545454546, 'valid_candidates': 7.772159090909091, 'amp_skipped_steps': 0, 'seconds': 171.69659113883972, 'global_videos_per_second': 20.501280640764776, 'global_candidate_gops_per_second': 328.0204902522364} val={'val_acc1': 70.06535947712419, 'val_acc5': 92.22222222222223, 'val_loss_me': 1.9416745109513274, 'val_seconds': 24.41375470161438, 'val_global_videos_per_second': 62.66959010196115}
+[emclip][rank=1] epoch=17 entering DataLoader
+[emclip][rank=2] epoch=17 entering DataLoader
+[emclip][rank=3] epoch=17 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=17 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=17 step=0/55 loss=0.8439 loss_mg=0.8432 loss_mg_mv2text=0.8343 loss_mg_text2mv=0.8522 loss_me=0.0007 acc1=100.00 acc5=100.00 lr=0.00000317 grad_norm=57.9610 entropy=0.4986 selected_mean=6.04 unique_gops=6.38 valid_candidates=7.75 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=17 step=10/55 loss=0.7240 loss_mg=0.7236 loss_mg_mv2text=0.5924 loss_mg_text2mv=0.8547 loss_me=0.0004 acc1=100.00 acc5=100.00 lr=0.00000309 grad_norm=45.5660 entropy=0.7480 selected_mean=6.93 unique_gops=6.45 valid_candidates=7.64 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=17 step=20/55 loss=0.8360 loss_mg=0.8348 loss_mg_mv2text=0.7628 loss_mg_text2mv=0.9067 loss_me=0.0012 acc1=100.00 acc5=100.00 lr=0.00000302 grad_norm=48.9610 entropy=0.7693 selected_mean=7.12 unique_gops=6.51 valid_candidates=7.70 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+epoch=17 step=30/55 loss=1.0942 loss_mg=1.0775 loss_mg_mv2text=1.0864 loss_mg_text2mv=1.0687 loss_me=0.0167 acc1=100.00 acc5=100.00 lr=0.00000295 grad_norm=53.2750 entropy=0.7606 selected_mean=6.34 unique_gops=6.48 valid_candidates=7.52 classification_scale=100.0000 max_mem=61878MB amp_scale=512.0 amp_skips=0
+[emclip][amp] skipped optimizer step epoch=17 step=32 scale=512.0->256.0 consecutive=1 bad=['text_encoder.positional_embedding', 'text_encoder.text_projection', 'text_encoder.token_embedding.weight', 'text_encoder.blocks.0.ln_1.weight', 'text_encoder.blocks.0.ln_1.bias']
+epoch=17 step=40/55 loss=0.7034 loss_mg=0.7033 loss_mg_mv2text=0.6756 loss_mg_text2mv=0.7309 loss_me=0.0002 acc1=99.85 acc5=100.00 lr=0.00000288 grad_norm=48.4906 entropy=0.7794 selected_mean=6.84 unique_gops=6.46 valid_candidates=7.52 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=1
+epoch=17 step=50/55 loss=0.6030 loss_mg=0.6029 loss_mg_mv2text=0.5623 loss_mg_text2mv=0.6436 loss_me=0.0001 acc1=99.88 acc5=100.00 lr=0.00000281 grad_norm=47.3181 entropy=0.7667 selected_mean=5.62 unique_gops=6.43 valid_candidates=7.52 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=1
+epoch=17 train={'loss': 0.7736788248473948, 'loss_mg': 0.7688664063811302, 'loss_mg_mv2text': 0.7118280627510765, 'loss_mg_text2mv': 0.8259047506885095, 'loss_me': 0.00481241966519354, 'acc1': 99.91477272727273, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7994273995811289, 'selected_unique_gops': 6.515909090909091, 'valid_candidates': 7.7690340909090905, 'amp_skipped_steps': 1, 'seconds': 168.67915081977844, 'global_videos_per_second': 20.86802063499162, 'global_candidate_gops_per_second': 333.8883301598659} val={'val_acc1': 69.86928104575163, 'val_acc5': 92.22222222222223, 'val_loss_me': 1.9614248141172543, 'val_seconds': 24.572467803955078, 'val_global_videos_per_second': 62.26480841105173}
+[emclip][rank=3] epoch=18 entering DataLoader
+[emclip][rank=1] epoch=18 entering DataLoader
+[emclip][rank=2] epoch=18 entering DataLoader
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=18 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=18 step=0/55 loss=0.6644 loss_mg=0.6641 loss_mg_mv2text=0.5768 loss_mg_text2mv=0.7515 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000277 grad_norm=52.6200 entropy=0.9043 selected_mean=6.69 unique_gops=7.00 valid_candidates=9.12 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=18 step=10/55 loss=0.7885 loss_mg=0.7874 loss_mg_mv2text=0.7741 loss_mg_text2mv=0.8007 loss_me=0.0011 acc1=100.00 acc5=100.00 lr=0.00000270 grad_norm=44.8275 entropy=0.8551 selected_mean=6.19 unique_gops=6.38 valid_candidates=7.91 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=18 step=20/55 loss=1.0725 loss_mg=1.0724 loss_mg_mv2text=0.8075 loss_mg_text2mv=1.3373 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000263 grad_norm=72.0070 entropy=0.8043 selected_mean=6.97 unique_gops=6.44 valid_candidates=7.80 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=18 step=30/55 loss=0.5993 loss_mg=0.4774 loss_mg_mv2text=0.4762 loss_mg_text2mv=0.4786 loss_me=0.1219 acc1=99.80 acc5=100.00 lr=0.00000256 grad_norm=63.0283 entropy=0.8041 selected_mean=5.95 unique_gops=6.50 valid_candidates=7.93 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=18 step=40/55 loss=0.6168 loss_mg=0.6147 loss_mg_mv2text=0.6392 loss_mg_text2mv=0.5901 loss_me=0.0022 acc1=99.85 acc5=100.00 lr=0.00000249 grad_norm=47.3965 entropy=0.8063 selected_mean=6.59 unique_gops=6.49 valid_candidates=7.86 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=18 step=50/55 loss=0.5065 loss_mg=0.5051 loss_mg_mv2text=0.2735 loss_mg_text2mv=0.7366 loss_me=0.0014 acc1=99.88 acc5=100.00 lr=0.00000241 grad_norm=55.7418 entropy=0.8091 selected_mean=6.85 unique_gops=6.49 valid_candidates=7.86 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=18 train={'loss': 0.7158935355869207, 'loss_mg': 0.7090348927812142, 'loss_mg_mv2text': 0.6393721497194333, 'loss_mg_text2mv': 0.7786976357752626, 'loss_me': 0.006858643284249411, 'acc1': 99.80113636363636, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7909394491802563, 'selected_unique_gops': 6.5071022727272725, 'valid_candidates': 7.750284090909091, 'amp_skipped_steps': 0, 'seconds': 164.82265615463257, 'global_videos_per_second': 21.356287309783568, 'global_candidate_gops_per_second': 341.7005969565371} val={'val_acc1': 68.49673202614379, 'val_acc5': 92.87581699346406, 'val_loss_me': 1.9196101792922147, 'val_seconds': 24.218225240707397, 'val_global_videos_per_second': 63.17556240365158}
+[emclip][rank=3] epoch=19 entering DataLoader
+[emclip][rank=2] epoch=19 entering DataLoader
+[emclip][rank=1] epoch=19 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=19 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=19 step=0/55 loss=0.8272 loss_mg=0.8267 loss_mg_mv2text=0.8488 loss_mg_text2mv=0.8047 loss_me=0.0005 acc1=100.00 acc5=100.00 lr=0.00000238 grad_norm=53.0995 entropy=0.5223 selected_mean=7.00 unique_gops=6.00 valid_candidates=6.62 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=19 step=10/55 loss=0.7136 loss_mg=0.7129 loss_mg_mv2text=0.4383 loss_mg_text2mv=0.9876 loss_me=0.0006 acc1=100.00 acc5=100.00 lr=0.00000231 grad_norm=53.4005 entropy=0.6885 selected_mean=6.63 unique_gops=6.39 valid_candidates=7.32 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=19 step=20/55 loss=0.5116 loss_mg=0.5107 loss_mg_mv2text=0.3647 loss_mg_text2mv=0.6567 loss_me=0.0009 acc1=99.70 acc5=100.00 lr=0.00000224 grad_norm=53.3643 entropy=0.7561 selected_mean=7.00 unique_gops=6.46 valid_candidates=7.75 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=19 step=30/55 loss=0.5002 loss_mg=0.4976 loss_mg_mv2text=0.2486 loss_mg_text2mv=0.7465 loss_me=0.0026 acc1=99.80 acc5=100.00 lr=0.00000217 grad_norm=49.4217 entropy=0.7664 selected_mean=6.50 unique_gops=6.46 valid_candidates=7.93 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=19 step=40/55 loss=0.4176 loss_mg=0.4174 loss_mg_mv2text=0.3628 loss_mg_text2mv=0.4719 loss_me=0.0002 acc1=99.85 acc5=100.00 lr=0.00000211 grad_norm=41.2070 entropy=0.7492 selected_mean=6.23 unique_gops=6.41 valid_candidates=7.74 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=19 step=50/55 loss=0.7747 loss_mg=0.7745 loss_mg_mv2text=0.7240 loss_mg_text2mv=0.8249 loss_me=0.0002 acc1=99.88 acc5=100.00 lr=0.00000204 grad_norm=48.0042 entropy=0.7584 selected_mean=6.80 unique_gops=6.43 valid_candidates=7.73 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=19 train={'loss': 0.6427199705080553, 'loss_mg': 0.6384264653379267, 'loss_mg_mv2text': 0.5710724670778621, 'loss_mg_text2mv': 0.7057804650881073, 'loss_me': 0.0042935054659623845, 'acc1': 99.85795454545455, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7779876133257693, 'selected_unique_gops': 6.5130681818181815, 'valid_candidates': 7.761647727272727, 'amp_skipped_steps': 0, 'seconds': 164.352609872818, 'global_videos_per_second': 21.41736600790157, 'global_candidate_gops_per_second': 342.6778561264251} val={'val_acc1': 70.19607843137256, 'val_acc5': 93.20261437908496, 'val_loss_me': 1.9978590774261795, 'val_seconds': 24.317906856536865, 'val_global_videos_per_second': 62.9165992380106}
+[emclip][rank=3] epoch=20 entering DataLoader
+[emclip][rank=2] epoch=20 entering DataLoader
+[emclip][rank=1] epoch=20 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=20 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=20 step=0/55 loss=0.5693 loss_mg=0.5691 loss_mg_mv2text=0.5384 loss_mg_text2mv=0.5998 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000201 grad_norm=45.8959 entropy=0.8162 selected_mean=7.18 unique_gops=6.56 valid_candidates=6.81 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=20 step=10/55 loss=0.6826 loss_mg=0.6820 loss_mg_mv2text=0.5698 loss_mg_text2mv=0.7942 loss_me=0.0006 acc1=100.00 acc5=100.00 lr=0.00000194 grad_norm=45.5125 entropy=0.7627 selected_mean=6.57 unique_gops=6.47 valid_candidates=7.20 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=20 step=20/55 loss=0.5489 loss_mg=0.5486 loss_mg_mv2text=0.4545 loss_mg_text2mv=0.6427 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000188 grad_norm=51.2707 entropy=0.7566 selected_mean=7.46 unique_gops=6.48 valid_candidates=7.48 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=20 step=30/55 loss=0.5105 loss_mg=0.5104 loss_mg_mv2text=0.3702 loss_mg_text2mv=0.6506 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000181 grad_norm=54.0925 entropy=0.7490 selected_mean=6.98 unique_gops=6.51 valid_candidates=7.56 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=20 step=40/55 loss=0.6609 loss_mg=0.6608 loss_mg_mv2text=0.4579 loss_mg_text2mv=0.8636 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000175 grad_norm=55.1492 entropy=0.7574 selected_mean=6.99 unique_gops=6.48 valid_candidates=7.57 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=20 step=50/55 loss=0.3992 loss_mg=0.3991 loss_mg_mv2text=0.2631 loss_mg_text2mv=0.5352 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000169 grad_norm=47.7900 entropy=0.7672 selected_mean=7.14 unique_gops=6.48 valid_candidates=7.62 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=20 train={'loss': 0.5940674539316785, 'loss_mg': 0.5909967390651053, 'loss_mg_mv2text': 0.5085659581151876, 'loss_mg_text2mv': 0.6734275244853714, 'loss_me': 0.003070713058716799, 'acc1': 99.94318181818181, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7645438107577237, 'selected_unique_gops': 6.502272727272727, 'valid_candidates': 7.7534090909090905, 'amp_skipped_steps': 0, 'seconds': 169.1451382637024, 'global_videos_per_second': 20.81053015258537, 'global_candidate_gops_per_second': 332.9684824413659} val={'val_acc1': 69.54248366013071, 'val_acc5': 92.94117647058823, 'val_loss_me': 1.989204645385335, 'val_seconds': 23.85628318786621, 'val_global_videos_per_second': 64.13404753587889}
+[emclip][rank=2] epoch=21 entering DataLoader
+[emclip][rank=1] epoch=21 entering DataLoader
+[emclip][rank=3] epoch=21 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=21 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=21 step=0/55 loss=0.3711 loss_mg=0.3710 loss_mg_mv2text=0.1771 loss_mg_text2mv=0.5650 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000166 grad_norm=49.4435 entropy=0.8185 selected_mean=6.73 unique_gops=6.12 valid_candidates=6.75 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=21 step=10/55 loss=0.5252 loss_mg=0.5250 loss_mg_mv2text=0.4802 loss_mg_text2mv=0.5698 loss_me=0.0002 acc1=99.43 acc5=100.00 lr=0.00000159 grad_norm=48.5610 entropy=0.8285 selected_mean=5.79 unique_gops=6.55 valid_candidates=7.86 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=21 step=20/55 loss=0.4903 loss_mg=0.4899 loss_mg_mv2text=0.4422 loss_mg_text2mv=0.5376 loss_me=0.0004 acc1=99.70 acc5=100.00 lr=0.00000153 grad_norm=44.2743 entropy=0.7967 selected_mean=6.41 unique_gops=6.47 valid_candidates=7.71 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=21 step=30/55 loss=0.6944 loss_mg=0.6943 loss_mg_mv2text=0.6136 loss_mg_text2mv=0.7750 loss_me=0.0001 acc1=99.80 acc5=100.00 lr=0.00000147 grad_norm=57.2425 entropy=0.7981 selected_mean=6.72 unique_gops=6.49 valid_candidates=7.71 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=21 step=40/55 loss=0.7718 loss_mg=0.7714 loss_mg_mv2text=0.7477 loss_mg_text2mv=0.7951 loss_me=0.0004 acc1=99.85 acc5=100.00 lr=0.00000142 grad_norm=58.2723 entropy=0.7865 selected_mean=6.77 unique_gops=6.52 valid_candidates=7.79 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=21 step=50/55 loss=0.8775 loss_mg=0.8774 loss_mg_mv2text=0.5840 loss_mg_text2mv=1.1708 loss_me=0.0001 acc1=99.88 acc5=100.00 lr=0.00000136 grad_norm=50.5077 entropy=0.7714 selected_mean=7.00 unique_gops=6.50 valid_candidates=7.72 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=21 train={'loss': 0.5550266687842933, 'loss_mg': 0.5505605713887648, 'loss_mg_mv2text': 0.47502755167132077, 'loss_mg_text2mv': 0.6260935894467614, 'loss_me': 0.004466097959224994, 'acc1': 99.85795454545455, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7657240394841541, 'selected_unique_gops': 6.5048295454545455, 'valid_candidates': 7.748579545454546, 'amp_skipped_steps': 0, 'seconds': 169.88645124435425, 'global_videos_per_second': 20.71972175660464, 'global_candidate_gops_per_second': 331.5155481056742} val={'val_acc1': 69.2156862745098, 'val_acc5': 93.26797385620915, 'val_loss_me': 2.0386687146080127, 'val_seconds': 24.203850984573364, 'val_global_videos_per_second': 63.213081297483}
+[emclip][rank=1] epoch=22 entering DataLoader
+[emclip][rank=3] epoch=22 entering DataLoader
+[emclip][rank=2] epoch=22 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=22 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=22 step=0/55 loss=0.5390 loss_mg=0.5387 loss_mg_mv2text=0.5083 loss_mg_text2mv=0.5690 loss_me=0.0004 acc1=100.00 acc5=100.00 lr=0.00000133 grad_norm=41.9673 entropy=0.7077 selected_mean=7.33 unique_gops=6.56 valid_candidates=6.69 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=22 step=10/55 loss=0.7790 loss_mg=0.7786 loss_mg_mv2text=0.8041 loss_mg_text2mv=0.7531 loss_me=0.0004 acc1=100.00 acc5=100.00 lr=0.00000127 grad_norm=54.1331 entropy=0.7494 selected_mean=6.60 unique_gops=6.42 valid_candidates=7.12 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=22 step=20/55 loss=0.8541 loss_mg=0.8514 loss_mg_mv2text=0.6315 loss_mg_text2mv=1.0714 loss_me=0.0027 acc1=100.00 acc5=100.00 lr=0.00000122 grad_norm=52.7908 entropy=0.7362 selected_mean=6.56 unique_gops=6.45 valid_candidates=7.38 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=22 step=30/55 loss=0.6306 loss_mg=0.6305 loss_mg_mv2text=0.5128 loss_mg_text2mv=0.7481 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000116 grad_norm=52.9581 entropy=0.7513 selected_mean=6.97 unique_gops=6.50 valid_candidates=7.47 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=22 step=40/55 loss=0.2731 loss_mg=0.2729 loss_mg_mv2text=0.2350 loss_mg_text2mv=0.3108 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000111 grad_norm=51.5196 entropy=0.7645 selected_mean=7.07 unique_gops=6.50 valid_candidates=7.58 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=22 step=50/55 loss=0.3983 loss_mg=0.3974 loss_mg_mv2text=0.3439 loss_mg_text2mv=0.4509 loss_me=0.0009 acc1=100.00 acc5=100.00 lr=0.00000106 grad_norm=54.3468 entropy=0.7747 selected_mean=6.91 unique_gops=6.54 valid_candidates=7.66 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=22 train={'loss': 0.5334746014665473, 'loss_mg': 0.5328180330043489, 'loss_mg_mv2text': 0.4539191157303073, 'loss_mg_text2mv': 0.6117169510234486, 'loss_me': 0.0006565691341847924, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7743035198612647, 'selected_unique_gops': 6.5071022727272725, 'valid_candidates': 7.7465909090909095, 'amp_skipped_steps': 0, 'seconds': 167.83970308303833, 'global_videos_per_second': 20.97239172461171, 'global_candidate_gops_per_second': 335.5582675937874} val={'val_acc1': 70.0, 'val_acc5': 92.94117647058823, 'val_loss_me': 2.0538804905577064, 'val_seconds': 24.009506464004517, 'val_global_videos_per_second': 63.72475845323199}
+[emclip][rank=1] epoch=23 entering DataLoader
+[emclip][rank=2] epoch=23 entering DataLoader
+[emclip][rank=3] epoch=23 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=23 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=23 step=0/55 loss=0.2198 loss_mg=0.2186 loss_mg_mv2text=0.1186 loss_mg_text2mv=0.3187 loss_me=0.0012 acc1=100.00 acc5=100.00 lr=0.00000103 grad_norm=33.7390 entropy=0.8009 selected_mean=6.68 unique_gops=7.00 valid_candidates=8.75 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=23 step=10/55 loss=0.6870 loss_mg=0.6869 loss_mg_mv2text=0.7019 loss_mg_text2mv=0.6719 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000098 grad_norm=48.2658 entropy=0.7478 selected_mean=6.74 unique_gops=6.47 valid_candidates=7.77 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=23 step=20/55 loss=0.3024 loss_mg=0.3023 loss_mg_mv2text=0.2422 loss_mg_text2mv=0.3625 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000093 grad_norm=39.6570 entropy=0.7628 selected_mean=6.73 unique_gops=6.57 valid_candidates=8.11 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=23 step=30/55 loss=0.6560 loss_mg=0.6560 loss_mg_mv2text=0.6412 loss_mg_text2mv=0.6707 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000088 grad_norm=57.5735 entropy=0.7642 selected_mean=6.51 unique_gops=6.56 valid_candidates=8.07 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=23 step=40/55 loss=0.2995 loss_mg=0.2986 loss_mg_mv2text=0.2080 loss_mg_text2mv=0.3891 loss_me=0.0009 acc1=100.00 acc5=100.00 lr=0.00000084 grad_norm=51.4759 entropy=0.7511 selected_mean=6.29 unique_gops=6.51 valid_candidates=7.85 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=23 step=50/55 loss=0.3889 loss_mg=0.3887 loss_mg_mv2text=0.2311 loss_mg_text2mv=0.5463 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000079 grad_norm=43.4239 entropy=0.7509 selected_mean=6.76 unique_gops=6.49 valid_candidates=7.81 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=23 train={'loss': 0.48229352418671956, 'loss_mg': 0.4819039246575399, 'loss_mg_mv2text': 0.4104636117307977, 'loss_mg_text2mv': 0.5533442370593548, 'loss_me': 0.000389601684312104, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7610646205869588, 'selected_unique_gops': 6.509375, 'valid_candidates': 7.755681818181818, 'amp_skipped_steps': 0, 'seconds': 168.84607124328613, 'global_videos_per_second': 20.847390608977328, 'global_candidate_gops_per_second': 333.55824974363725} val={'val_acc1': 70.0, 'val_acc5': 93.39869281045752, 'val_loss_me': 2.045938407330387, 'val_seconds': 24.261403799057007, 'val_global_videos_per_second': 63.06312745429298}
+[emclip][rank=2] epoch=24 entering DataLoader
+[emclip][rank=1] epoch=24 entering DataLoader
+[emclip][rank=3] epoch=24 entering DataLoader
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=24 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=24 step=0/55 loss=0.2726 loss_mg=0.2715 loss_mg_mv2text=0.1570 loss_mg_text2mv=0.3861 loss_me=0.0010 acc1=100.00 acc5=100.00 lr=0.00000077 grad_norm=34.7013 entropy=0.5553 selected_mean=6.27 unique_gops=5.94 valid_candidates=6.75 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=24 step=10/55 loss=0.2346 loss_mg=0.2346 loss_mg_mv2text=0.1589 loss_mg_text2mv=0.3103 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000072 grad_norm=48.7447 entropy=0.7142 selected_mean=6.29 unique_gops=6.54 valid_candidates=7.69 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=24 step=20/55 loss=0.3426 loss_mg=0.3426 loss_mg_mv2text=0.1088 loss_mg_text2mv=0.5763 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000068 grad_norm=46.4321 entropy=0.7569 selected_mean=6.04 unique_gops=6.51 valid_candidates=7.75 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=24 step=30/55 loss=0.4252 loss_mg=0.4252 loss_mg_mv2text=0.4669 loss_mg_text2mv=0.3835 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000064 grad_norm=57.2133 entropy=0.7431 selected_mean=6.27 unique_gops=6.51 valid_candidates=7.77 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=24 step=40/55 loss=0.5527 loss_mg=0.5527 loss_mg_mv2text=0.4882 loss_mg_text2mv=0.6172 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000060 grad_norm=43.8069 entropy=0.7547 selected_mean=6.91 unique_gops=6.55 valid_candidates=7.86 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=24 step=50/55 loss=0.3573 loss_mg=0.3572 loss_mg_mv2text=0.3215 loss_mg_text2mv=0.3930 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000056 grad_norm=42.8201 entropy=0.7522 selected_mean=6.87 unique_gops=6.53 valid_candidates=7.85 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=24 train={'loss': 0.46578590761531485, 'loss_mg': 0.4653343267061494, 'loss_mg_mv2text': 0.3894434659995816, 'loss_mg_text2mv': 0.5412251884287054, 'loss_me': 0.00045158227063149585, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7605054251172326, 'selected_unique_gops': 6.508806818181818, 'valid_candidates': 7.765056818181818, 'amp_skipped_steps': 0, 'seconds': 168.28395295143127, 'global_videos_per_second': 20.917027073971298, 'global_candidate_gops_per_second': 334.67243318354076} val={'val_acc1': 69.6078431372549, 'val_acc5': 93.59477124183006, 'val_loss_me': 2.0442355113786785, 'val_seconds': 23.477507829666138, 'val_global_videos_per_second': 65.16875688426754}
+[emclip][rank=1] epoch=25 entering DataLoader
+[emclip][rank=2] epoch=25 entering DataLoader
+[emclip][rank=3] epoch=25 entering DataLoader
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=25 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=25 step=0/55 loss=0.3841 loss_mg=0.3840 loss_mg_mv2text=0.2139 loss_mg_text2mv=0.5541 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000054 grad_norm=49.8138 entropy=0.6173 selected_mean=6.17 unique_gops=5.62 valid_candidates=6.25 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=25 step=10/55 loss=0.3343 loss_mg=0.3342 loss_mg_mv2text=0.2576 loss_mg_text2mv=0.4109 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000050 grad_norm=49.8322 entropy=0.7138 selected_mean=6.51 unique_gops=6.53 valid_candidates=7.84 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=25 step=20/55 loss=0.4796 loss_mg=0.4796 loss_mg_mv2text=0.3730 loss_mg_text2mv=0.5862 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000047 grad_norm=49.3102 entropy=0.7253 selected_mean=6.69 unique_gops=6.50 valid_candidates=7.65 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=25 step=30/55 loss=0.7571 loss_mg=0.7570 loss_mg_mv2text=0.7855 loss_mg_text2mv=0.7284 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000043 grad_norm=44.8325 entropy=0.7414 selected_mean=6.17 unique_gops=6.51 valid_candidates=7.79 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=25 step=40/55 loss=0.4664 loss_mg=0.4661 loss_mg_mv2text=0.4034 loss_mg_text2mv=0.5289 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000040 grad_norm=67.4073 entropy=0.7542 selected_mean=5.95 unique_gops=6.51 valid_candidates=7.70 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=25 step=50/55 loss=0.6243 loss_mg=0.6243 loss_mg_mv2text=0.6725 loss_mg_text2mv=0.5761 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000036 grad_norm=57.2918 entropy=0.7448 selected_mean=6.44 unique_gops=6.51 valid_candidates=7.70 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=25 train={'loss': 0.45111982788551935, 'loss_mg': 0.4507364931431684, 'loss_mg_mv2text': 0.37805968218229036, 'loss_mg_text2mv': 0.5234133081002669, 'loss_me': 0.00038333493334386567, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7592164129018784, 'selected_unique_gops': 6.509375, 'valid_candidates': 7.766477272727273, 'amp_skipped_steps': 0, 'seconds': 171.88042497634888, 'global_videos_per_second': 20.4793535999481, 'global_candidate_gops_per_second': 327.6696575991696} val={'val_acc1': 70.3921568627451, 'val_acc5': 93.72549019607843, 'val_loss_me': 2.0372735166120335, 'val_seconds': 23.54858636856079, 'val_global_videos_per_second': 64.97205293149443}
+[emclip][rank=1] epoch=26 entering DataLoader
+[emclip][rank=2] epoch=26 entering DataLoader
+[emclip][rank=3] epoch=26 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=26 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=26 step=0/55 loss=0.5863 loss_mg=0.5861 loss_mg_mv2text=0.5838 loss_mg_text2mv=0.5884 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000035 grad_norm=43.3630 entropy=0.7782 selected_mean=6.22 unique_gops=6.50 valid_candidates=6.81 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=26 step=10/55 loss=0.2892 loss_mg=0.2892 loss_mg_mv2text=0.1915 loss_mg_text2mv=0.3868 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000032 grad_norm=47.6802 entropy=0.7739 selected_mean=6.11 unique_gops=6.57 valid_candidates=7.82 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=26 step=20/55 loss=0.3313 loss_mg=0.3313 loss_mg_mv2text=0.2142 loss_mg_text2mv=0.4483 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000029 grad_norm=37.3829 entropy=0.7668 selected_mean=6.80 unique_gops=6.51 valid_candidates=7.67 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=26 step=30/55 loss=0.4755 loss_mg=0.4754 loss_mg_mv2text=0.4431 loss_mg_text2mv=0.5076 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000026 grad_norm=53.4390 entropy=0.7329 selected_mean=6.90 unique_gops=6.41 valid_candidates=7.56 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=26 step=40/55 loss=0.4420 loss_mg=0.4420 loss_mg_mv2text=0.3914 loss_mg_text2mv=0.4926 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000024 grad_norm=42.8568 entropy=0.7409 selected_mean=6.89 unique_gops=6.43 valid_candidates=7.66 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=26 step=50/55 loss=0.5222 loss_mg=0.5214 loss_mg_mv2text=0.3826 loss_mg_text2mv=0.6602 loss_me=0.0008 acc1=100.00 acc5=100.00 lr=0.00000021 grad_norm=50.2210 entropy=0.7576 selected_mean=6.73 unique_gops=6.43 valid_candidates=7.73 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=26 train={'loss': 0.4242274168540131, 'loss_mg': 0.42390766313130207, 'loss_mg_mv2text': 0.34943093982609835, 'loss_mg_text2mv': 0.49838438724929635, 'loss_me': 0.0003197529859810609, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7571353820237247, 'selected_unique_gops': 6.5107954545454545, 'valid_candidates': 7.764204545454546, 'amp_skipped_steps': 0, 'seconds': 175.31733655929565, 'global_videos_per_second': 20.077877459708436, 'global_candidate_gops_per_second': 321.246039355335} val={'val_acc1': 70.19607843137256, 'val_acc5': 93.59477124183006, 'val_loss_me': 2.0591060557528693, 'val_seconds': 23.830398082733154, 'val_global_videos_per_second': 64.20371135590032}
+[emclip][rank=3] epoch=27 entering DataLoader
+[emclip][rank=1] epoch=27 entering DataLoader
+[emclip][rank=2] epoch=27 entering DataLoader
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=27 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=27 step=0/55 loss=0.2608 loss_mg=0.2608 loss_mg_mv2text=0.2092 loss_mg_text2mv=0.3124 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000020 grad_norm=42.9718 entropy=0.7889 selected_mean=6.87 unique_gops=7.06 valid_candidates=9.69 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=27 step=10/55 loss=0.3436 loss_mg=0.3436 loss_mg_mv2text=0.1894 loss_mg_text2mv=0.4977 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000018 grad_norm=51.3277 entropy=0.7256 selected_mean=6.91 unique_gops=6.43 valid_candidates=7.44 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=27 step=20/55 loss=0.3409 loss_mg=0.3406 loss_mg_mv2text=0.3209 loss_mg_text2mv=0.3602 loss_me=0.0003 acc1=100.00 acc5=100.00 lr=0.00000015 grad_norm=33.3821 entropy=0.7376 selected_mean=6.95 unique_gops=6.49 valid_candidates=7.65 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=27 step=30/55 loss=0.4751 loss_mg=0.4749 loss_mg_mv2text=0.4596 loss_mg_text2mv=0.4902 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000013 grad_norm=46.0544 entropy=0.7486 selected_mean=6.92 unique_gops=6.55 valid_candidates=7.70 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=27 step=40/55 loss=0.5374 loss_mg=0.5372 loss_mg_mv2text=0.3863 loss_mg_text2mv=0.6881 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000011 grad_norm=49.7716 entropy=0.7263 selected_mean=5.93 unique_gops=6.48 valid_candidates=7.58 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=27 step=50/55 loss=0.3488 loss_mg=0.3488 loss_mg_mv2text=0.2568 loss_mg_text2mv=0.4409 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000010 grad_norm=43.7470 entropy=0.7340 selected_mean=6.39 unique_gops=6.49 valid_candidates=7.59 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=27 train={'loss': 0.41261771741238507, 'loss_mg': 0.41248413466594436, 'loss_mg_mv2text': 0.3438499022952535, 'loss_mg_text2mv': 0.48111836781555956, 'loss_me': 0.00013358391063113893, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7508453902873126, 'selected_unique_gops': 6.511931818181818, 'valid_candidates': 7.7644886363636365, 'amp_skipped_steps': 0, 'seconds': 172.30417013168335, 'global_videos_per_second': 20.42898902162288, 'global_candidate_gops_per_second': 326.86382434596607} val={'val_acc1': 70.19607843137256, 'val_acc5': 93.59477124183006, 'val_loss_me': 2.0570948802650046, 'val_seconds': 24.4985454082489, 'val_global_videos_per_second': 62.45268747608313}
+[emclip][rank=1] epoch=28 entering DataLoader
+[emclip][rank=3] epoch=28 entering DataLoader
+[emclip][rank=2] epoch=28 entering DataLoader
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=28 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=28 step=0/55 loss=0.5413 loss_mg=0.5413 loss_mg_mv2text=0.4726 loss_mg_text2mv=0.6100 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000009 grad_norm=44.3130 entropy=0.9867 selected_mean=6.60 unique_gops=6.56 valid_candidates=7.81 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=28 step=10/55 loss=0.4709 loss_mg=0.4707 loss_mg_mv2text=0.5278 loss_mg_text2mv=0.4136 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000007 grad_norm=49.2080 entropy=0.7698 selected_mean=6.77 unique_gops=6.32 valid_candidates=7.43 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=28 step=20/55 loss=0.2247 loss_mg=0.2247 loss_mg_mv2text=0.1269 loss_mg_text2mv=0.3225 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000006 grad_norm=46.6509 entropy=0.7787 selected_mean=6.23 unique_gops=6.39 valid_candidates=7.53 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=28 step=30/55 loss=0.2111 loss_mg=0.2110 loss_mg_mv2text=0.1847 loss_mg_text2mv=0.2373 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000005 grad_norm=40.7666 entropy=0.7700 selected_mean=6.47 unique_gops=6.42 valid_candidates=7.63 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=28 step=40/55 loss=0.3463 loss_mg=0.3463 loss_mg_mv2text=0.1955 loss_mg_text2mv=0.4971 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000004 grad_norm=50.7419 entropy=0.7627 selected_mean=6.67 unique_gops=6.42 valid_candidates=7.60 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=28 step=50/55 loss=0.5400 loss_mg=0.5399 loss_mg_mv2text=0.5341 loss_mg_text2mv=0.5456 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000003 grad_norm=50.5756 entropy=0.7563 selected_mean=6.44 unique_gops=6.44 valid_candidates=7.62 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=28 train={'loss': 0.40961423631418836, 'loss_mg': 0.40943588262254543, 'loss_mg_mv2text': 0.34431711973791773, 'loss_mg_text2mv': 0.47455464310266754, 'loss_me': 0.00017835460197065085, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7487456019629132, 'selected_unique_gops': 6.513636363636364, 'valid_candidates': 7.7622159090909095, 'amp_skipped_steps': 0, 'seconds': 164.3618004322052, 'global_videos_per_second': 21.41616842078768, 'global_candidate_gops_per_second': 342.6586947326029} val={'val_acc1': 70.32679738562092, 'val_acc5': 93.59477124183006, 'val_loss_me': 2.062663499872886, 'val_seconds': 23.73053240776062, 'val_global_videos_per_second': 64.47390112072002}
+[emclip][rank=1] epoch=29 entering DataLoader
+[emclip][rank=2] epoch=29 entering DataLoader[emclip][rank=3] epoch=29 entering DataLoader
+
+[emclip][rank=1] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=1] first micro-batch moved to cuda:1 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=2] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=2] first micro-batch moved to cuda:2 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=3] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=3] first micro-batch moved to cuda:3 shape I=(16, 16, 3, 256, 256)
+[emclip][rank=0] epoch=29 entering DataLoader
+[emclip][rank=0] first batch loaded CPU shapes I=(16, 16, 3, 256, 256) MV=(16, 16, 2, 256, 256) R=(16, 16, 3, 256, 256)
+[emclip][rank=0] first micro-batch moved to cuda:0 shape I=(16, 16, 3, 256, 256)
+epoch=29 step=0/55 loss=0.3280 loss_mg=0.3280 loss_mg_mv2text=0.2157 loss_mg_text2mv=0.4403 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000002 grad_norm=58.1810 entropy=0.8390 selected_mean=6.80 unique_gops=6.44 valid_candidates=7.00 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=29 step=10/55 loss=0.3287 loss_mg=0.3285 loss_mg_mv2text=0.2031 loss_mg_text2mv=0.4540 loss_me=0.0001 acc1=100.00 acc5=100.00 lr=0.00000002 grad_norm=46.2970 entropy=0.8218 selected_mean=6.62 unique_gops=6.48 valid_candidates=7.77 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=29 step=20/55 loss=0.2410 loss_mg=0.2408 loss_mg_mv2text=0.1284 loss_mg_text2mv=0.3532 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000001 grad_norm=45.7779 entropy=0.7968 selected_mean=6.11 unique_gops=6.52 valid_candidates=7.68 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=29 step=30/55 loss=0.3685 loss_mg=0.3683 loss_mg_mv2text=0.1781 loss_mg_text2mv=0.5584 loss_me=0.0002 acc1=100.00 acc5=100.00 lr=0.00000000 grad_norm=56.1479 entropy=0.7674 selected_mean=6.30 unique_gops=6.43 valid_candidates=7.58 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=29 step=40/55 loss=0.6258 loss_mg=0.6257 loss_mg_mv2text=0.6019 loss_mg_text2mv=0.6496 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000000 grad_norm=46.6521 entropy=0.7424 selected_mean=7.12 unique_gops=6.42 valid_candidates=7.60 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=29 step=50/55 loss=0.3331 loss_mg=0.3331 loss_mg_mv2text=0.1307 loss_mg_text2mv=0.5355 loss_me=0.0000 acc1=100.00 acc5=100.00 lr=0.00000000 grad_norm=39.6810 entropy=0.7463 selected_mean=7.23 unique_gops=6.45 valid_candidates=7.69 classification_scale=100.0000 max_mem=61878MB amp_scale=256.0 amp_skips=0
+epoch=29 train={'loss': 0.41241223818876527, 'loss_mg': 0.4122651205821471, 'loss_mg_mv2text': 0.33788789210163733, 'loss_mg_text2mv': 0.4866423519497568, 'loss_me': 0.00014711874036741143, 'acc1': 100.0, 'acc5': 100.0, 'mgse_saliency_entropy': 0.7559877818281, 'selected_unique_gops': 6.511363636363637, 'valid_candidates': 7.7625, 'amp_skipped_steps': 0, 'seconds': 158.6108512878418, 'global_videos_per_second': 22.192680837529956, 'global_candidate_gops_per_second': 355.0828934004793} val={'val_acc1': 70.3921568627451, 'val_acc5': 93.59477124183006, 'val_loss_me': 2.061269633727699, 'val_seconds': 23.9517605304718, 'val_global_videos_per_second': 63.8783941603587}
